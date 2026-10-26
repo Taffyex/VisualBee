@@ -20,7 +20,7 @@ namespace MusicBeePlugin
         private void CycleMode()
         {
             if (Settings == null) return;
-            int next = ((int)Settings.Mode + 1) % 3;
+            int next = ((int)Settings.Mode + 1) % 2;
             Settings.Mode = (VisualizerMode)next;
             Settings.NotifyChanged();
             Settings.RequestSave();

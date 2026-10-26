@@ -67,12 +67,11 @@ namespace MusicBeePlugin
 
         private void CreatePipeline(string shaderCacheFolder)
         {
-            string fullSource = D3DShaders.Common + D3DShaders.Bloom + D3DShaders.Bars + D3DShaders.Ribbon + D3DShaders.Scope;
+            string fullSource = D3DShaders.Common + D3DShaders.Bloom + D3DShaders.Bars + D3DShaders.Ribbon;
 
             _vsFullscreen = CompileOrLoadVS(fullSource, "VSFullscreen", shaderCacheFolder);
             _psBars = CompileOrLoadPS(fullSource, "PSBars", shaderCacheFolder);
             _psRibbon = CompileOrLoadPS(fullSource, "PSRibbon", shaderCacheFolder);
-            _psScope = CompileOrLoadPS(fullSource, "PSScope", shaderCacheFolder);
 
             _psBloomBright = CompileOrLoadPS(fullSource, "PSBloomBright", shaderCacheFolder);
             _psBloomBlur = CompileOrLoadPS(fullSource, "PSBloomBlur", shaderCacheFolder);

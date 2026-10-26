@@ -70,7 +70,6 @@ namespace MusicBeePlugin
             var modeMenu = new ToolStripMenuItem("Visualizer Mode");
             AddRadio(modeMenu, "Spectrum Bars", _settings.Mode == VisualizerMode.SpectrumBars, () => _settings.Mode = VisualizerMode.SpectrumBars);
             AddRadio(modeMenu, "Liquid Waveform", _settings.Mode == VisualizerMode.Waveform, () => _settings.Mode = VisualizerMode.Waveform);
-            AddRadio(modeMenu, "Vector Scope (XY Goniometer)", _settings.Mode == VisualizerMode.PhaseScope, () => _settings.Mode = VisualizerMode.PhaseScope);
             _menu.Items.Add(modeMenu);
 
             // Stereo Spectrum Layout

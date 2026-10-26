@@ -14,18 +14,10 @@ namespace MusicBeePlugin
         private VbSegmented _segPeakColorMode;
         private VbSwatch _swPeakCustom;
 
-        private void BuildPeaksPage(Panel host)
+        private void BuildPeaksSection(FlowLayoutPanel pnl)
         {
-            var pnl = new FlowLayoutPanel
-            {
-                Dock = DockStyle.Fill,
-                FlowDirection = FlowDirection.TopDown,
-                WrapContents = false,
-                AutoScroll = true,
-                Padding = new Padding(8)
-            };
-
-            pnl.Controls.Add(CreateHeaderLabel("PEAK CAPS"));
+            pnl.Controls.Add(CreateSpacer(12));
+            pnl.Controls.Add(CreateHeaderLabel("FLOATING PEAK CAPS"));
 
             _togPeakEnabled = new VbToggle
             {
@@ -138,7 +130,6 @@ namespace MusicBeePlugin
             pnl.Controls.Add(_swPeakCustom);
 
             UpdatePeakControlsState();
-            host.Controls.Add(pnl);
         }
 
         private void UpdatePeakControlsState()
@@ -151,7 +142,7 @@ namespace MusicBeePlugin
             if (_swPeakCustom != null) _swPeakCustom.Enabled = (en && _settings.PeakCapColorMode == PeakColorMode.Custom);
         }
 
-        private void RefreshPeaksPageUi()
+        private void RefreshPeaksUi()
         {
             if (_togPeakEnabled != null) _togPeakEnabled.Checked = _settings.PeakHoldEnabled;
             if (_sldPeakHold != null) _sldPeakHold.Value = _settings.PeakHoldMs;

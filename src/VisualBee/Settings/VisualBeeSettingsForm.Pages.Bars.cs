@@ -14,6 +14,8 @@ namespace MusicBeePlugin
         private VbSlider _sldTrebleTaper;
         private VbSlider _sldLedSegH;
         private VbSlider _sldLedSegGap;
+        private VbSegmented _segStereo;
+        private VbToggle _togHighlightTips;
 
         private void BuildBarsPage(Panel host)
         {
@@ -25,6 +27,9 @@ namespace MusicBeePlugin
                 AutoScroll = true,
                 Padding = new Padding(8)
             };
+
+            pnl.Controls.Add(CreateHeaderLabel("SPECTRUM BARS"));
+            pnl.Controls.Add(CreateSubtitleLabel("Applies to Bars mode"));
 
             pnl.Controls.Add(CreateHeaderLabel("BAR STYLE"));
 
@@ -163,6 +168,42 @@ namespace MusicBeePlugin
             };
             pnl.Controls.Add(_sldLedSegGap);
 
+            pnl.Controls.Add(CreateSpacer(8));
+            pnl.Controls.Add(CreateHeaderLabel("STEREO SPECTRUM LAYOUT"));
+
+            _segStereo = new VbSegmented
+            {
+                Width = 520,
+                Items = new[] { "Mono (Standard)", "Center-Out Wings", "Split Left / Right" },
+                SelectedIndex = (int)_settings.StereoMode
+            };
+            _segStereo.SelectedIndexChanged += idx =>
+            {
+                _settings.StereoMode = (StereoMode)idx;
+                _settings.NotifyChanged();
+                _settings.RequestSave();
+            };
+            pnl.Controls.Add(_segStereo);
+
+            pnl.Controls.Add(CreateSpacer(8));
+            pnl.Controls.Add(CreateHeaderLabel("BAR ACCENT"));
+
+            _togHighlightTips = new VbToggle
+            {
+                Width = 520,
+                Label = "Highlight Bar Tops (Tip Glow / Accent using Color D)",
+                Checked = _settings.HighlightBarTips
+            };
+            _togHighlightTips.CheckedChanged += chk =>
+            {
+                _settings.HighlightBarTips = chk;
+                _settings.NotifyChanged();
+                _settings.RequestSave();
+            };
+            pnl.Controls.Add(_togHighlightTips);
+
+            BuildPeaksSection(pnl);
+
             UpdateLedControlsState();
             host.Controls.Add(pnl);
         }
@@ -183,7 +224,10 @@ namespace MusicBeePlugin
             if (_sldTrebleTaper != null) _sldTrebleTaper.Value = _settings.TrebleTaper * 100f;
             if (_sldLedSegH != null) _sldLedSegH.Value = _settings.LedSegmentHeight;
             if (_sldLedSegGap != null) _sldLedSegGap.Value = _settings.LedSegmentGap;
+            if (_segStereo != null) _segStereo.SelectedIndex = (int)_settings.StereoMode;
+            if (_togHighlightTips != null) _togHighlightTips.Checked = _settings.HighlightBarTips;
             UpdateLedControlsState();
+            RefreshPeaksUi();
         }
     }
 }

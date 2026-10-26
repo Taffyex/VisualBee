@@ -46,8 +46,8 @@ namespace MusicBeePlugin
                     switch (key)
                     {
                         case "Mode":
-                            if (int.TryParse(val, out int mode) && mode >= 0 && mode <= 2)
-                                settings.Mode = (VisualizerMode)mode;
+                            if (int.TryParse(val, out int mode))
+                                settings.Mode = (mode == 1) ? VisualizerMode.Waveform : VisualizerMode.SpectrumBars;
                             break;
                         case "StereoMode":
                             if (int.TryParse(val, out int sm) && Enum.IsDefined(typeof(StereoMode), sm))
@@ -89,6 +89,10 @@ namespace MusicBeePlugin
                             if (float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float lsg))
                                 settings.LedSegmentGap = Math.Max(1.0f, Math.Min(8.0f, lsg));
                             break;
+                        case "HighlightBarTips":
+                            if (bool.TryParse(val, out bool hbt))
+                                settings.HighlightBarTips = hbt;
+                            break;
                         case "ColorMode":
                             if (int.TryParse(val, out int cMode) && Enum.IsDefined(typeof(BarColorMode), cMode))
                                 settings.ColorMode = (BarColorMode)cMode;
@@ -96,6 +100,14 @@ namespace MusicBeePlugin
                         case "HueSpeed":
                             if (float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float hSpd))
                                 settings.HueSpeed = Math.Max(0.01f, Math.Min(2.0f, hSpd));
+                            break;
+                        case "HueMotion":
+                            if (int.TryParse(val, out int hMot) && Enum.IsDefined(typeof(HueCycleMotion), hMot))
+                                settings.HueMotion = (HueCycleMotion)hMot;
+                            break;
+                        case "HueSource":
+                            if (int.TryParse(val, out int hSrc) && Enum.IsDefined(typeof(HueCycleSource), hSrc))
+                                settings.HueSource = (HueCycleSource)hSrc;
                             break;
                         case "PeakHoldEnabled":
                             if (bool.TryParse(val, out bool peak))
@@ -252,7 +264,7 @@ namespace MusicBeePlugin
             {
                 using (var writer = new StreamWriter(_path, false))
                 {
-                    writer.WriteLine("# VisualBee v4 configuration");
+                    writer.WriteLine("# VisualBee v1.0 configuration");
                     writer.WriteLine("Mode=" + (int)Mode);
                     writer.WriteLine("StereoMode=" + (int)StereoMode);
                     writer.WriteLine("AudioSource=" + (int)AudioSource);
@@ -265,10 +277,13 @@ namespace MusicBeePlugin
                     writer.WriteLine("TrebleTaper=" + TrebleTaper.ToString("0.00", CultureInfo.InvariantCulture));
                     writer.WriteLine("LedSegmentHeight=" + LedSegmentHeight.ToString("0.0", CultureInfo.InvariantCulture));
                     writer.WriteLine("LedSegmentGap=" + LedSegmentGap.ToString("0.0", CultureInfo.InvariantCulture));
+                    writer.WriteLine("HighlightBarTips=" + HighlightBarTips);
 
                     writer.WriteLine("Palette=" + (Palette ?? "skin"));
                     writer.WriteLine("ColorMode=" + (int)ColorMode);
                     writer.WriteLine("HueSpeed=" + HueSpeed.ToString("0.00", CultureInfo.InvariantCulture));
+                    writer.WriteLine("HueMotion=" + (int)HueMotion);
+                    writer.WriteLine("HueSource=" + (int)HueSource);
 
                     writer.WriteLine("PeakHoldEnabled=" + PeakHoldEnabled);
                     writer.WriteLine("PeakHoldMs=" + PeakHoldMs.ToString("0", CultureInfo.InvariantCulture));

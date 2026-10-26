@@ -22,6 +22,9 @@ namespace MusicBeePlugin
                 Padding = new Padding(8)
             };
 
+            pnl.Controls.Add(CreateHeaderLabel("ABOUT"));
+            pnl.Controls.Add(CreateSubtitleLabel("Plugin information and live telemetry"));
+
             var lblTitle = new Label
             {
                 Text = "VisualBee v1.0.0",
@@ -115,7 +118,7 @@ namespace MusicBeePlugin
             sb.AppendLine("=== VisualBee v1.0.0 Diagnostics Report ===");
             sb.AppendLine($"Timestamp: {DateTime.UtcNow:O}");
             sb.AppendLine($"OS: {Environment.OSVersion}");
-            sb.AppendLine($"CLR: {Environment.Version}");
+            sb.AppendLine($"Host Runtime: .NET Framework {Environment.Version}");
             var r = _control?.Renderer;
             sb.AppendLine($"Renderer Ready: {r?.IsReady ?? false}");
             sb.AppendLine($"Present Mode: {r?.PresentMode ?? "N/A"}");

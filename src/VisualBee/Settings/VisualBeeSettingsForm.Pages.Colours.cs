@@ -9,6 +9,8 @@ namespace MusicBeePlugin
     {
         private ComboBox _cboPresets;
         private VbSegmented _segColorMode;
+        private VbSegmented _segHueSource;
+        private VbSegmented _segHueMotion;
         private VbSlider _sldHueSpeed;
         private FlowLayoutPanel _pnlSwatches;
 
@@ -22,6 +24,9 @@ namespace MusicBeePlugin
                 AutoScroll = true,
                 Padding = new Padding(8)
             };
+
+            pnl.Controls.Add(CreateHeaderLabel("COLOURS & THEME"));
+            pnl.Controls.Add(CreateSubtitleLabel("Applies to all modes"));
 
             pnl.Controls.Add(CreateHeaderLabel("THEME PRESETS"));
 
@@ -100,15 +105,50 @@ namespace MusicBeePlugin
                 _settings.ColorMode = (BarColorMode)idx;
                 _settings.NotifyChanged();
                 _settings.RequestSave();
-                if (_sldHueSpeed != null) _sldHueSpeed.Enabled = (_settings.ColorMode == BarColorMode.HueCycle);
+                UpdateHueControlsState();
             };
             pnl.Controls.Add(_segColorMode);
 
             pnl.Controls.Add(CreateSpacer(8));
+            pnl.Controls.Add(CreateHeaderLabel("HUE CYCLE SETTINGS"));
+
+            _segHueSource = new VbSegmented
+            {
+                Width = 520,
+                Items = new[] { "Selected Palette Colors", "Full Rainbow Spectrum" },
+                SelectedIndex = (int)_settings.HueSource,
+                Enabled = (_settings.ColorMode == BarColorMode.HueCycle)
+            };
+            _segHueSource.SelectedIndexChanged += idx =>
+            {
+                _settings.HueSource = (HueCycleSource)idx;
+                _settings.NotifyChanged();
+                _settings.RequestSave();
+            };
+            pnl.Controls.Add(_segHueSource);
+
+            pnl.Controls.Add(CreateSpacer(6));
+
+            _segHueMotion = new VbSegmented
+            {
+                Width = 520,
+                Items = new[] { "Sideways Wave", "Spin (Diagonal)" },
+                SelectedIndex = (int)_settings.HueMotion,
+                Enabled = (_settings.ColorMode == BarColorMode.HueCycle)
+            };
+            _segHueMotion.SelectedIndexChanged += idx =>
+            {
+                _settings.HueMotion = (HueCycleMotion)idx;
+                _settings.NotifyChanged();
+                _settings.RequestSave();
+            };
+            pnl.Controls.Add(_segHueMotion);
+
+            pnl.Controls.Add(CreateSpacer(6));
             _sldHueSpeed = new VbSlider
             {
                 Width = 520,
-                Label = "Hue Rotation Speed (for Hue Cycle mode)",
+                Label = "Hue Rotation Speed",
                 Minimum = 0.05f,
                 Maximum = 2.0f,
                 DefaultValue = 0.25f,
@@ -176,16 +216,23 @@ namespace MusicBeePlugin
             }
         }
 
+        private void UpdateHueControlsState()
+        {
+            bool isHue = (_settings.ColorMode == BarColorMode.HueCycle);
+            if (_segHueSource != null) _segHueSource.Enabled = isHue;
+            if (_segHueMotion != null) _segHueMotion.Enabled = isHue;
+            if (_sldHueSpeed != null) _sldHueSpeed.Enabled = isHue;
+        }
+
         private void RefreshColoursPageUi()
         {
             PopulatePresetCombo();
             UpdateSwatches();
             if (_segColorMode != null) _segColorMode.SelectedIndex = (int)_settings.ColorMode;
-            if (_sldHueSpeed != null)
-            {
-                _sldHueSpeed.Value = _settings.HueSpeed;
-                _sldHueSpeed.Enabled = (_settings.ColorMode == BarColorMode.HueCycle);
-            }
+            if (_segHueSource != null) _segHueSource.SelectedIndex = (int)_settings.HueSource;
+            if (_segHueMotion != null) _segHueMotion.SelectedIndex = (int)_settings.HueMotion;
+            if (_sldHueSpeed != null) _sldHueSpeed.Value = _settings.HueSpeed;
+            UpdateHueControlsState();
         }
 
         private sealed class PresetItem

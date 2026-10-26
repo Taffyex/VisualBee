@@ -55,10 +55,10 @@ namespace MusicBeePlugin
                 settings.RibbonFloorReflection ? 1f : 0f,
                 dpiScale);
             _constants.StyleExtra = new Vector4(
-                1f,
+                (float)(int)settings.HueMotion,
                 (float)(int)settings.StereoMode,
-                0f,
-                0f);
+                settings.HighlightBarTips ? 1.0f : 0.0f,
+                (float)(int)settings.HueSource);
 
             // Background resolution & brightness
             Vector4 baseBg;
@@ -125,9 +125,6 @@ namespace MusicBeePlugin
 
             switch (settings.Mode)
             {
-                case VisualizerMode.PhaseScope:
-                    _context.PixelShader.Set(_psScope);
-                    break;
                 case VisualizerMode.Waveform:
                     _context.PixelShader.Set(_psRibbon);
                     break;

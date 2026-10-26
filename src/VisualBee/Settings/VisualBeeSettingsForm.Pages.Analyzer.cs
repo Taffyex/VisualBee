@@ -27,6 +27,9 @@ namespace MusicBeePlugin
                 Padding = new Padding(8)
             };
 
+            pnl.Controls.Add(CreateHeaderLabel("AUDIO & FFT"));
+            pnl.Controls.Add(CreateSubtitleLabel("Audio engine and spectrum analysis"));
+
             pnl.Controls.Add(CreateHeaderLabel("BALLISTICS & SENSITIVITY"));
 
             _sldSens = new VbSlider

@@ -8,7 +8,6 @@ namespace MusicBeePlugin
     public sealed partial class VisualBeeSettingsForm
     {
         private VbSegmented _segMode;
-        private VbSegmented _segStereo;
         private VbToggle _togMirrorH;
         private VbToggle _togMirrorV;
 
@@ -23,12 +22,15 @@ namespace MusicBeePlugin
                 Padding = new Padding(8)
             };
 
+            pnl.Controls.Add(CreateHeaderLabel("GENERAL & WINDOW"));
+            pnl.Controls.Add(CreateSubtitleLabel("Applies to all modes"));
+
             pnl.Controls.Add(CreateHeaderLabel("VISUALIZER MODE"));
 
             _segMode = new VbSegmented
             {
                 Width = 520,
-                Items = new[] { "Spectrum Bars", "Waveform", "Vector Scope" },
+                Items = new[] { "Spectrum Bars", "Waveform" },
                 SelectedIndex = (int)_settings.Mode
             };
             _segMode.SelectedIndexChanged += idx =>
@@ -38,23 +40,6 @@ namespace MusicBeePlugin
                 _settings.RequestSave();
             };
             pnl.Controls.Add(_segMode);
-
-            pnl.Controls.Add(CreateSpacer(12));
-            pnl.Controls.Add(CreateHeaderLabel("STEREO SPECTRUM LAYOUT"));
-
-            _segStereo = new VbSegmented
-            {
-                Width = 520,
-                Items = new[] { "Mono (Standard)", "Center-Out Wings", "Split Left / Right" },
-                SelectedIndex = (int)_settings.StereoMode
-            };
-            _segStereo.SelectedIndexChanged += idx =>
-            {
-                _settings.StereoMode = (StereoMode)idx;
-                _settings.NotifyChanged();
-                _settings.RequestSave();
-            };
-            pnl.Controls.Add(_segStereo);
 
             pnl.Controls.Add(CreateSpacer(12));
             pnl.Controls.Add(CreateHeaderLabel("MIRROR MODES"));
@@ -77,7 +62,7 @@ namespace MusicBeePlugin
             _togMirrorV = new VbToggle
             {
                 Width = 520,
-                Label = "Vertical Mirror (Bars grow up and down from center line)",
+                Label = "Vertical Mirror (Bars/wave grow up and down from center line)",
                 Checked = (_settings.Mirror & BarMirror.Vertical) != 0
             };
             _togMirrorV.CheckedChanged += chk =>
@@ -90,6 +75,8 @@ namespace MusicBeePlugin
             pnl.Controls.Add(_togMirrorV);
 
             pnl.Controls.Add(CreateSpacer(16));
+            pnl.Controls.Add(CreateHeaderLabel("WINDOW POPOUT"));
+
             var btnPopout = new Button
             {
                 Text = "Popout Visualizer Window",
@@ -111,7 +98,6 @@ namespace MusicBeePlugin
         private void RefreshGeneralPageUi()
         {
             if (_segMode != null) _segMode.SelectedIndex = (int)_settings.Mode;
-            if (_segStereo != null) _segStereo.SelectedIndex = (int)_settings.StereoMode;
             if (_togMirrorH != null) _togMirrorH.Checked = (_settings.Mirror & BarMirror.Horizontal) != 0;
             if (_togMirrorV != null) _togMirrorV.Checked = (_settings.Mirror & BarMirror.Vertical) != 0;
         }

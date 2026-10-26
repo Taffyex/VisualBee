@@ -7,32 +7,66 @@ namespace MusicBeePlugin
 // Mode 0: Spectrum Bars (Grounded, Pixel-Accurate AA, H/V Mirror, Dynamic Styles)
 // -----------------------------------------------------------------------------
 
+float3 CyclePalette(float phase)
+{
+    float p = frac(phase) * 4.0;
+    int seg = (int)p;
+    float f = frac(p);
+    f = f * f * (3.0 - 2.0 * f);
+    if (seg == 0) return lerp(PaletteColorA.rgb, PaletteColorB.rgb, f);
+    if (seg == 1) return lerp(PaletteColorB.rgb, PaletteColorC.rgb, f);
+    if (seg == 2) return lerp(PaletteColorC.rgb, PaletteColorD.rgb, f);
+    return lerp(PaletteColorD.rgb, PaletteColorA.rgb, f);
+}
+
 float3 GetBarColor(float relY, float barFrac, float time)
 {
     int mode = (int)ColorParams.x;
+    bool highlightTip = StyleExtra.z > 0.5;
+
     if (mode == 1) // Across frequencies (A -> B -> C -> D)
     {
         float3 c;
         if (barFrac < 0.33) c = lerp(PaletteColorA.rgb, PaletteColorB.rgb, barFrac / 0.33);
         else if (barFrac < 0.66) c = lerp(PaletteColorB.rgb, PaletteColorC.rgb, (barFrac - 0.33) / 0.33);
         else c = lerp(PaletteColorC.rgb, PaletteColorD.rgb, (barFrac - 0.66) / 0.34);
-        c = lerp(c, PaletteColorD.rgb, smoothstep(0.85, 1.0, relY) * 0.45);
+        if (highlightTip)
+            c = lerp(c, PaletteColorD.rgb, smoothstep(0.85, 1.0, relY) * 0.45);
         return c;
     }
     else if (mode == 2) // Solid tip
     {
-        return lerp(PaletteColorC.rgb * 0.9, PaletteColorD.rgb, smoothstep(0.80, 1.0, relY));
+        if (highlightTip)
+            return lerp(PaletteColorC.rgb * 0.9, PaletteColorD.rgb, smoothstep(0.80, 1.0, relY));
+        else
+            return PaletteColorC.rgb;
     }
     else if (mode == 3) // Hue cycle
     {
-        float hue = frac(time * ColorParams.y * 0.12 + barFrac * 0.5 + relY * 0.15);
-        float3 rgb = saturate(abs(frac(hue + float3(0.0, 2.0/3.0, 1.0/3.0)) * 6.0 - 3.0) - 1.0);
-        return rgb;
+        int hueMotion = (int)StyleExtra.x; // 0 = Sideways, 1 = Spin
+        int hueSource = (int)StyleExtra.w; // 0 = Palette, 1 = Rainbow
+        float speed = ColorParams.y * 0.15;
+        float offset = (hueMotion == 1) ? (barFrac * 0.6 + relY * 0.35) : barFrac;
+        float phase = frac(time * speed + offset);
+
+        float3 c;
+        if (hueSource == 0)
+        {
+            c = CyclePalette(phase);
+        }
+        else
+        {
+            c = saturate(abs(frac(phase + float3(0.0, 2.0/3.0, 1.0/3.0)) * 6.0 - 3.0) - 1.0);
+        }
+        if (highlightTip)
+            c = lerp(c, PaletteColorD.rgb, smoothstep(0.85, 1.0, relY) * 0.40);
+        return c;
     }
     else // Mode 0: Vertical gradient (Default)
     {
         float3 c = lerp(PaletteColorB.rgb, PaletteColorC.rgb, relY);
-        c = lerp(c, PaletteColorD.rgb, smoothstep(0.85, 1.0, relY) * 0.85);
+        if (highlightTip)
+            c = lerp(c, PaletteColorD.rgb, smoothstep(0.85, 1.0, relY) * 0.85);
         return c;
     }
 }
@@ -254,7 +288,7 @@ float4 PSBars(FSOut i) : SV_Target
             float relY = yPx / max(1.0, hPx);
             float3 barCol = GetBarColor(relY, barFrac, VisualParams.x);
 
-            if (abs(yPx - hPx) < 1.5)
+            if (StyleExtra.z > 0.5 && abs(yPx - hPx) < 1.5)
                 barCol += PaletteColorD.rgb * 0.6;
 
             float chamfer = 1.0 - smoothstep(halfBarPx * (0.5 + 0.5 * roundness), halfBarPx, pxX) * 0.35;

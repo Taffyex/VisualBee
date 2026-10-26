@@ -7,8 +7,19 @@ namespace MusicBeePlugin
     public enum VisualizerMode
     {
         SpectrumBars = 0,
-        Waveform = 1,
-        PhaseScope = 2
+        Waveform = 1
+    }
+
+    public enum HueCycleMotion
+    {
+        Sideways = 0,
+        Spin = 1
+    }
+
+    public enum HueCycleSource
+    {
+        Palette = 0,
+        Rainbow = 1
     }
 
     public enum StereoMode
@@ -80,11 +91,14 @@ namespace MusicBeePlugin
         public float TrebleTaper = 0.10f;
         public float LedSegmentHeight = 6.0f;
         public float LedSegmentGap = 2.0f;
+        public bool HighlightBarTips = true;
 
         // Colours
         public string Palette = "skin";
         public BarColorMode ColorMode = BarColorMode.VerticalGradient;
         public float HueSpeed = 0.25f;
+        public HueCycleMotion HueMotion = HueCycleMotion.Sideways;
+        public HueCycleSource HueSource = HueCycleSource.Palette;
 
         // Peaks
         public bool PeakHoldEnabled = true;
@@ -173,12 +187,28 @@ namespace MusicBeePlugin
                 TrebleTaper = 0.10f;
                 LedSegmentHeight = 6.0f;
                 LedSegmentGap = 2.0f;
+                HighlightBarTips = true;
+                StereoMode = StereoMode.Mono;
+                PeakHoldEnabled = true;
+                PeakHoldMs = 350f;
+                PeakGravity = 2.8f;
+                PeakCapThickness = 2.0f;
+                PeakCapColorMode = PeakColorMode.PaletteTip;
+                PeakCustomColor = Color.FromArgb(255, 255, 255);
+            }
+            if (string.IsNullOrEmpty(sec) || sec == "waveform")
+            {
+                RibbonThickness = 2.5f;
+                RibbonFill = true;
+                RibbonFloorReflection = true;
             }
             if (string.IsNullOrEmpty(sec) || sec == "colours" || sec == "colors")
             {
                 Palette = "skin";
                 ColorMode = BarColorMode.VerticalGradient;
                 HueSpeed = 0.25f;
+                HueMotion = HueCycleMotion.Sideways;
+                HueSource = HueCycleSource.Palette;
             }
             if (string.IsNullOrEmpty(sec) || sec == "peaks")
             {

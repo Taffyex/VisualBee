@@ -119,33 +119,70 @@ namespace MusicBeePlugin
             _pnlNav = new Panel
             {
                 Dock = DockStyle.Left,
-                Width = 150,
+                Width = 165,
                 BackColor = VbTheme.BgNav,
-                Padding = new Padding(8, 12, 8, 12)
+                Padding = new Padding(6, 10, 6, 10)
             };
 
-            string[] navTitles = { "General", "Bars", "Colours", "Peaks", "Analyzer", "Effects", "Performance", "About" };
-            for (int i = navTitles.Length - 1; i >= 0; i--)
+            var flowNav = new FlowLayoutPanel
             {
-                int pageIdx = i;
+                Dock = DockStyle.Fill,
+                FlowDirection = FlowDirection.TopDown,
+                WrapContents = false,
+                AutoScroll = false,
+                BackColor = Color.Transparent
+            };
+
+            void AddNavHeader(string text, int topMargin)
+            {
+                var lbl = new Label
+                {
+                    Text = text,
+                    Width = 150,
+                    Height = 18,
+                    Font = VbTheme.FontSmall,
+                    ForeColor = Color.FromArgb(120, 135, 155),
+                    TextAlign = ContentAlignment.BottomLeft,
+                    Margin = new Padding(6, topMargin, 0, 4)
+                };
+                flowNav.Controls.Add(lbl);
+            }
+
+            void AddNavButton(int pageIdx, string text)
+            {
                 var btn = new Button
                 {
-                    Text = "  " + navTitles[i],
-                    Dock = DockStyle.Top,
-                    Height = 36,
+                    Text = "  " + text,
+                    Width = 152,
+                    Height = 34,
                     FlatStyle = FlatStyle.Flat,
                     TextAlign = ContentAlignment.MiddleLeft,
                     Font = VbTheme.FontRegular,
                     ForeColor = VbTheme.TextSecondary,
                     BackColor = Color.Transparent,
-                    Cursor = Cursors.Hand
+                    Cursor = Cursors.Hand,
+                    Margin = new Padding(0, 1, 0, 1)
                 };
                 btn.FlatAppearance.BorderSize = 0;
                 btn.FlatAppearance.MouseOverBackColor = VbTheme.BgHover;
                 btn.Click += delegate { SelectPage(pageIdx); };
-                _navButtons[i] = btn;
-                _pnlNav.Controls.Add(btn);
+                _navButtons[pageIdx] = btn;
+                flowNav.Controls.Add(btn);
             }
+
+            AddNavHeader("MODE SPECIFIC", 0);
+            AddNavButton(0, "Spectrum Bars");
+            AddNavButton(1, "Waveform");
+
+            AddNavHeader("UNIVERSAL", 10);
+            AddNavButton(2, "General & Window");
+            AddNavButton(3, "Colours & Theme");
+            AddNavButton(4, "Audio & FFT");
+            AddNavButton(5, "Effects & Environment");
+            AddNavButton(6, "Performance");
+            AddNavButton(7, "About");
+
+            _pnlNav.Controls.Add(flowNav);
 
             // Right Content Container
             _pnlContent = new Panel
@@ -200,7 +237,7 @@ namespace MusicBeePlugin
 
         private void ResetCurrentPage()
         {
-            string[] sections = { "general", "bars", "colours", "peaks", "analyzer", "effects", "performance", "about" };
+            string[] sections = { "bars", "waveform", "general", "colours", "analyzer", "effects", "performance", "about" };
             if (_currentPage >= 0 && _currentPage < sections.Length && sections[_currentPage] != "about")
             {
                 _settings.ResetToDefaults(sections[_currentPage]);
@@ -229,10 +266,10 @@ namespace MusicBeePlugin
                 _pnlContent.Controls.Add(pnl);
             }
 
-            BuildGeneralPage(_pagePanels[0]);
-            BuildBarsPage(_pagePanels[1]);
-            BuildColoursPage(_pagePanels[2]);
-            BuildPeaksPage(_pagePanels[3]);
+            BuildBarsPage(_pagePanels[0]);
+            BuildWaveformPage(_pagePanels[1]);
+            BuildGeneralPage(_pagePanels[2]);
+            BuildColoursPage(_pagePanels[3]);
             BuildAnalyzerPage(_pagePanels[4]);
             BuildEffectsPage(_pagePanels[5]);
             BuildPerformancePage(_pagePanels[6]);
@@ -243,10 +280,10 @@ namespace MusicBeePlugin
         {
             switch (_currentPage)
             {
-                case 0: RefreshGeneralPageUi(); break;
-                case 1: RefreshBarsPageUi(); break;
-                case 2: RefreshColoursPageUi(); break;
-                case 3: RefreshPeaksPageUi(); break;
+                case 0: RefreshBarsPageUi(); break;
+                case 1: RefreshWaveformPageUi(); break;
+                case 2: RefreshGeneralPageUi(); break;
+                case 3: RefreshColoursPageUi(); break;
                 case 4: RefreshAnalyzerPageUi(); break;
                 case 5: RefreshEffectsPageUi(); break;
                 case 6: RefreshPerformancePageUi(); break;
@@ -256,14 +293,26 @@ namespace MusicBeePlugin
 
         private void RefreshAllPagesUi()
         {
-            RefreshGeneralPageUi();
             RefreshBarsPageUi();
+            RefreshWaveformPageUi();
+            RefreshGeneralPageUi();
             RefreshColoursPageUi();
-            RefreshPeaksPageUi();
             RefreshAnalyzerPageUi();
             RefreshEffectsPageUi();
             RefreshPerformancePageUi();
             RefreshAboutPageUi();
+        }
+
+        internal static Label CreateSubtitleLabel(string text)
+        {
+            return new Label
+            {
+                Text = text,
+                AutoSize = true,
+                Font = VbTheme.FontSmall,
+                ForeColor = VbTheme.TextSecondary,
+                Margin = new Padding(0, 0, 0, 10)
+            };
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)

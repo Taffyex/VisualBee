@@ -25,6 +25,9 @@ namespace MusicBeePlugin
                 Padding = new Padding(8)
             };
 
+            pnl.Controls.Add(CreateHeaderLabel("EFFECTS & ENVIRONMENT"));
+            pnl.Controls.Add(CreateSubtitleLabel("Applies to all modes"));
+
             pnl.Controls.Add(CreateHeaderLabel("LIGHTING & GLOW"));
 
             _sldBloom = new VbSlider

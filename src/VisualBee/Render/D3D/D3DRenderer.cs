@@ -77,7 +77,6 @@ namespace MusicBeePlugin
         private VertexShader _vsFullscreen;
         private PixelShader _psBars;
         private PixelShader _psRibbon;
-        private PixelShader _psScope;
 
         private PixelShader _psBloomBright;
         private PixelShader _psBloomBlur;
@@ -246,7 +245,6 @@ namespace MusicBeePlugin
             _vsFullscreen?.Dispose();
             _psBars?.Dispose();
             _psRibbon?.Dispose();
-            _psScope?.Dispose();
             _psBloomBright?.Dispose();
             _psBloomBlur?.Dispose();
             _psComposite?.Dispose();

@@ -26,6 +26,9 @@ namespace MusicBeePlugin
                 Padding = new Padding(8)
             };
 
+            pnl.Controls.Add(CreateHeaderLabel("PERFORMANCE"));
+            pnl.Controls.Add(CreateSubtitleLabel("Applies to all modes"));
+
             pnl.Controls.Add(CreateHeaderLabel("DISPLAY FRAME RATE CAP"));
 
             _segFrameCap = new VbSegmented
