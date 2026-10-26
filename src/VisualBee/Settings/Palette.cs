@@ -102,6 +102,13 @@ namespace MusicBeePlugin
             Color.FromArgb(210, 255, 245),
             Color.FromArgb(8, 12, 18));
 
+        public static readonly PaletteColors VfdStudioGlass = new PaletteColors(
+            Color.FromArgb(4, 16, 28),
+            Color.FromArgb(0, 120, 240),
+            Color.FromArgb(0, 240, 220),
+            Color.FromArgb(255, 255, 255),
+            Color.FromArgb(4, 8, 16));
+
         public static readonly PaletteColors TeenageEngineering = new PaletteColors(
             Color.FromArgb(30, 30, 32),
             Color.FromArgb(245, 85, 25),

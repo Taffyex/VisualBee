@@ -61,6 +61,7 @@ namespace MusicBeePlugin
             _builtInPresets.Add(new ThemePreset("phosphor", "Phosphor Green", true, PaletteManager.PhosphorGreen));
             _builtInPresets.Add(new ThemePreset("monochrome", "Monochrome Slate", true, PaletteManager.Monochrome));
             _builtInPresets.Add(new ThemePreset("mcintosh", "McIntosh Studio Glass", true, PaletteManager.McIntoshGlass));
+            _builtInPresets.Add(new ThemePreset("vfd_glass", "VFD Studio Glass", true, PaletteManager.VfdStudioGlass));
             _builtInPresets.Add(new ThemePreset("teenage", "Teenage Engineering", true, PaletteManager.TeenageEngineering));
             _builtInPresets.Add(new ThemePreset("oled", "OLED Midnight", true, PaletteManager.OledMidnight));
         }

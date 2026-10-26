@@ -40,7 +40,8 @@ namespace MusicBeePlugin
     {
         Pills = 0,
         Segmented = 1,
-        Solid = 2
+        Solid = 2,
+        GlassPillar = 3
     }
 
     [Flags]
@@ -132,6 +133,9 @@ namespace MusicBeePlugin
         public float Vignette = 0.35f;
         public float FloorReflection = 0.0f;
         public bool ContactGlow = true;
+        public bool DecibelGrid = true;
+        public float DecibelGridOpacity = 0.12f;
+        public bool HdrIncandescence = true;
 
         // Performance
         public int FrameCap = 0; // 0 = VSync, -1 = Uncapped, else 60/120/144/240/360
@@ -239,6 +243,9 @@ namespace MusicBeePlugin
                 Vignette = 0.35f;
                 FloorReflection = 0.0f;
                 ContactGlow = true;
+                DecibelGrid = true;
+                DecibelGridOpacity = 0.12f;
+                HdrIncandescence = true;
             }
             if (string.IsNullOrEmpty(sec) || sec == "performance")
             {

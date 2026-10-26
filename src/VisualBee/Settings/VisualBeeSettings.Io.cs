@@ -224,6 +224,18 @@ namespace MusicBeePlugin
                             if (bool.TryParse(val, out bool cg))
                                 settings.ContactGlow = cg;
                             break;
+                        case "DecibelGrid":
+                            if (bool.TryParse(val, out bool dg))
+                                settings.DecibelGrid = dg;
+                            break;
+                        case "DecibelGridOpacity":
+                            if (float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float dgo))
+                                settings.DecibelGridOpacity = Math.Max(0.0f, Math.Min(1.0f, dgo));
+                            break;
+                        case "HdrIncandescence":
+                            if (bool.TryParse(val, out bool inc))
+                                settings.HdrIncandescence = inc;
+                            break;
                         case "FrameCap":
                             if (int.TryParse(val, out int cap))
                                 settings.FrameCap = cap;
@@ -312,6 +324,9 @@ namespace MusicBeePlugin
                     writer.WriteLine("Vignette=" + Vignette.ToString("0.00", CultureInfo.InvariantCulture));
                     writer.WriteLine("FloorReflection=" + FloorReflection.ToString("0.00", CultureInfo.InvariantCulture));
                     writer.WriteLine("ContactGlow=" + ContactGlow);
+                    writer.WriteLine("DecibelGrid=" + DecibelGrid);
+                    writer.WriteLine("DecibelGridOpacity=" + DecibelGridOpacity.ToString("0.00", CultureInfo.InvariantCulture));
+                    writer.WriteLine("HdrIncandescence=" + HdrIncandescence);
 
                     writer.WriteLine("FrameCap=" + FrameCap);
                     writer.WriteLine("AnalysisHz=" + AnalysisHz);

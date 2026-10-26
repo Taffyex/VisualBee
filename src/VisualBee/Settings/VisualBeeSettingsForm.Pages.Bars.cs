@@ -36,7 +36,7 @@ namespace MusicBeePlugin
             _segBarStyle = new VbSegmented
             {
                 Width = 520,
-                Items = new[] { "Smooth Pills", "Frosted LEDs", "Solid Neo-Bars" },
+                Items = new[] { "Smooth Pills", "Frosted LEDs", "Solid Neo-Bars", "Glass Pillars (VFD)" },
                 SelectedIndex = (int)_settings.BarStyle
             };
             _segBarStyle.SelectedIndexChanged += idx =>
@@ -210,9 +210,9 @@ namespace MusicBeePlugin
 
         private void UpdateLedControlsState()
         {
-            bool isLed = _settings.BarStyle == BarVisualEffect.Segmented;
-            if (_sldLedSegH != null) _sldLedSegH.Enabled = isLed;
-            if (_sldLedSegGap != null) _sldLedSegGap.Enabled = isLed;
+            bool hasSegments = _settings.BarStyle == BarVisualEffect.Segmented || _settings.BarStyle == BarVisualEffect.GlassPillar;
+            if (_sldLedSegH != null) _sldLedSegH.Enabled = hasSegments;
+            if (_sldLedSegGap != null) _sldLedSegGap.Enabled = hasSegments;
         }
 
         private void RefreshBarsPageUi()

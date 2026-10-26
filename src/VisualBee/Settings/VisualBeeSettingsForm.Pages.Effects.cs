@@ -8,11 +8,14 @@ namespace MusicBeePlugin
     public sealed partial class VisualBeeSettingsForm
     {
         private VbSlider _sldBloom;
+        private VbToggle _togIncandescence;
         private VbSegmented _segBgSource;
         private VbSlider _sldBgBrightness;
         private VbSlider _sldVignette;
         private VbSlider _sldFloorReflection;
         private VbToggle _togContactGlow;
+        private VbToggle _togDecibelGrid;
+        private VbSlider _sldDecibelGrid;
 
         private void BuildEffectsPage(Panel host)
         {
@@ -48,6 +51,20 @@ namespace MusicBeePlugin
                 _settings.RequestSave();
             };
             pnl.Controls.Add(_sldBloom);
+
+            _togIncandescence = new VbToggle
+            {
+                Width = 520,
+                Label = "Amplitude HDR Incandescence (White-Hot Overdrive)",
+                Checked = _settings.HdrIncandescence
+            };
+            _togIncandescence.CheckedChanged += chk =>
+            {
+                _settings.HdrIncandescence = chk;
+                _settings.NotifyChanged();
+                _settings.RequestSave();
+            };
+            pnl.Controls.Add(_togIncandescence);
 
             _togContactGlow = new VbToggle
             {
@@ -125,7 +142,7 @@ namespace MusicBeePlugin
             _sldFloorReflection = new VbSlider
             {
                 Width = 520,
-                Label = "Floor Mirror Reflection",
+                Label = "Wet Lacquer Studio Glass Horizon Reflection",
                 Minimum = 0f,
                 Maximum = 100f,
                 DefaultValue = 0f,
@@ -141,17 +158,62 @@ namespace MusicBeePlugin
             };
             pnl.Controls.Add(_sldFloorReflection);
 
+            pnl.Controls.Add(CreateSpacer(8));
+            pnl.Controls.Add(CreateHeaderLabel("STUDIO DECIBEL GRID"));
+
+            _togDecibelGrid = new VbToggle
+            {
+                Width = 520,
+                Label = "Studio Decibel Reference Grid Lines (-24dB .. 0dB)",
+                Checked = _settings.DecibelGrid
+            };
+            _togDecibelGrid.CheckedChanged += chk =>
+            {
+                _settings.DecibelGrid = chk;
+                if (_sldDecibelGrid != null) _sldDecibelGrid.Enabled = chk;
+                _settings.NotifyChanged();
+                _settings.RequestSave();
+            };
+            pnl.Controls.Add(_togDecibelGrid);
+
+            _sldDecibelGrid = new VbSlider
+            {
+                Width = 520,
+                Label = "Decibel Grid Opacity",
+                Minimum = 2f,
+                Maximum = 40f,
+                DefaultValue = 12f,
+                Value = _settings.DecibelGridOpacity * 100f,
+                DecimalPlaces = 0,
+                Unit = "%",
+                Enabled = _settings.DecibelGrid
+            };
+            _sldDecibelGrid.ValueChanged += val =>
+            {
+                _settings.DecibelGridOpacity = val / 100f;
+                _settings.NotifyChanged();
+                _settings.RequestSave();
+            };
+            pnl.Controls.Add(_sldDecibelGrid);
+
             host.Controls.Add(pnl);
         }
 
         private void RefreshEffectsPageUi()
         {
             if (_sldBloom != null) _sldBloom.Value = _settings.BloomIntensity;
+            if (_togIncandescence != null) _togIncandescence.Checked = _settings.HdrIncandescence;
             if (_togContactGlow != null) _togContactGlow.Checked = _settings.ContactGlow;
             if (_segBgSource != null) _segBgSource.SelectedIndex = (int)_settings.BgSource;
             if (_sldBgBrightness != null) _sldBgBrightness.Value = _settings.BgBrightness;
             if (_sldVignette != null) _sldVignette.Value = _settings.Vignette * 100f;
             if (_sldFloorReflection != null) _sldFloorReflection.Value = _settings.FloorReflection * 100f;
+            if (_togDecibelGrid != null) _togDecibelGrid.Checked = _settings.DecibelGrid;
+            if (_sldDecibelGrid != null)
+            {
+                _sldDecibelGrid.Value = _settings.DecibelGridOpacity * 100f;
+                _sldDecibelGrid.Enabled = _settings.DecibelGrid;
+            }
         }
     }
 }

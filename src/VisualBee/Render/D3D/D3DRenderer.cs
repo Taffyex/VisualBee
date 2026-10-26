@@ -28,6 +28,7 @@ namespace MusicBeePlugin
         public Vector4 ColorParams;     // x: colorMode 0..3, y: hueSpeed, z: bgBrightness, w: vignette 0..1
         public Vector4 PeakParams;      // x: capThicknessPx, y: capColorMode 0..2, z: reflection 0..1, w: contactGlow 0/1
         public Vector4 PeakColor;       // linear custom cap colour (rgb)
+        public Vector4 StudioParams;    // x: decibelGrid, y: incandescence, z: glassOpacity, w: horizonGlow
     }
 
     [StructLayout(LayoutKind.Sequential)]

@@ -21,6 +21,7 @@ cbuffer VisualBeeConstants : register(b0)
     float4 ColorParams;     // x: colorMode 0..3, y: hueSpeed, z: bgBrightness, w: vignette 0..1
     float4 PeakParams;      // x: capThicknessPx, y: capColorMode 0..2, z: reflection 0..1, w: contactGlow 0/1
     float4 PeakColor;       // linear custom cap colour (rgb)
+    float4 StudioParams;    // x: decibelGrid (0..1), y: incandescence (0..1), z: glassOpacity, w: horizonGlow
 };
 
 cbuffer BlurConstants : register(b1)

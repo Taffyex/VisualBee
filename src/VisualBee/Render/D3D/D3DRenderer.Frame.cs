@@ -96,6 +96,11 @@ namespace MusicBeePlugin
                 settings.ContactGlow ? 1f : 0f);
 
             _constants.PeakColor = ToLinearVec4(settings.PeakCustomColor);
+            _constants.StudioParams = new Vector4(
+                settings.DecibelGrid ? settings.DecibelGridOpacity : 0.0f,
+                settings.HdrIncandescence ? 1.0f : 0.0f,
+                1.0f,
+                settings.FloorReflection > 0.01f ? 1.0f : 0.0f);
 
             DataBox cbBox = _context.MapSubresource(_constantBuffer, 0, MapMode.WriteDiscard, MapFlags.None);
             try
