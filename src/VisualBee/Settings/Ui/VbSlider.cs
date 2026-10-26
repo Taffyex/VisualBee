@@ -62,9 +62,11 @@ namespace MusicBeePlugin.SettingsUi
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
-            // Draw Label and Value readout
-            using (var bText = new SolidBrush(VbTheme.TextPrimary))
-            using (var bVal = new SolidBrush(VbTheme.Accent))
+            Color textCol = Enabled ? VbTheme.TextPrimary : VbTheme.TextMuted;
+            Color accentCol = Enabled ? VbTheme.Accent : VbTheme.BorderLight;
+
+            using (var bText = new SolidBrush(textCol))
+            using (var bVal = new SolidBrush(accentCol))
             {
                 g.DrawString(_label, VbTheme.FontRegular, bText, 6, 4);
 
@@ -75,7 +77,6 @@ namespace MusicBeePlugin.SettingsUi
                 g.DrawString(valStr, VbTheme.FontBold, bVal, Width - valSize.Width - 6, 4);
             }
 
-            // Draw Track
             var track = GetTrackRect();
             if (track.Width <= 0) return;
 
@@ -88,7 +89,6 @@ namespace MusicBeePlugin.SettingsUi
                     g.FillPath(bTrack, pTrack);
             }
 
-            // Draw Filled Track
             float norm = _max > _min ? (_value - _min) / (_max - _min) : 0f;
             norm = Math.Max(0f, Math.Min(1f, norm));
             int fillW = (int)(track.Width * norm);
@@ -99,17 +99,16 @@ namespace MusicBeePlugin.SettingsUi
                     pFill.AddArc(track.X, track.Y, track.Height, track.Height, 90, 180);
                     pFill.AddArc(track.X + fillW - track.Height, track.Y, track.Height, track.Height, 270, 180);
                     pFill.CloseFigure();
-                    using (var bFill = new SolidBrush(VbTheme.Accent))
+                    using (var bFill = new SolidBrush(accentCol))
                         g.FillPath(bFill, pFill);
                 }
             }
 
-            // Draw Thumb
             int thumbX = track.X + (int)(track.Width * norm);
             int thumbY = track.Y + track.Height / 2;
             int radius = 7;
-            using (var bThumb = new SolidBrush(Color.White))
-            using (var pBorder = new Pen(VbTheme.Accent, 2f))
+            using (var bThumb = new SolidBrush(Enabled ? Color.White : VbTheme.TextMuted))
+            using (var pBorder = new Pen(accentCol, 2f))
             {
                 g.FillEllipse(bThumb, thumbX - radius, thumbY - radius, radius * 2, radius * 2);
                 g.DrawEllipse(pBorder, thumbX - radius, thumbY - radius, radius * 2, radius * 2);
@@ -118,6 +117,7 @@ namespace MusicBeePlugin.SettingsUi
 
         private void UpdateFromMouse(int mouseX)
         {
+            if (!Enabled) return;
             var track = GetTrackRect();
             if (track.Width <= 0) return;
             float norm = (float)(mouseX - track.X) / track.Width;
@@ -128,6 +128,7 @@ namespace MusicBeePlugin.SettingsUi
         protected override void OnMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
+            if (!Enabled) return;
             Focus();
             if (e.Button == MouseButtons.Left)
             {
@@ -140,7 +141,7 @@ namespace MusicBeePlugin.SettingsUi
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
-            if (_dragging)
+            if (_dragging && Enabled)
             {
                 UpdateFromMouse(e.X);
             }
@@ -159,7 +160,7 @@ namespace MusicBeePlugin.SettingsUi
         protected override void OnMouseDoubleClick(MouseEventArgs e)
         {
             base.OnMouseDoubleClick(e);
-            if (e.Button == MouseButtons.Left)
+            if (Enabled && e.Button == MouseButtons.Left)
             {
                 Value = _default;
             }
@@ -167,14 +168,48 @@ namespace MusicBeePlugin.SettingsUi
 
         protected override void OnMouseWheel(MouseEventArgs e)
         {
-            base.OnMouseWheel(e);
-            float step = (_max - _min) / 40f;
-            if (_decimalPlaces == 0) step = Math.Max(1f, (float)Math.Round(step));
-            Value += (e.Delta > 0 ? step : -step);
+            // Only adjust slider value if Ctrl is held down or the user is actively dragging.
+            // Otherwise, forward the scroll event up to the parent scrollable container
+            // so scrolling down settings never changes sliders accidentally!
+            if (Enabled && ((ModifierKeys & Keys.Control) != 0 || _dragging))
+            {
+                base.OnMouseWheel(e);
+                float step = (_max - _min) / 40f;
+                if (_decimalPlaces == 0) step = Math.Max(1f, (float)Math.Round(step));
+                Value += (e.Delta > 0 ? step : -step);
+            }
+            else
+            {
+                // Forward wheel to parent container for silky smooth page scrolling
+                Parent?.Focus();
+                var sc = FindScrollableParent(Parent);
+                if (sc != null)
+                {
+                    try
+                    {
+                        sc.AutoScrollPosition = new Point(
+                            -sc.AutoScrollPosition.X,
+                            -sc.AutoScrollPosition.Y - (e.Delta > 0 ? 40 : -40));
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        private static ScrollableControl FindScrollableParent(Control c)
+        {
+            while (c != null)
+            {
+                if (c is ScrollableControl sc && sc.AutoScroll) return sc;
+                c = c.Parent;
+            }
+            return null;
         }
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
+            if (!Enabled) return base.ProcessCmdKey(ref msg, keyData);
+
             float step = (_max - _min) / 50f;
             if (_decimalPlaces == 0) step = Math.Max(1f, (float)Math.Round(step));
 

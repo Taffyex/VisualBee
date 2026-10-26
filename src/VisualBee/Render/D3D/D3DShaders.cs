@@ -16,12 +16,15 @@ cbuffer VisualBeeConstants : register(b0)
     float4 PaletteBg;       // True Dark Background (linear)
     float4 BarParams;       // x: barCount, y: barGap, z: mirrorFlags, w: peakHoldEnabled
     float4 RibbonParams;    // x: thicknessPx, y: fillToFloor, z: floorReflection, w: dpiScale
-    float4 StyleExtra;      // extra parameters
+    float4 StyleExtra;      // x: hueMotion, y: stereoMode, z: highlightBarTips, w: hueSource
     float4 BarShape;        // x: roundness 0..1, y: segHeightPx, z: segGapPx, w: trebleTaper 0..0.8
     float4 ColorParams;     // x: colorMode 0..3, y: hueSpeed, z: bgBrightness, w: vignette 0..1
     float4 PeakParams;      // x: capThicknessPx, y: capColorMode 0..2, z: reflection 0..1, w: contactGlow 0/1
     float4 PeakColor;       // linear custom cap colour (rgb)
-    float4 StudioParams;    // x: decibelGrid (0..1), y: incandescence (0..1), z: glassOpacity, w: horizonGlow
+    float4 StudioParams;    // x: decibelGrid, y: incandescence, z: glassOpacity, w: horizonGlow
+    float4 GlassParams;     // x: glassFillMode, y: glassTubeOverlay, z: rungGhostOpacity, w: rungGhostRange
+    float4 AtmosphereParams;// x: particleIntensity, y: particleParallax, z: cyberGridIntensity, w: scanlineShimmer
+    float4 SymmetryParams;  // x: centerLineGlow, y: symmetricCenterColor, z: centerLineIntensity, w: reserved
 };
 
 cbuffer BlurConstants : register(b1)
@@ -49,6 +52,72 @@ FSOut VSFullscreen(uint vid : SV_VertexID)
     o.UV  = float2((vid << 1) & 2, vid & 2);
     o.Pos = float4(o.UV.x * 2.0 - 1.0, 1.0 - o.UV.y * 2.0, 0.0, 1.0);
     return o;
+}
+
+// -----------------------------------------------------------------------------
+// Procedural Background Atmosphere & Particles (Embers, Cyber-Grid & Shimmer)
+// -----------------------------------------------------------------------------
+float Hash21(float2 p)
+{
+    p = frac(p * float2(234.34, 435.345));
+    p += dot(p, p + 34.23);
+    return frac(p.x * p.y);
+}
+
+float3 RenderAtmosphere(float2 uv, float time, float3 bgBase)
+{
+    float3 col = bgBase;
+
+    // 1. Perspective 3D Cyber-Grid & Horizon
+    float gridInt = AtmosphereParams.z;
+    if (gridInt > 0.01)
+    {
+        float2 pGrid = uv - float2(0.5, 0.5);
+        if (pGrid.y < -0.01)
+        {
+            float depth = -0.22 / (pGrid.y - 0.02);
+            float xPersp = pGrid.x * depth;
+            float gridZ = frac(depth * 0.85 - time * 0.45);
+            float gridX = frac(xPersp * 1.6);
+            float lineZ = smoothstep(0.06, 0.0, abs(gridZ - 0.5) * 0.5);
+            float lineX = smoothstep(0.06, 0.0, abs(gridX - 0.5) * 0.5);
+            float gridMask = max(lineZ, lineX) * saturate(-pGrid.y * 3.5);
+            float3 gridCol = lerp(PaletteColorB.rgb, PaletteColorC.rgb, saturate(depth * 0.15));
+            col += gridCol * (gridMask * gridInt * 0.45);
+        }
+    }
+
+    // 2. 3D Parallax Bokeh & Floating Embers
+    float partInt = AtmosphereParams.x;
+    if (partInt > 0.01)
+    {
+        float parallax = AtmosphereParams.y;
+        float beat = AudioMetricsB.x;
+        [unroll]
+        for (int layer = 1; layer <= 3; layer++)
+        {
+            float fLayer = (float)layer;
+            float speed = 0.08 * fLayer;
+            float2 pUv = uv * (3.0 + fLayer * 2.5);
+            pUv.y += time * speed;
+            pUv.x += sin(time * 0.35 + fLayer) * (0.15 * parallax);
+
+            float2 id = floor(pUv);
+            float2 gv = frac(pUv) - 0.5;
+
+            float n = Hash21(id + fLayer * 17.13);
+            float size = lerp(0.08, 0.22, n);
+            float d = length(gv - (float2(Hash21(id * 1.5), Hash21(id * 2.7)) - 0.5) * 0.65);
+            float spark = smoothstep(size, 0.0, d);
+            spark *= (0.4 + 0.6 * sin(time * 2.5 + n * 6.28));
+            spark *= (1.0 + beat * 0.7);
+
+            float3 partCol = lerp(PaletteColorB.rgb, PaletteColorD.rgb, n);
+            col += partCol * (spark * partInt * (0.35 / fLayer));
+        }
+    }
+
+    return col;
 }
 ";
 
@@ -87,6 +156,14 @@ float4 PSComposite(FSOut i) : SV_Target
     {
         float3 bloom = g_Bloom.Sample(g_Linear, i.UV).rgb;
         col += bloom * bloomWeight;
+    }
+
+    // Subtle VFD / CRT micro-scanline and glass shimmer
+    float shimmer = AtmosphereParams.w;
+    if (shimmer > 0.001)
+    {
+        float scanline = sin(i.UV.y * Viewport.y * 3.14159) * 0.5 + 0.5;
+        col *= (1.0 - (1.0 - scanline) * (shimmer * 0.18));
     }
 
     // ACES Tone Mapping

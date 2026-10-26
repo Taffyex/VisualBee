@@ -18,6 +18,7 @@ namespace MusicBeePlugin
         private D3DRenderer _renderer;
         private Thread _renderThread;
         private Timer _startTimer;
+        private Timer _hudTimer;
         private volatile bool _running;
         private volatile bool _startRequested;
         private volatile bool _suspended;
@@ -34,9 +35,11 @@ namespace MusicBeePlugin
         private float _dpiScale = 1f;
 
         private PaletteColors _palette;
+        private Color _skinPanelColor = Color.FromArgb(18, 20, 24);
         private readonly ManualResetEvent _renderStopped = new ManualResetEvent(true);
         private readonly ContextMenuStrip _menu = new ContextMenuStrip();
         private Form _popoutForm;
+        private Label _lblHudOverlay;
 
         internal D3DRenderer Renderer => _renderer;
         public double Fps => _renderer?.Fps ?? 0;
@@ -66,18 +69,72 @@ namespace MusicBeePlugin
             TabStop = true;
             _appliedFrameCap = _settings.FrameCap;
             RefreshPalette();
+            ResolveSkinPanelColor();
             _settings.SettingsChanged += OnSettingsChanged;
             SetupMenu();
+            SetupHudOverlay();
+        }
+
+        private void SetupHudOverlay()
+        {
+            _lblHudOverlay = new Label
+            {
+                AutoSize = true,
+                BackColor = Color.FromArgb(180, 10, 14, 20),
+                ForeColor = Color.FromArgb(20, 220, 190),
+                Font = new Font("Consolas", 8.5f, FontStyle.Bold),
+                Padding = new Padding(6, 4, 6, 4),
+                Visible = _settings.ShowDiagnostics,
+                Location = new Point(10, 10)
+            };
+            Controls.Add(_lblHudOverlay);
+
+            _hudTimer = new Timer { Interval = 250 };
+            _hudTimer.Tick += (s, e) =>
+            {
+                if (_lblHudOverlay == null || _lblHudOverlay.IsDisposed) return;
+                bool show = _settings.ShowDiagnostics;
+                if (_lblHudOverlay.Visible != show) _lblHudOverlay.Visible = show;
+                if (!show) return;
+
+                var r = _renderer;
+                string fps = r != null ? $"{r.Fps:0.0} FPS ({r.FrameMs:0.1} ms)" : "offline";
+                string tap = _audio != null ? _audio.TapDescription : "direct";
+                _lblHudOverlay.Text = $"VisualBee HUD: {fps} · Mode: {_settings.Mode} · Audio: {_settings.AnalysisHz}Hz ({tap})";
+                _lblHudOverlay.BringToFront();
+            };
+            _hudTimer.Start();
+        }
+
+        private void ResolveSkinPanelColor()
+        {
+            if (_api.Setting_GetSkinElementColour != null)
+            {
+                try
+                {
+                    int rawBg = _api.Setting_GetSkinElementColour(
+                        SkinElement.SkinTrackAndArtistPanel,
+                        ElementState.ElementStateDefault,
+                        ElementComponent.ComponentBackground);
+                    if (rawBg != 0)
+                        _skinPanelColor = Color.FromArgb((rawBg >> 16) & 0xFF, (rawBg >> 8) & 0xFF, rawBg & 0xFF);
+                }
+                catch { }
+            }
         }
 
         private void OnSettingsChanged()
         {
             RefreshPalette();
+            ResolveSkinPanelColor();
             if (_settings.FrameCap != _appliedFrameCap)
             {
                 _appliedFrameCap = _settings.FrameCap;
                 Interlocked.Exchange(ref _swapchainRebuildPending, 1);
             }
+            if (_lblHudOverlay != null)
+                _lblHudOverlay.Visible = _settings.ShowDiagnostics;
+
             var r = _renderer;
             if (r != null && r.IsReady)
                 r.SetPalette(_palette);
@@ -270,6 +327,12 @@ namespace MusicBeePlugin
                 _disposeRequested = true;
                 Stop();
                 _settings.SettingsChanged -= OnSettingsChanged;
+                if (_hudTimer != null)
+                {
+                    _hudTimer.Stop();
+                    _hudTimer.Dispose();
+                    _hudTimer = null;
+                }
                 _menu.Dispose();
                 _popoutForm?.Dispose();
                 VisualBeeSettingsForm.CloseIfOpen();

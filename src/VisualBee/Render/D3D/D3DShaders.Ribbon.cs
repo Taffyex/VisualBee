@@ -9,13 +9,32 @@ namespace MusicBeePlugin
 float4 PSRibbon(FSOut i) : SV_Target
 {
     float2 uv = float2(i.UV.x, 1.0 - i.UV.y);
+    int mirror = (int)BarParams.z;
+    bool mirrorH = (mirror & 1) != 0;
+    bool mirrorV = (mirror & 2) != 0;
+
     float yBaseline = 0.50;
     float maxAmp = 0.38 * (1.0 + AudioMetricsB.x * 0.15);
 
-    // Dark vignette background
+    // Dark vignette background with dynamic atmosphere
     float vign = 1.0 - length((uv - 0.5) * float2(1.2, 0.9));
     float3 bg = PaletteBg.rgb * saturate(vign * 0.7 + 0.3);
-    float3 col = bg;
+    float3 col = RenderAtmosphere(uv, VisualParams.x, bg);
+
+    // Studio Decibel Reference Grid Lines (-24 dB .. 0 dB)
+    if (StudioParams.x > 0.001)
+    {
+        static const float kGridMarks[5] = { 0.18, 0.36, 0.54, 0.72, 0.90 };
+        float gridLine = 0.0;
+        [unroll]
+        for (int g = 0; g < 5; g++)
+        {
+            float markPx = kGridMarks[g] * Viewport.y;
+            gridLine += saturate(1.0 - abs(uv.y * Viewport.y - markPx));
+        }
+        float3 gridCol = lerp(PaletteColorA.rgb, PaletteColorB.rgb, 0.35) * 0.6;
+        col += gridCol * (gridLine * StudioParams.x);
+    }
 
     // Main line & polyline parameters
     float pxX = uv.x * Viewport.x;
@@ -33,9 +52,10 @@ float4 PSRibbon(FSOut i) : SV_Target
     }
 
     // Audio-reactive translucent fill under/above the wave towards the baseline
+    float sampleU = mirrorH ? abs(uv.x * 2.0 - 1.0) : uv.x;
     if (RibbonParams.y > 0.5)
     {
-        float localW = g_Waveform.Sample(g_Linear, uv.x).r * maxAmp;
+        float localW = g_Waveform.Sample(g_Linear, sampleU).r * maxAmp;
         float waveCurveY = yBaseline + localW;
         float minY = min(yBaseline, waveCurveY);
         float maxY = max(yBaseline, waveCurveY);
@@ -51,7 +71,7 @@ float4 PSRibbon(FSOut i) : SV_Target
     }
 
     // Sample discrete polyline segments near pxX
-    float uTex = uv.x * 511.0;
+    float uTex = sampleU * 511.0;
     int centerIdx = clamp((int)uTex, 0, 511);
     float cellWidthPx = Viewport.x / 511.0;
     int kSpan = clamp((int)ceil(halfThick / max(1.0, cellWidthPx)) + 2, 2, 6);

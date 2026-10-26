@@ -61,6 +61,35 @@ namespace MusicBeePlugin
                             if (int.TryParse(val, out int bStyle) && Enum.IsDefined(typeof(BarVisualEffect), bStyle))
                                 settings.BarStyle = (BarVisualEffect)bStyle;
                             break;
+                        case "GlassFill":
+                            if (int.TryParse(val, out int gf) && Enum.IsDefined(typeof(GlassFillMode), gf))
+                                settings.GlassFill = (GlassFillMode)gf;
+                            break;
+                        case "GlassTubeOverlay":
+                            if (bool.TryParse(val, out bool gto)) settings.GlassTubeOverlay = gto;
+                            break;
+                        case "GlassOpacity":
+                            if (float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float gop))
+                                settings.GlassOpacity = Math.Max(0.0f, Math.Min(1.0f, gop));
+                            break;
+                        case "RungGhostOpacity":
+                            if (float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float rgo))
+                                settings.RungGhostOpacity = Math.Max(0.0f, Math.Min(1.0f, rgo));
+                            break;
+                        case "RungGhostRange":
+                            if (float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float rgr))
+                                settings.RungGhostRange = Math.Max(0.0f, Math.Min(1.0f, rgr));
+                            break;
+                        case "CenterLineGlow":
+                            if (bool.TryParse(val, out bool clg)) settings.CenterLineGlow = clg;
+                            break;
+                        case "CenterLineGlowIntensity":
+                            if (float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float clgi))
+                                settings.CenterLineGlowIntensity = Math.Max(0.0f, Math.Min(2.0f, clgi));
+                            break;
+                        case "SymmetricCenterColor":
+                            if (bool.TryParse(val, out bool scc)) settings.SymmetricCenterColor = scc;
+                            break;
                         case "Mirror":
                             if (int.TryParse(val, out int mir))
                                 settings.Mirror = (BarMirror)(mir & 3);
@@ -236,6 +265,28 @@ namespace MusicBeePlugin
                             if (bool.TryParse(val, out bool inc))
                                 settings.HdrIncandescence = inc;
                             break;
+                        case "ParticlesEnabled":
+                            if (bool.TryParse(val, out bool pe)) settings.ParticlesEnabled = pe;
+                            break;
+                        case "ParticleIntensity":
+                            if (float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float pi))
+                                settings.ParticleIntensity = Math.Max(0.0f, Math.Min(1.0f, pi));
+                            break;
+                        case "ParticleParallax":
+                            if (float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float pp))
+                                settings.ParticleParallax = Math.Max(0.0f, Math.Min(1.0f, pp));
+                            break;
+                        case "CyberGridEnabled":
+                            if (bool.TryParse(val, out bool cge)) settings.CyberGridEnabled = cge;
+                            break;
+                        case "CyberGridIntensity":
+                            if (float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float cgi))
+                                settings.CyberGridIntensity = Math.Max(0.0f, Math.Min(1.0f, cgi));
+                            break;
+                        case "ScanlineShimmer":
+                            if (float.TryParse(val, NumberStyles.Float, CultureInfo.InvariantCulture, out float ss))
+                                settings.ScanlineShimmer = Math.Max(0.0f, Math.Min(1.0f, ss));
+                            break;
                         case "FrameCap":
                             if (int.TryParse(val, out int cap))
                                 settings.FrameCap = cap;
@@ -276,11 +327,19 @@ namespace MusicBeePlugin
             {
                 using (var writer = new StreamWriter(_path, false))
                 {
-                    writer.WriteLine("# VisualBee v1.0 configuration");
+                    writer.WriteLine("# VisualBee v2.0 configuration");
                     writer.WriteLine("Mode=" + (int)Mode);
                     writer.WriteLine("StereoMode=" + (int)StereoMode);
                     writer.WriteLine("AudioSource=" + (int)AudioSource);
                     writer.WriteLine("BarStyle=" + (int)BarStyle);
+                    writer.WriteLine("GlassFill=" + (int)GlassFill);
+                    writer.WriteLine("GlassTubeOverlay=" + GlassTubeOverlay);
+                    writer.WriteLine("GlassOpacity=" + GlassOpacity.ToString("0.00", CultureInfo.InvariantCulture));
+                    writer.WriteLine("RungGhostOpacity=" + RungGhostOpacity.ToString("0.00", CultureInfo.InvariantCulture));
+                    writer.WriteLine("RungGhostRange=" + RungGhostRange.ToString("0.00", CultureInfo.InvariantCulture));
+                    writer.WriteLine("CenterLineGlow=" + CenterLineGlow);
+                    writer.WriteLine("CenterLineGlowIntensity=" + CenterLineGlowIntensity.ToString("0.00", CultureInfo.InvariantCulture));
+                    writer.WriteLine("SymmetricCenterColor=" + SymmetricCenterColor);
                     writer.WriteLine("Mirror=" + (int)Mirror);
 
                     writer.WriteLine("BarGap=" + BarGap.ToString("0.00", CultureInfo.InvariantCulture));
@@ -291,7 +350,7 @@ namespace MusicBeePlugin
                     writer.WriteLine("LedSegmentGap=" + LedSegmentGap.ToString("0.0", CultureInfo.InvariantCulture));
                     writer.WriteLine("HighlightBarTips=" + HighlightBarTips);
 
-                    writer.WriteLine("Palette=" + (Palette ?? "skin"));
+                    writer.WriteLine("Palette=" + (Palette ?? "vfd_glass"));
                     writer.WriteLine("ColorMode=" + (int)ColorMode);
                     writer.WriteLine("HueSpeed=" + HueSpeed.ToString("0.00", CultureInfo.InvariantCulture));
                     writer.WriteLine("HueMotion=" + (int)HueMotion);
@@ -327,6 +386,13 @@ namespace MusicBeePlugin
                     writer.WriteLine("DecibelGrid=" + DecibelGrid);
                     writer.WriteLine("DecibelGridOpacity=" + DecibelGridOpacity.ToString("0.00", CultureInfo.InvariantCulture));
                     writer.WriteLine("HdrIncandescence=" + HdrIncandescence);
+
+                    writer.WriteLine("ParticlesEnabled=" + ParticlesEnabled);
+                    writer.WriteLine("ParticleIntensity=" + ParticleIntensity.ToString("0.00", CultureInfo.InvariantCulture));
+                    writer.WriteLine("ParticleParallax=" + ParticleParallax.ToString("0.00", CultureInfo.InvariantCulture));
+                    writer.WriteLine("CyberGridEnabled=" + CyberGridEnabled);
+                    writer.WriteLine("CyberGridIntensity=" + CyberGridIntensity.ToString("0.00", CultureInfo.InvariantCulture));
+                    writer.WriteLine("ScanlineShimmer=" + ScanlineShimmer.ToString("0.00", CultureInfo.InvariantCulture));
 
                     writer.WriteLine("FrameCap=" + FrameCap);
                     writer.WriteLine("AnalysisHz=" + AnalysisHz);

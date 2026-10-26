@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.Threading;
 
 namespace MusicBeePlugin
@@ -159,7 +160,8 @@ namespace MusicBeePlugin
                         dynamics.Push(frame);
                         dynamics.Step(now, dt, _settings, heightPeak);
 
-                        renderer.Render(frame.Metrics, heightPeak, now, _dpiScale, _settings);
+                        Color skinBg = _skinPanelColor;
+                        renderer.Render(frame.Metrics, heightPeak, now, _dpiScale, _settings, skinBg);
                     }
                     catch (Exception)
                     {

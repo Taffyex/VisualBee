@@ -4,7 +4,7 @@ namespace MusicBeePlugin
     {
         public const string Bars = @"
 // -----------------------------------------------------------------------------
-// Mode 0: Spectrum Bars (Glass Pillars, Studio VFD Rack, Decibel Grid & Lacquer)
+// Mode 0: Spectrum Bars (Glass Pillars, Symmetric Center LED, Studio VFD & Lacquer)
 // -----------------------------------------------------------------------------
 
 float3 CyclePalette(float phase)
@@ -21,7 +21,7 @@ float3 CyclePalette(float phase)
 float3 GetBarColor(float relY, float barFrac, float time, float screenY, float rawH, float coreDist, int style)
 {
     int mode = (int)ColorParams.x;
-    bool highlightTip = StyleExtra.z > 0.5 && (style != 3);
+    bool highlightTip = StyleExtra.z > 0.5;
     float3 c;
 
     if (mode == 1) // Across frequencies (B -> C -> D)
@@ -56,8 +56,7 @@ float3 GetBarColor(float relY, float barFrac, float time, float screenY, float r
             c = lerp(c, PaletteColorD.rgb, smoothstep(0.85, 1.0, relY) * 0.85);
     }
 
-    // Power-driven HDR incandescence: ONLY kicks in when signal amplitude is high (> 0.55).
-    // Short bars stay deep saturated cyan/blue. Tall bars burn white-hot at their core!
+    // Power-driven HDR incandescence: kicks in when signal amplitude is high (> 0.55).
     if (StudioParams.y > 0.5 && rawH > 0.55)
     {
         float powerOverdrive = smoothstep(0.55, 0.88, rawH);
@@ -135,7 +134,7 @@ float4 PSBars(FSOut i) : SV_Target
     float h = rawH * maxH;
     float peak = rawP * maxH;
 
-    // Background: true dark PaletteBg with customizable vignette & bass breathing
+    // Background: base palette with vignette & dynamic atmosphere
     float3 bg = PaletteBg.rgb * lerp(0.85, 0.45, uv.y);
     float dCenter = length(uv - float2(0.5, 0.5));
     bg *= saturate(1.0 - dCenter * ColorParams.w);
@@ -143,7 +142,7 @@ float4 PSBars(FSOut i) : SV_Target
     {
         bg += PaletteColorB.rgb * (0.015 * AudioMetricsA.x * (1.0 - uv.y));
     }
-    float3 col = bg;
+    float3 col = RenderAtmosphere(uv, VisualParams.x, bg);
 
     // Floor reflection support
     float floorReflect = (!mirrorV && stereoMode != 2) ? PeakParams.z : 0.0;
@@ -160,6 +159,16 @@ float4 PSBars(FSOut i) : SV_Target
         {
             col += PaletteColorB.rgb * (exp(-dHorizon * 0.35) * 0.12 * floorReflect);
         }
+    }
+
+    // Center Horizon Laser Line (Reference 2: Symmetric Center Axis)
+    if (mirrorV && SymmetryParams.x > 0.5)
+    {
+        float dCenterAxis = abs(uv.y - 0.5) * Viewport.y;
+        float laserCore = saturate(1.5 - dCenterAxis);
+        float laserHalo = exp(-dCenterAxis * 0.25) * 0.55;
+        float3 laserCol = lerp(PaletteColorB.rgb, PaletteColorD.rgb, 0.7);
+        col += laserCol * ((laserCore * 1.5 + laserHalo) * SymmetryParams.z);
     }
 
     float effectiveY = y;
@@ -295,10 +304,10 @@ float4 PSBars(FSOut i) : SV_Target
                 col = lerp(col, barCol * chamfer, cov);
         }
     }
-    // Style 3: Glass Pillars & VFD Rack
+    // Style 3: Glass Pillars & VFD Studio Rack (Reference 1 & 2)
     else
     {
-        // 1. Persistent full-height glass pillar enclosure with rounded dome cap
+        // 1. Transparent Glass Tube Enclosure with Rounded Dome Top & Fresnel Sheen
         float pillarCeilPx = totalHPx * 0.91;
         float radiusPx = halfBarPx;
         float dYCeil = yPx - (pillarCeilPx - radiusPx);
@@ -308,15 +317,19 @@ float4 PSBars(FSOut i) : SV_Target
 
         float pillarCov = saturate(0.5 - dPillar) * saturate(pillarCeilPx - yPx + 0.5);
 
-        // Subtle glowing glass capsule outline & interior glass tint
-        if (!isFloorMirror && pillarCov > 0.0)
+        if (!isFloorMirror && pillarCov > 0.0 && GlassParams.y > 0.5)
         {
-            float glassBorder = saturate(1.0 - abs(dPillar)) * 0.28;
+            float glassEdge = saturate(1.0 - abs(dPillar)) * (0.35 * StudioParams.z);
+            float glassFresnel = pow(saturate(pxX / halfBarPx), 2.5) * 0.22;
+            float leftSpecular = smoothstep(0.40, 0.45, (lx - 0.5)) * smoothstep(0.55, 0.45, (lx - 0.5)) * 0.35;
             float3 glassCol = lerp(PaletteColorB.rgb, PaletteColorC.rgb, 0.45);
-            col += glassCol * (glassBorder + pillarCov * 0.025);
+            col += glassCol * (glassEdge + glassFresnel + leftSpecular + pillarCov * 0.02);
         }
 
-        // 2. Architectural Ladder Rungs (Global Y grid alignment across all bands)
+        // 2. Interior Fill Logic (Mixed, Segmented Rungs, or Solid Glass Core)
+        int fillMode = (int)GlassParams.x; // 0 = Mixed, 1 = Segmented, 2 = Solid
+        bool isSolidBar = (fillMode == 2) || (fillMode == 0 && ((bar % 3 == 0) || rawH > 0.72));
+
         float segH = max(2.0, BarShape.y);
         float segGap = max(1.0, BarShape.z);
         float segPeriod = segH + segGap;
@@ -326,28 +339,50 @@ float4 PSBars(FSOut i) : SV_Target
         float covRungY = saturate(0.5 - (abs(segY - segH * 0.5) - (segH * 0.5 - 0.5)));
         float rungCov = covX * covRungY;
 
-        if (rungCov > 0.0 && yPx <= pillarCeilPx)
-        {
-            float relY = yPx / max(1.0, hPx);
-            float coreDist = saturate(pxX / halfBarPx);
-            float uBevel = segY / segH;
-            float bevel = sin(uBevel * 3.14159) * 0.30 + 0.82;
+        float relY = yPx / max(1.0, hPx);
+        float coreDist = saturate(pxX / halfBarPx);
 
-            bool isLit = yPx <= (hPx + 0.5);
-            if (isLit)
+        if (isSolidBar)
+        {
+            // Smooth glowing glass plasma pillar (Reference 1 tall tubes)
+            float covY = saturate(hPx - yPx + 0.5);
+            float cov = covX * covY;
+            if (cov > 0.0)
             {
+                float3 solidCol = GetBarColor(relY, barFrac, VisualParams.x, uv.y, rawH, coreDist, 3);
+                float chamfer = 1.0 - smoothstep(halfBarPx * 0.5, halfBarPx, pxX) * 0.35;
+                if (isFloorMirror)
+                    col = lerp(col, solidCol * chamfer * navyLacquer * 1.6 + solidCol * 0.12, cov * lacquerFalloff);
+                else
+                    col = lerp(col, solidCol * chamfer, cov);
+            }
+        }
+        else
+        {
+            // Segmented VFD Rung Ladder (Reference 2 & Reference 1 alternating)
+            if (rungCov > 0.0 && yPx <= (hPx + 0.5))
+            {
+                float uBevel = segY / segH;
+                float bevel = sin(uBevel * 3.14159) * 0.30 + 0.82;
                 float3 litCol = GetBarColor(relY, barFrac, VisualParams.x, uv.y, rawH, coreDist, 3) * bevel;
                 if (isFloorMirror)
                     col = lerp(col, litCol * navyLacquer * 1.6 + litCol * 0.12, rungCov * lacquerFalloff);
                 else
                     col = lerp(col, litCol, rungCov);
             }
-            else if (!isFloorMirror && yPx <= max(peakPx, hPx + 2.0))
-            {
-                // Ghosted unlit ladder rung: distinct, glowing cyan/slate VFD phosphor filaments
-                float3 unlitCol = lerp(PaletteColorB.rgb, PaletteColorC.rgb, 0.35) * 0.24 * bevel;
-                col = lerp(col, col + unlitCol, rungCov * 0.90);
-            }
+        }
+
+        // 3. Ghosted Unlit Ladder Rungs (Filaments extending above the bar)
+        float ghostRangePx = totalHPx * GlassParams.w;
+        float ghostMaxPx = max(peakPx, hPx + ghostRangePx);
+        if (!isFloorMirror && rungCov > 0.0 && yPx > (hPx + 0.5) && yPx <= min(pillarCeilPx, ghostMaxPx))
+        {
+            float uBevel = segY / segH;
+            float bevel = sin(uBevel * 3.14159) * 0.30 + 0.82;
+            float ghostDist = (yPx - hPx) / max(1.0, ghostMaxPx - hPx);
+            float ghostFade = (1.0 - smoothstep(0.0, 1.0, ghostDist)) * GlassParams.z;
+            float3 unlitCol = lerp(PaletteColorB.rgb, PaletteColorC.rgb, 0.35) * bevel * ghostFade;
+            col += unlitCol * rungCov;
         }
     }
 

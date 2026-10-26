@@ -19,7 +19,8 @@ namespace MusicBeePlugin
             float[] heightPeakBands,
             double time,
             float dpiScale,
-            VisualBeeSettings settings)
+            VisualBeeSettings settings,
+            System.Drawing.Color skinPanelBg)
         {
             if (_disposed || _swapChain == null || _backBufferRtv == null) return;
 
@@ -69,6 +70,8 @@ namespace MusicBeePlugin
                     baseBg = new Vector4(0f, 0f, 0f, 1f);
                     break;
                 case BackgroundSource.SkinPanel:
+                    baseBg = ToLinearVec4(skinPanelBg.A != 0 ? skinPanelBg : _currentPalette.Background);
+                    break;
                 case BackgroundSource.Palette:
                 default:
                     baseBg = ToLinearVec4(_currentPalette.Background);
@@ -99,8 +102,26 @@ namespace MusicBeePlugin
             _constants.StudioParams = new Vector4(
                 settings.DecibelGrid ? settings.DecibelGridOpacity : 0.0f,
                 settings.HdrIncandescence ? 1.0f : 0.0f,
-                1.0f,
+                settings.GlassOpacity,
                 settings.FloorReflection > 0.01f ? 1.0f : 0.0f);
+
+            _constants.GlassParams = new Vector4(
+                (float)(int)settings.GlassFill,
+                settings.GlassTubeOverlay ? 1.0f : 0.0f,
+                settings.RungGhostOpacity,
+                settings.RungGhostRange);
+
+            _constants.AtmosphereParams = new Vector4(
+                settings.ParticlesEnabled ? settings.ParticleIntensity : 0.0f,
+                settings.ParticleParallax,
+                settings.CyberGridEnabled ? settings.CyberGridIntensity : 0.0f,
+                settings.ScanlineShimmer);
+
+            _constants.SymmetryParams = new Vector4(
+                settings.CenterLineGlow ? 1.0f : 0.0f,
+                settings.SymmetricCenterColor ? 1.0f : 0.0f,
+                settings.CenterLineGlowIntensity,
+                0.0f);
 
             DataBox cbBox = _context.MapSubresource(_constantBuffer, 0, MapMode.WriteDiscard, MapFlags.None);
             try
@@ -120,9 +141,7 @@ namespace MusicBeePlugin
             _context.PixelShader.SetSampler(0, _linearSampler);
             _context.PixelShader.SetSampler(1, _pointSampler);
 
-            // -------------------------------------------------------------
             // Pass 1: Main Scene Render
-            // -------------------------------------------------------------
             _context.Rasterizer.SetViewport(0, 0, _width, _height, 0f, 1f);
             _context.OutputMerger.SetRenderTargets(_sceneRtv);
 
@@ -142,21 +161,19 @@ namespace MusicBeePlugin
 
             _context.Draw(3, 0);
 
-            // -------------------------------------------------------------
-            // Bloom Passes (4-Tap Box Downsample + Directional Blur)
-            // -------------------------------------------------------------
+            // Bloom Passes
             if (settings.BloomIntensity > 0.05f)
             {
                 _context.OutputMerger.SetRenderTargets((RenderTargetView)null);
 
-                // Pass 2: Bright Extraction (4-tap box filter)
+                // Pass 2: Bright Extraction
                 _context.Rasterizer.SetViewport(0, 0, _bloomWidth, _bloomHeight, 0f, 1f);
                 _context.OutputMerger.SetRenderTargets(_bloomRtvA);
                 _context.PixelShader.Set(_psBloomBright);
                 _context.PixelShader.SetShaderResource(2, _sceneSrv);
                 _context.Draw(3, 0);
 
-                // Pass 3: Horizontal Blur with immutable CB at b1
+                // Pass 3: Horizontal Blur
                 _context.OutputMerger.SetRenderTargets((RenderTargetView)null);
                 _context.OutputMerger.SetRenderTargets(_bloomRtvB);
                 _context.PixelShader.SetConstantBuffer(1, _cbBlurHorizontal);
@@ -164,7 +181,7 @@ namespace MusicBeePlugin
                 _context.PixelShader.SetShaderResource(2, _bloomSrvA);
                 _context.Draw(3, 0);
 
-                // Pass 4: Vertical Blur with immutable CB at b1
+                // Pass 4: Vertical Blur
                 _context.OutputMerger.SetRenderTargets((RenderTargetView)null);
                 _context.OutputMerger.SetRenderTargets(_bloomRtvA);
                 _context.PixelShader.SetConstantBuffer(1, _cbBlurVertical);
@@ -173,9 +190,7 @@ namespace MusicBeePlugin
                 _context.Draw(3, 0);
             }
 
-            // -------------------------------------------------------------
             // Pass 5: Final Composite to BackBuffer
-            // -------------------------------------------------------------
             _context.OutputMerger.SetRenderTargets((RenderTargetView)null);
             _context.Rasterizer.SetViewport(0, 0, _width, _height, 0f, 1f);
             _context.OutputMerger.SetRenderTargets(_backBufferRtv);
@@ -184,11 +199,9 @@ namespace MusicBeePlugin
             _context.PixelShader.SetShaderResource(3, _bloomSrvA);
             _context.Draw(3, 0);
 
-            // Unbind textures to prevent hazards on subsequent frame
             _context.PixelShader.SetShaderResource(2, null);
             _context.PixelShader.SetShaderResource(3, null);
 
-            // Present via FramePacer
             _pacer.Present(_swapChain);
         }
 
@@ -279,7 +292,6 @@ namespace MusicBeePlugin
                 OptionFlags = ResourceOptionFlags.None
             };
 
-            // Intermediate texture to resolve composite / backbuffer
             var resolveDesc = new Texture2DDescription
             {
                 Width = _width,
@@ -297,7 +309,6 @@ namespace MusicBeePlugin
             using (var rtv = new RenderTargetView(_device, resolveTex))
             using (var staging = new Texture2D(_device, desc))
             {
-                // Composite to resolve texture
                 _context.OutputMerger.SetRenderTargets((RenderTargetView)null);
                 _context.Rasterizer.SetViewport(0, 0, _width, _height, 0f, 1f);
                 _context.OutputMerger.SetRenderTargets(rtv);

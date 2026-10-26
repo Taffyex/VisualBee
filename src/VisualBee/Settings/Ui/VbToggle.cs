@@ -49,13 +49,14 @@ namespace MusicBeePlugin.SettingsUi
             var g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
-            // Draw Label
-            using (var bText = new SolidBrush(VbTheme.TextPrimary))
+            Color textCol = Enabled ? VbTheme.TextPrimary : VbTheme.TextMuted;
+            Color accentCol = Enabled ? VbTheme.Accent : VbTheme.BorderLight;
+
+            using (var bText = new SolidBrush(textCol))
             {
                 g.DrawString(_label, VbTheme.FontRegular, bText, 6, (Height - 16) / 2);
             }
 
-            // Draw Switch Pill
             int swW = 38;
             int swH = 20;
             int swX = Width - swW - 8;
@@ -68,17 +69,16 @@ namespace MusicBeePlugin.SettingsUi
                 pTrack.AddArc(swRect.Right - swH, swRect.Y, swH, swH, 270, 180);
                 pTrack.CloseFigure();
 
-                Color trackColor = _checked ? VbTheme.Accent : VbTheme.Border;
+                Color trackColor = _checked ? accentCol : VbTheme.Border;
                 using (var bTrack = new SolidBrush(trackColor))
                     g.FillPath(bTrack, pTrack);
             }
 
-            // Draw Knob
             int knobRadius = 7;
             int knobX = _checked ? (swRect.Right - swH / 2) : (swRect.X + swH / 2);
             int knobY = swRect.Y + swH / 2;
 
-            using (var bKnob = new SolidBrush(Color.White))
+            using (var bKnob = new SolidBrush(Enabled ? Color.White : VbTheme.TextMuted))
             {
                 g.FillEllipse(bKnob, knobX - knobRadius, knobY - knobRadius, knobRadius * 2, knobRadius * 2);
             }
@@ -87,6 +87,7 @@ namespace MusicBeePlugin.SettingsUi
         protected override void OnMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
+            if (!Enabled) return;
             Focus();
             if (e.Button == MouseButtons.Left)
             {
@@ -96,6 +97,7 @@ namespace MusicBeePlugin.SettingsUi
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
+            if (!Enabled) return base.ProcessCmdKey(ref msg, keyData);
             if (keyData == Keys.Space || keyData == Keys.Enter)
             {
                 Checked = !_checked;

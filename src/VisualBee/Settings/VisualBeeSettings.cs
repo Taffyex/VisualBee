@@ -44,6 +44,13 @@ namespace MusicBeePlugin
         GlassPillar = 3
     }
 
+    public enum GlassFillMode
+    {
+        Mixed = 0,
+        SegmentedRungs = 1,
+        SolidGlass = 2
+    }
+
     [Flags]
     public enum BarMirror
     {
@@ -78,24 +85,36 @@ namespace MusicBeePlugin
     {
         public event Action SettingsChanged;
 
-        // General
+        // General / Mode
         public VisualizerMode Mode = VisualizerMode.SpectrumBars;
         public StereoMode StereoMode = StereoMode.Mono;
         public AudioSourceMode AudioSource = AudioSourceMode.Auto;
-        public BarVisualEffect BarStyle = BarVisualEffect.Pills;
+        public BarVisualEffect BarStyle = BarVisualEffect.GlassPillar;
         public BarMirror Mirror = BarMirror.None;
 
-        // Bars
-        public float BarGap = 0.22f;
-        public int BarCount = 64;
+        // Bars Geometry
+        public float BarGap = 0.26f;
+        public int BarCount = 32;
         public float BarRoundness = 0.60f;
-        public float TrebleTaper = 0.10f;
-        public float LedSegmentHeight = 6.0f;
+        public float TrebleTaper = 0.05f;
+        public float LedSegmentHeight = 5.0f;
         public float LedSegmentGap = 2.0f;
         public bool HighlightBarTips = true;
 
+        // Glass Pillars & Rungs (Studio VFD)
+        public GlassFillMode GlassFill = GlassFillMode.Mixed;
+        public bool GlassTubeOverlay = true;
+        public float GlassOpacity = 0.45f;
+        public float RungGhostOpacity = 0.28f;
+        public float RungGhostRange = 0.35f;
+
+        // Center-Axis Symmetry & Horizontal Laser Line
+        public bool CenterLineGlow = true;
+        public float CenterLineGlowIntensity = 0.60f;
+        public bool SymmetricCenterColor = true;
+
         // Colours
-        public string Palette = "skin";
+        public string Palette = "vfd_glass";
         public BarColorMode ColorMode = BarColorMode.VerticalGradient;
         public float HueSpeed = 0.25f;
         public HueCycleMotion HueMotion = HueCycleMotion.Sideways;
@@ -114,32 +133,40 @@ namespace MusicBeePlugin
         public float BeatSensitivity = 0.6f;
         public int AttackMs = 8;
         public int DecayMs = 65;
-        public int SmoothingMs => DecayMs; // backward compatibility
+        public int SmoothingMs => DecayMs;
         public float MinFreqHz = 50.0f;
         public float MaxFreqHz = 20000.0f;
         public float DbRange = 60.0f;
         public float TrebleTiltDb = 13.0f;
         public int SyncOffsetMs = 0;
 
-        // Ribbon
+        // Ribbon / Waveform
         public float RibbonThickness = 2.5f;
         public bool RibbonFill = true;
         public bool RibbonFloorReflection = true;
 
-        // Effects
-        public float BloomIntensity = 0.85f;
+        // Lighting & Environment
+        public float BloomIntensity = 0.95f;
         public BackgroundSource BgSource = BackgroundSource.Palette;
         public float BgBrightness = 1.0f;
         public float Vignette = 0.35f;
-        public float FloorReflection = 0.0f;
+        public float FloorReflection = 0.25f;
         public bool ContactGlow = true;
         public bool DecibelGrid = true;
         public float DecibelGridOpacity = 0.12f;
         public bool HdrIncandescence = true;
 
-        // Performance
-        public int FrameCap = 0; // 0 = VSync, -1 = Uncapped, else 60/120/144/240/360
-        public int AnalysisHz = 120; // 60, 120, 240
+        // Atmosphere & Particles
+        public bool ParticlesEnabled = true;
+        public float ParticleIntensity = 0.45f;
+        public float ParticleParallax = 0.60f;
+        public bool CyberGridEnabled = false;
+        public float CyberGridIntensity = 0.35f;
+        public float ScanlineShimmer = 0.15f;
+
+        // Performance & Telemetry
+        public int FrameCap = 0;
+        public int AnalysisHz = 120;
         public bool IdleThrottle = true;
         public bool ShowDiagnostics = false;
 
@@ -175,24 +202,31 @@ namespace MusicBeePlugin
         public void ResetToDefaults(string section = null)
         {
             string sec = (section ?? "").ToLowerInvariant();
-            if (string.IsNullOrEmpty(sec) || sec == "general")
+            if (string.IsNullOrEmpty(sec) || sec == "general" || sec == "studio")
             {
                 Mode = VisualizerMode.SpectrumBars;
                 StereoMode = StereoMode.Mono;
                 AudioSource = AudioSourceMode.Auto;
                 Mirror = BarMirror.None;
-            }
-            if (string.IsNullOrEmpty(sec) || sec == "bars")
-            {
-                BarStyle = BarVisualEffect.Pills;
-                BarGap = 0.22f;
-                BarCount = 64;
+                BarStyle = BarVisualEffect.GlassPillar;
+                BarGap = 0.26f;
+                BarCount = 32;
                 BarRoundness = 0.60f;
-                TrebleTaper = 0.10f;
-                LedSegmentHeight = 6.0f;
+                TrebleTaper = 0.05f;
+                LedSegmentHeight = 5.0f;
                 LedSegmentGap = 2.0f;
                 HighlightBarTips = true;
-                StereoMode = StereoMode.Mono;
+                GlassFill = GlassFillMode.Mixed;
+                GlassTubeOverlay = true;
+                GlassOpacity = 0.45f;
+                RungGhostOpacity = 0.28f;
+                RungGhostRange = 0.35f;
+                CenterLineGlow = true;
+                CenterLineGlowIntensity = 0.60f;
+                SymmetricCenterColor = true;
+                RibbonThickness = 2.5f;
+                RibbonFill = true;
+                RibbonFloorReflection = true;
                 PeakHoldEnabled = true;
                 PeakHoldMs = 350f;
                 PeakGravity = 2.8f;
@@ -200,30 +234,30 @@ namespace MusicBeePlugin
                 PeakCapColorMode = PeakColorMode.PaletteTip;
                 PeakCustomColor = Color.FromArgb(255, 255, 255);
             }
-            if (string.IsNullOrEmpty(sec) || sec == "waveform")
+            if (string.IsNullOrEmpty(sec) || sec == "theme" || sec == "colours")
             {
-                RibbonThickness = 2.5f;
-                RibbonFill = true;
-                RibbonFloorReflection = true;
-            }
-            if (string.IsNullOrEmpty(sec) || sec == "colours" || sec == "colors")
-            {
-                Palette = "skin";
+                Palette = "vfd_glass";
                 ColorMode = BarColorMode.VerticalGradient;
                 HueSpeed = 0.25f;
                 HueMotion = HueCycleMotion.Sideways;
                 HueSource = HueCycleSource.Palette;
+                BloomIntensity = 0.95f;
+                BgSource = BackgroundSource.Palette;
+                BgBrightness = 1.0f;
+                Vignette = 0.35f;
+                FloorReflection = 0.25f;
+                ContactGlow = true;
+                DecibelGrid = true;
+                DecibelGridOpacity = 0.12f;
+                HdrIncandescence = true;
+                ParticlesEnabled = true;
+                ParticleIntensity = 0.45f;
+                ParticleParallax = 0.60f;
+                CyberGridEnabled = false;
+                CyberGridIntensity = 0.35f;
+                ScanlineShimmer = 0.15f;
             }
-            if (string.IsNullOrEmpty(sec) || sec == "peaks")
-            {
-                PeakHoldEnabled = true;
-                PeakHoldMs = 350f;
-                PeakGravity = 2.8f;
-                PeakCapThickness = 2.0f;
-                PeakCapColorMode = PeakColorMode.PaletteTip;
-                PeakCustomColor = Color.FromArgb(255, 255, 255);
-            }
-            if (string.IsNullOrEmpty(sec) || sec == "analyzer")
+            if (string.IsNullOrEmpty(sec) || sec == "audio" || sec == "analyzer")
             {
                 Sensitivity = 1.0f;
                 BeatSensitivity = 0.6f;
@@ -235,19 +269,7 @@ namespace MusicBeePlugin
                 TrebleTiltDb = 13.0f;
                 SyncOffsetMs = 0;
             }
-            if (string.IsNullOrEmpty(sec) || sec == "effects")
-            {
-                BloomIntensity = 0.85f;
-                BgSource = BackgroundSource.Palette;
-                BgBrightness = 1.0f;
-                Vignette = 0.35f;
-                FloorReflection = 0.0f;
-                ContactGlow = true;
-                DecibelGrid = true;
-                DecibelGridOpacity = 0.12f;
-                HdrIncandescence = true;
-            }
-            if (string.IsNullOrEmpty(sec) || sec == "performance")
+            if (string.IsNullOrEmpty(sec) || sec == "system" || sec == "performance")
             {
                 FrameCap = 0;
                 AnalysisHz = 120;

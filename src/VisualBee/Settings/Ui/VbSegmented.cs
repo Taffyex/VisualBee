@@ -60,7 +60,6 @@ namespace MusicBeePlugin.SettingsUi
             float itemW = (float)(Width - 2) / n;
             var bounds = new Rectangle(0, 0, Width - 1, Height - 1);
 
-            // Container background
             using (var pBg = CreateRoundedPath(bounds, 6))
             using (var bBg = new SolidBrush(VbTheme.BgCard))
             using (var pBorder = new Pen(VbTheme.Border))
@@ -69,17 +68,18 @@ namespace MusicBeePlugin.SettingsUi
                 g.DrawPath(pBorder, pBg);
             }
 
-            // Draw items
+            Color accentCol = Enabled ? VbTheme.Accent : VbTheme.BorderLight;
+
             for (int i = 0; i < n; i++)
             {
                 var itemRect = new Rectangle((int)(i * itemW + 2), 2, (int)itemW - 4, Height - 5);
                 bool isSelected = (i == _selectedIndex);
-                bool isHover = (i == _hoverIndex && !isSelected);
+                bool isHover = (i == _hoverIndex && !isSelected && Enabled);
 
                 if (isSelected)
                 {
                     using (var pItem = CreateRoundedPath(itemRect, 4))
-                    using (var bSel = new SolidBrush(VbTheme.Accent))
+                    using (var bSel = new SolidBrush(accentCol))
                         g.FillPath(bSel, pItem);
                 }
                 else if (isHover)
@@ -89,7 +89,7 @@ namespace MusicBeePlugin.SettingsUi
                         g.FillPath(bHover, pItem);
                 }
 
-                Color textCol = isSelected ? Color.Black : (isHover ? Color.White : VbTheme.TextPrimary);
+                Color textCol = isSelected ? Color.Black : (isHover ? Color.White : (Enabled ? VbTheme.TextPrimary : VbTheme.TextMuted));
                 using (var bText = new SolidBrush(textCol))
                 {
                     var sf = new StringFormat
@@ -123,6 +123,7 @@ namespace MusicBeePlugin.SettingsUi
         protected override void OnMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
+            if (!Enabled) return;
             Focus();
             if (e.Button == MouseButtons.Left && _items.Length > 0)
             {
@@ -138,6 +139,7 @@ namespace MusicBeePlugin.SettingsUi
         protected override void OnMouseMove(MouseEventArgs e)
         {
             base.OnMouseMove(e);
+            if (!Enabled) return;
             if (_items.Length > 0)
             {
                 float itemW = (float)(Width - 2) / _items.Length;
@@ -162,6 +164,7 @@ namespace MusicBeePlugin.SettingsUi
 
         protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
         {
+            if (!Enabled) return base.ProcessCmdKey(ref msg, keyData);
             if (_items.Length > 0)
             {
                 if (keyData == Keys.Left || keyData == Keys.Up)

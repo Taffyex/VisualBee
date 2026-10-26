@@ -13,11 +13,12 @@ namespace MusicBeePlugin
         private readonly VisualBeeSettings _settings;
         private readonly VisualBeeControl _control;
 
+        private Panel _pnlHeader;
         private Panel _pnlNav;
         private Panel _pnlContent;
         private Panel _pnlFooter;
-        private readonly Button[] _navButtons = new Button[8];
-        private readonly Panel[] _pagePanels = new Panel[8];
+        private readonly Button[] _navButtons = new Button[4];
+        private readonly Panel[] _pagePanels = new Panel[4];
         private int _currentPage = 0;
 
         public static void ShowOrFocus(MusicBeeApiInterface api, VisualBeeSettings settings, VisualBeeControl control)
@@ -33,7 +34,6 @@ namespace MusicBeePlugin
 
             _instance = new VisualBeeSettingsForm(api, settings, control);
 
-            // Modeless ownership by MusicBee main window
             try
             {
                 if (api.MB_GetWindowHandle != null)
@@ -70,11 +70,11 @@ namespace MusicBeePlugin
             _settings = settings;
             _control = control;
 
-            Text = "VisualBee Settings";
+            Text = "VisualBee Studio v2.0 Settings";
             BackColor = VbTheme.BgMain;
             ForeColor = VbTheme.TextPrimary;
-            Size = new Size(780, 600);
-            MinimumSize = new Size(680, 480);
+            Size = new Size(820, 640);
+            MinimumSize = new Size(720, 500);
             StartPosition = FormStartPosition.CenterScreen;
             ShowInTaskbar = false;
             DoubleBuffered = true;
@@ -87,26 +87,72 @@ namespace MusicBeePlugin
 
         private void BuildShell()
         {
+            // Top Quick Preset Vibe Bar
+            _pnlHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 44,
+                BackColor = VbTheme.BgNav,
+                Padding = new Padding(12, 6, 12, 6)
+            };
+
+            var lblVibe = new Label
+            {
+                Text = "⚡ 1-CLICK VIBES:",
+                AutoSize = true,
+                Font = VbTheme.FontBold,
+                ForeColor = VbTheme.Accent,
+                Dock = DockStyle.Left,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Margin = new Padding(0, 4, 10, 0)
+            };
+            _pnlHeader.Controls.Add(lblVibe);
+
+            void AddVibeButton(string label, Action action)
+            {
+                var btn = new Button
+                {
+                    Text = label,
+                    Height = 28,
+                    AutoSize = true,
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = VbTheme.BgCard,
+                    ForeColor = VbTheme.TextPrimary,
+                    Cursor = Cursors.Hand,
+                    Dock = DockStyle.Left,
+                    Margin = new Padding(4, 0, 4, 0)
+                };
+                btn.FlatAppearance.BorderColor = VbTheme.Border;
+                btn.FlatAppearance.MouseOverBackColor = VbTheme.BgHover;
+                btn.Click += delegate { action(); };
+                _pnlHeader.Controls.Add(btn);
+            }
+
+            AddVibeButton("  Glass Pillars (Ref 1)  ", () => ApplyVfdRef1Preset());
+            AddVibeButton("  Center-Axis LED (Ref 2)  ", () => ApplyCenterLedRef2Preset());
+            AddVibeButton("  Cyber Horizon  ", () => ApplyCyberHorizonPreset());
+            AddVibeButton("  Liquid Waveform  ", () => ApplyWaveformPreset());
+
             // Bottom Footer
             _pnlFooter = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 48,
+                Height = 46,
                 BackColor = VbTheme.BgNav,
-                Padding = new Padding(12, 8, 12, 8)
+                Padding = new Padding(12, 7, 12, 7)
             };
 
-            var btnResetPage = CreateFooterButton("Reset this page", () => ResetCurrentPage());
+            var btnResetPage = CreateFooterButton("Reset current tab", () => ResetCurrentPage());
             btnResetPage.Dock = DockStyle.Left;
-            btnResetPage.Width = 120;
+            btnResetPage.Width = 130;
 
-            var btnResetAll = CreateFooterButton("Reset all", () => ResetAllSettings());
+            var btnResetAll = CreateFooterButton("Reset all settings", () => ResetAllSettings());
             btnResetAll.Dock = DockStyle.Left;
-            btnResetAll.Width = 90;
+            btnResetAll.Width = 120;
 
             var btnClose = CreateFooterButton("Close", () => Close());
             btnClose.Dock = DockStyle.Right;
-            btnClose.Width = 80;
+            btnClose.Width = 84;
             btnClose.BackColor = VbTheme.Accent;
             btnClose.ForeColor = Color.Black;
             btnClose.Font = VbTheme.FontBold;
@@ -115,13 +161,13 @@ namespace MusicBeePlugin
             _pnlFooter.Controls.Add(btnResetAll);
             _pnlFooter.Controls.Add(btnResetPage);
 
-            // Left Navigation
+            // Left Navigation Tabs (4 Smart Tabs)
             _pnlNav = new Panel
             {
                 Dock = DockStyle.Left,
-                Width = 165,
+                Width = 180,
                 BackColor = VbTheme.BgNav,
-                Padding = new Padding(6, 10, 6, 10)
+                Padding = new Padding(6, 12, 6, 10)
             };
 
             var flowNav = new FlowLayoutPanel
@@ -133,35 +179,20 @@ namespace MusicBeePlugin
                 BackColor = Color.Transparent
             };
 
-            void AddNavHeader(string text, int topMargin)
-            {
-                var lbl = new Label
-                {
-                    Text = text,
-                    Width = 150,
-                    Height = 18,
-                    Font = VbTheme.FontSmall,
-                    ForeColor = Color.FromArgb(120, 135, 155),
-                    TextAlign = ContentAlignment.BottomLeft,
-                    Margin = new Padding(6, topMargin, 0, 4)
-                };
-                flowNav.Controls.Add(lbl);
-            }
-
-            void AddNavButton(int pageIdx, string text)
+            void AddNavButton(int pageIdx, string text, string subtext)
             {
                 var btn = new Button
                 {
-                    Text = "  " + text,
-                    Width = 152,
-                    Height = 34,
+                    Text = "  " + text + "\n  " + subtext,
+                    Width = 168,
+                    Height = 46,
                     FlatStyle = FlatStyle.Flat,
                     TextAlign = ContentAlignment.MiddleLeft,
                     Font = VbTheme.FontRegular,
                     ForeColor = VbTheme.TextSecondary,
                     BackColor = Color.Transparent,
                     Cursor = Cursors.Hand,
-                    Margin = new Padding(0, 1, 0, 1)
+                    Margin = new Padding(0, 2, 0, 4)
                 };
                 btn.FlatAppearance.BorderSize = 0;
                 btn.FlatAppearance.MouseOverBackColor = VbTheme.BgHover;
@@ -170,21 +201,14 @@ namespace MusicBeePlugin
                 flowNav.Controls.Add(btn);
             }
 
-            AddNavHeader("MODE SPECIFIC", 0);
-            AddNavButton(0, "Spectrum Bars");
-            AddNavButton(1, "Waveform");
-
-            AddNavHeader("UNIVERSAL", 10);
-            AddNavButton(2, "General & Window");
-            AddNavButton(3, "Colours & Theme");
-            AddNavButton(4, "Audio & FFT");
-            AddNavButton(5, "Effects & Environment");
-            AddNavButton(6, "Performance");
-            AddNavButton(7, "About");
+            AddNavButton(0, "Visualizer Studio", "Mode, Styles & Symmetry");
+            AddNavButton(1, "Theme & Atmosphere", "Colors, Particles & FX");
+            AddNavButton(2, "Audio & Dynamics", "Ballistics, EQ & Range");
+            AddNavButton(3, "System & Telemetry", "Framerate, HUD & Info");
 
             _pnlNav.Controls.Add(flowNav);
 
-            // Right Content Container
+            // Content Panel
             _pnlContent = new Panel
             {
                 Dock = DockStyle.Fill,
@@ -194,6 +218,7 @@ namespace MusicBeePlugin
 
             Controls.Add(_pnlContent);
             Controls.Add(_pnlNav);
+            Controls.Add(_pnlHeader);
             Controls.Add(_pnlFooter);
         }
 
@@ -237,8 +262,8 @@ namespace MusicBeePlugin
 
         private void ResetCurrentPage()
         {
-            string[] sections = { "bars", "waveform", "general", "colours", "analyzer", "effects", "performance", "about" };
-            if (_currentPage >= 0 && _currentPage < sections.Length && sections[_currentPage] != "about")
+            string[] sections = { "studio", "theme", "audio", "system" };
+            if (_currentPage >= 0 && _currentPage < sections.Length)
             {
                 _settings.ResetToDefaults(sections[_currentPage]);
                 RefreshCurrentPageUi();
@@ -253,7 +278,7 @@ namespace MusicBeePlugin
 
         private void BuildPages()
         {
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 4; i++)
             {
                 var pnl = new Panel
                 {
@@ -266,41 +291,118 @@ namespace MusicBeePlugin
                 _pnlContent.Controls.Add(pnl);
             }
 
-            BuildBarsPage(_pagePanels[0]);
-            BuildWaveformPage(_pagePanels[1]);
-            BuildGeneralPage(_pagePanels[2]);
-            BuildColoursPage(_pagePanels[3]);
-            BuildAnalyzerPage(_pagePanels[4]);
-            BuildEffectsPage(_pagePanels[5]);
-            BuildPerformancePage(_pagePanels[6]);
-            BuildAboutPage(_pagePanels[7]);
+            BuildStudioPage(_pagePanels[0]);
+            BuildThemePage(_pagePanels[1]);
+            BuildAudioPage(_pagePanels[2]);
+            BuildSystemPage(_pagePanels[3]);
         }
 
         private void RefreshCurrentPageUi()
         {
             switch (_currentPage)
             {
-                case 0: RefreshBarsPageUi(); break;
-                case 1: RefreshWaveformPageUi(); break;
-                case 2: RefreshGeneralPageUi(); break;
-                case 3: RefreshColoursPageUi(); break;
-                case 4: RefreshAnalyzerPageUi(); break;
-                case 5: RefreshEffectsPageUi(); break;
-                case 6: RefreshPerformancePageUi(); break;
-                case 7: RefreshAboutPageUi(); break;
+                case 0: RefreshStudioPageUi(); break;
+                case 1: RefreshThemePageUi(); break;
+                case 2: RefreshAudioPageUi(); break;
+                case 3: RefreshSystemPageUi(); break;
             }
         }
 
         private void RefreshAllPagesUi()
         {
-            RefreshBarsPageUi();
-            RefreshWaveformPageUi();
-            RefreshGeneralPageUi();
-            RefreshColoursPageUi();
-            RefreshAnalyzerPageUi();
-            RefreshEffectsPageUi();
-            RefreshPerformancePageUi();
-            RefreshAboutPageUi();
+            RefreshStudioPageUi();
+            RefreshThemePageUi();
+            RefreshAudioPageUi();
+            RefreshSystemPageUi();
+        }
+
+        private void ApplyVfdRef1Preset()
+        {
+            _settings.Mode = VisualizerMode.SpectrumBars;
+            _settings.BarStyle = BarVisualEffect.GlassPillar;
+            _settings.GlassFill = GlassFillMode.Mixed;
+            _settings.GlassTubeOverlay = true;
+            _settings.Mirror &= ~BarMirror.Vertical;
+            _settings.Palette = "vfd_glass";
+            _settings.BarCount = 32;
+            _settings.BarGap = 0.26f;
+            _settings.LedSegmentHeight = 5.0f;
+            _settings.LedSegmentGap = 2.0f;
+            _settings.FloorReflection = 0.35f;
+            _settings.DecibelGrid = true;
+            _settings.HdrIncandescence = true;
+            _settings.BloomIntensity = 1.05f;
+            _settings.ParticlesEnabled = true;
+            _settings.ParticleIntensity = 0.45f;
+            _settings.NotifyChanged();
+            _settings.RequestSave();
+            _control?.RefreshPalette();
+            RefreshAllPagesUi();
+        }
+
+        private void ApplyCenterLedRef2Preset()
+        {
+            _settings.Mode = VisualizerMode.SpectrumBars;
+            _settings.BarStyle = BarVisualEffect.GlassPillar;
+            _settings.GlassFill = GlassFillMode.SegmentedRungs;
+            _settings.GlassTubeOverlay = true;
+            _settings.Mirror |= BarMirror.Vertical;
+            _settings.CenterLineGlow = true;
+            _settings.SymmetricCenterColor = true;
+            _settings.Palette = "vfd_glass";
+            _settings.BarCount = 30;
+            _settings.BarGap = 0.25f;
+            _settings.LedSegmentHeight = 4.0f;
+            _settings.LedSegmentGap = 2.0f;
+            _settings.FloorReflection = 0.0f;
+            _settings.HdrIncandescence = true;
+            _settings.DecibelGrid = true;
+            _settings.NotifyChanged();
+            _settings.RequestSave();
+            _control?.RefreshPalette();
+            RefreshAllPagesUi();
+        }
+
+        private void ApplyCyberHorizonPreset()
+        {
+            _settings.Mode = VisualizerMode.SpectrumBars;
+            _settings.BarStyle = BarVisualEffect.Solid;
+            _settings.Palette = "cyberpunk";
+            _settings.CyberGridEnabled = true;
+            _settings.CyberGridIntensity = 0.50f;
+            _settings.ParticlesEnabled = true;
+            _settings.ParticleIntensity = 0.60f;
+            _settings.FloorReflection = 0.40f;
+            _settings.NotifyChanged();
+            _settings.RequestSave();
+            _control?.RefreshPalette();
+            RefreshAllPagesUi();
+        }
+
+        private void ApplyWaveformPreset()
+        {
+            _settings.Mode = VisualizerMode.Waveform;
+            _settings.Palette = "aurora";
+            _settings.RibbonThickness = 3.0f;
+            _settings.RibbonFill = true;
+            _settings.RibbonFloorReflection = true;
+            _settings.ParticlesEnabled = true;
+            _settings.NotifyChanged();
+            _settings.RequestSave();
+            _control?.RefreshPalette();
+            RefreshAllPagesUi();
+        }
+
+        internal static Label CreateHeaderLabel(string text)
+        {
+            return new Label
+            {
+                Text = text,
+                AutoSize = true,
+                Font = VbTheme.FontSection,
+                ForeColor = VbTheme.Accent,
+                Margin = new Padding(0, 6, 0, 4)
+            };
         }
 
         internal static Label CreateSubtitleLabel(string text)
@@ -311,8 +413,13 @@ namespace MusicBeePlugin
                 AutoSize = true,
                 Font = VbTheme.FontSmall,
                 ForeColor = VbTheme.TextSecondary,
-                Margin = new Padding(0, 0, 0, 10)
+                Margin = new Padding(0, 0, 0, 8)
             };
+        }
+
+        internal static Control CreateSpacer(int height)
+        {
+            return new Panel { Height = height, Width = 10 };
         }
 
         protected override void OnFormClosed(FormClosedEventArgs e)
