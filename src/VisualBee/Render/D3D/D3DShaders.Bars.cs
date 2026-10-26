@@ -18,10 +18,10 @@ float3 CyclePalette(float phase)
     return lerp(PaletteColorD.rgb, PaletteColorB.rgb, f);
 }
 
-float3 GetBarColor(float relY, float barFrac, float time, float screenY, float rawH, float coreDist)
+float3 GetBarColor(float relY, float barFrac, float time, float screenY, float rawH, float coreDist, int style)
 {
     int mode = (int)ColorParams.x;
-    bool highlightTip = StyleExtra.z > 0.5;
+    bool highlightTip = StyleExtra.z > 0.5 && (style != 3);
     float3 c;
 
     if (mode == 1) // Across frequencies (B -> C -> D)
@@ -56,13 +56,15 @@ float3 GetBarColor(float relY, float barFrac, float time, float screenY, float r
             c = lerp(c, PaletteColorD.rgb, smoothstep(0.85, 1.0, relY) * 0.85);
     }
 
-    // Power-driven HDR incandescence (White-hot overdrive)
-    if (StudioParams.y > 0.5 && rawH > 0.45)
+    // Power-driven HDR incandescence: ONLY kicks in when signal amplitude is high (> 0.55).
+    // Short bars stay deep saturated cyan/blue. Tall bars burn white-hot at their core!
+    if (StudioParams.y > 0.5 && rawH > 0.55)
     {
-        float overdrive = smoothstep(0.45, 0.95, rawH);
-        float coreX = 1.0 - smoothstep(0.0, 0.85, coreDist);
-        float heat = overdrive * (coreX * 0.75 + smoothstep(0.3, 1.0, relY) * 0.35);
-        c = lerp(c, float3(1.65, 1.65, 1.65), heat * 0.90);
+        float powerOverdrive = smoothstep(0.55, 0.88, rawH);
+        float coreX = 1.0 - smoothstep(0.0, 0.75, coreDist);
+        float heightBias = smoothstep(0.15, 0.95, relY);
+        float heat = powerOverdrive * coreX * (0.60 + 0.40 * heightBias);
+        c = lerp(c, float3(1.70, 1.70, 1.70), heat * 0.95);
     }
 
     return c;
@@ -116,6 +118,7 @@ float4 PSBars(FSOut i) : SV_Target
         float cell = x * N;
         bar = clamp((int)cell, 0, (int)N - 1);
         lx = frac(cell);
+        channelOffset = 0;
         barFrac = (float)bar / max(1.0, N - 1.0);
     }
 
@@ -152,7 +155,7 @@ float4 PSBars(FSOut i) : SV_Target
     {
         float dHorizon = abs(y - groundBase) * Viewport.y;
         float horizonLine = saturate(1.2 - dHorizon);
-        col += lerp(PaletteColorB.rgb, PaletteColorC.rgb, 0.5) * (horizonLine * 0.40 * floorReflect);
+        col += lerp(PaletteColorB.rgb, PaletteColorC.rgb, 0.5) * (horizonLine * 0.45 * floorReflect);
         if (y < groundBase)
         {
             col += PaletteColorB.rgb * (exp(-dHorizon * 0.35) * 0.12 * floorReflect);
@@ -186,7 +189,7 @@ float4 PSBars(FSOut i) : SV_Target
             float markPx = kGridMarks[g] * totalHPx;
             gridLine += saturate(1.0 - abs(yPx - markPx));
         }
-        float3 gridCol = lerp(PaletteColorA.rgb, PaletteColorB.rgb, 0.4) * 0.7;
+        float3 gridCol = lerp(PaletteColorA.rgb, PaletteColorB.rgb, 0.35) * 0.6;
         col += gridCol * (gridLine * StudioParams.x);
     }
 
@@ -226,7 +229,7 @@ float4 PSBars(FSOut i) : SV_Target
         {
             float relY = yPx / max(1.0, hPx);
             float coreDist = saturate(pxX / halfBarPx);
-            float3 barCol = GetBarColor(relY, barFrac, VisualParams.x, uv.y, rawH, coreDist);
+            float3 barCol = GetBarColor(relY, barFrac, VisualParams.x, uv.y, rawH, coreDist, 0);
             barCol *= (0.80 + 0.35 * (1.0 - coreDist));
 
             if (isFloorMirror)
@@ -252,7 +255,7 @@ float4 PSBars(FSOut i) : SV_Target
         {
             float relY = min(1.0, (segIdx * segPeriod) / max(1.0, totalHPx * 0.9));
             float coreDist = saturate(pxX / halfBarPx);
-            float3 ledCol = GetBarColor(relY, barFrac, VisualParams.x, uv.y, rawH, coreDist);
+            float3 ledCol = GetBarColor(relY, barFrac, VisualParams.x, uv.y, rawH, coreDist, 1);
 
             float uBevel = segY / segH;
             float bevel = sin(uBevel * 3.14159) * 0.35 + 0.75;
@@ -280,7 +283,7 @@ float4 PSBars(FSOut i) : SV_Target
         {
             float relY = yPx / max(1.0, hPx);
             float coreDist = saturate(pxX / halfBarPx);
-            float3 barCol = GetBarColor(relY, barFrac, VisualParams.x, uv.y, rawH, coreDist);
+            float3 barCol = GetBarColor(relY, barFrac, VisualParams.x, uv.y, rawH, coreDist, 2);
 
             if (StyleExtra.z > 0.5 && abs(yPx - hPx) < 1.5)
                 barCol += PaletteColorD.rgb * 0.6;
@@ -292,27 +295,28 @@ float4 PSBars(FSOut i) : SV_Target
                 col = lerp(col, barCol * chamfer, cov);
         }
     }
-    // Style 3: Glass Pillars & VFD Rack (Enclosure, Ghosted Rungs, Architectural Ladder)
+    // Style 3: Glass Pillars & VFD Rack
     else
     {
-        float pillarTopPx = max(peakPx, hPx + 4.0);
-        float radiusPx = min(halfBarPx * roundness, pillarTopPx * 0.5);
-        float dYTop = yPx - (pillarTopPx - radiusPx);
-        float dPillar = (dYTop > 0.0 && radiusPx > 0.5)
-            ? (length(float2(max(0.0, pxX - (halfBarPx - radiusPx)), dYTop)) - radiusPx)
+        // 1. Persistent full-height glass pillar enclosure with rounded dome cap
+        float pillarCeilPx = totalHPx * 0.91;
+        float radiusPx = halfBarPx;
+        float dYCeil = yPx - (pillarCeilPx - radiusPx);
+        float dPillar = (dYCeil > 0.0 && radiusPx > 0.5)
+            ? (length(float2(pxX, dYCeil)) - radiusPx)
             : dX;
 
-        float pillarCov = saturate(0.5 - dPillar) * saturate(pillarTopPx - yPx + 0.5);
+        float pillarCov = saturate(0.5 - dPillar) * saturate(pillarCeilPx - yPx + 0.5);
 
-        // 1. Translucent glass capsule boundary with subtle glowing rounded-pill border
+        // Subtle glowing glass capsule outline & interior glass tint
         if (!isFloorMirror && pillarCov > 0.0)
         {
-            float glassBorder = saturate(1.0 - abs(dPillar)) * 0.38;
-            float3 glassCol = lerp(PaletteColorB.rgb, PaletteColorC.rgb, 0.4);
-            col += glassCol * (glassBorder + pillarCov * 0.035);
+            float glassBorder = saturate(1.0 - abs(dPillar)) * 0.28;
+            float3 glassCol = lerp(PaletteColorB.rgb, PaletteColorC.rgb, 0.45);
+            col += glassCol * (glassBorder + pillarCov * 0.025);
         }
 
-        // 2. Architectural Ladder Geometry (Global Y grid alignment)
+        // 2. Architectural Ladder Rungs (Global Y grid alignment across all bands)
         float segH = max(2.0, BarShape.y);
         float segGap = max(1.0, BarShape.z);
         float segPeriod = segH + segGap;
@@ -322,56 +326,42 @@ float4 PSBars(FSOut i) : SV_Target
         float covRungY = saturate(0.5 - (abs(segY - segH * 0.5) - (segH * 0.5 - 0.5)));
         float rungCov = covX * covRungY;
 
-        if (rungCov > 0.0)
+        if (rungCov > 0.0 && yPx <= pillarCeilPx)
         {
             float relY = yPx / max(1.0, hPx);
             float coreDist = saturate(pxX / halfBarPx);
-            float3 rungCol = GetBarColor(relY, barFrac, VisualParams.x, uv.y, rawH, coreDist);
-
             float uBevel = segY / segH;
-            float bevel = sin(uBevel * 3.14159) * 0.35 + 0.80;
-            rungCol *= bevel;
+            float bevel = sin(uBevel * 3.14159) * 0.30 + 0.82;
 
             bool isLit = yPx <= (hPx + 0.5);
             if (isLit)
             {
+                float3 litCol = GetBarColor(relY, barFrac, VisualParams.x, uv.y, rawH, coreDist, 3) * bevel;
                 if (isFloorMirror)
-                    col = lerp(col, rungCol * navyLacquer * 1.6 + rungCol * 0.12, rungCov * lacquerFalloff);
+                    col = lerp(col, litCol * navyLacquer * 1.6 + litCol * 0.12, rungCov * lacquerFalloff);
                 else
-                    col = lerp(col, rungCol, rungCov);
+                    col = lerp(col, litCol, rungCov);
             }
-            else if (!isFloorMirror && yPx <= pillarTopPx)
+            else if (!isFloorMirror && yPx <= max(peakPx, hPx + 2.0))
             {
-                // Ghosted unlit ladder rung (VFD unlit filament phosphor)
-                float3 unlitCol = lerp(PaletteColorA.rgb, PaletteColorB.rgb, 0.25) * 0.18 * bevel;
-                col = lerp(col, col + unlitCol, rungCov * 0.85);
-            }
-        }
-
-        // 3. Floating illuminated cap at the top of active volume
-        if (!isFloorMirror && abs(yPx - hPx) < (segH * 0.6) && hPx > 3.0)
-        {
-            float dCapY = abs(yPx - hPx);
-            float capCov = covX * saturate(segH * 0.6 - dCapY);
-            if (capCov > 0.0)
-            {
-                float3 capCol = lerp(PaletteColorC.rgb, float3(1.6, 1.6, 1.6), 0.65);
-                col = lerp(col, capCol, capCov * 0.90);
+                // Ghosted unlit ladder rung: distinct, glowing cyan/slate VFD phosphor filaments
+                float3 unlitCol = lerp(PaletteColorB.rgb, PaletteColorC.rgb, 0.35) * 0.24 * bevel;
+                col = lerp(col, col + unlitCol, rungCov * 0.90);
             }
         }
     }
 
-    // Peak Caps (BarParams.w: 1 = enabled)
-    if (!isFloorMirror && BarParams.w > 0.5 && peakPx > (hPx + 2.0) && peakPx < totalHPx)
+    // Peak Caps: Sleek horizontal floating mark
+    if (!isFloorMirror && BarParams.w > 0.5 && peakPx > (hPx + 2.0) && peakPx < (totalHPx * 0.94))
     {
-        float thick = max(1.0, PeakParams.x);
+        float thick = max(1.5, PeakParams.x);
         float dPeakY = abs(yPx - peakPx);
         float covPeak = covX * saturate((thick * 0.5 + 0.5) - dPeakY);
         if (covPeak > 0.0)
         {
-            float3 capCol = PaletteColorD.rgb * 1.35;
+            float3 capCol = PaletteColorD.rgb * 1.4;
             int capMode = (int)PeakParams.y;
-            if (capMode == 1) capCol = GetBarColor(1.0, barFrac, VisualParams.x, uv.y, rawH, 0.0) * 1.25;
+            if (capMode == 1) capCol = GetBarColor(1.0, barFrac, VisualParams.x, uv.y, rawH, 0.0, style) * 1.25;
             else if (capMode == 2) capCol = PeakColor.rgb * 1.25;
             col = lerp(col, capCol, covPeak);
         }

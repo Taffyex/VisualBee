@@ -48,6 +48,42 @@ namespace MusicBeePlugin
             };
             pnl.Controls.Add(_segBarStyle);
 
+            var btnApplyVfdPreset = new Button
+            {
+                Text = "⚡ Apply Studio VFD Rack Preset (1-Click Setup)",
+                Width = 520,
+                Height = 30,
+                FlatStyle = FlatStyle.Flat,
+                ForeColor = VbTheme.Accent,
+                BackColor = VbTheme.BgCard,
+                Cursor = Cursors.Hand,
+                Margin = new Padding(0, 4, 0, 8)
+            };
+            btnApplyVfdPreset.FlatAppearance.BorderColor = VbTheme.Accent;
+            btnApplyVfdPreset.FlatAppearance.BorderSize = 1;
+            btnApplyVfdPreset.Click += delegate
+            {
+                _settings.BarStyle = BarVisualEffect.GlassPillar;
+                _settings.Mirror = BarMirror.None;
+                _settings.Palette = "vfd_glass";
+                _settings.BarCount = 28;
+                _settings.BarGap = 0.28f;
+                _settings.LedSegmentHeight = 4.0f;
+                _settings.LedSegmentGap = 1.8f;
+                _settings.FloorReflection = 0.35f;
+                _settings.DecibelGrid = true;
+                _settings.DecibelGridOpacity = 0.12f;
+                _settings.HdrIncandescence = true;
+                _settings.BloomIntensity = 1.10f;
+                _settings.ContactGlow = true;
+                _settings.HighlightBarTips = false;
+                _settings.NotifyChanged();
+                _settings.RequestSave();
+                _control?.RefreshPalette();
+                RefreshAllPagesUi();
+            };
+            pnl.Controls.Add(btnApplyVfdPreset);
+
             pnl.Controls.Add(CreateSpacer(8));
             pnl.Controls.Add(CreateHeaderLabel("BAR GEOMETRY"));
 
