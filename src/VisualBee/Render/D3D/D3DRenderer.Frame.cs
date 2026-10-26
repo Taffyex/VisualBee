@@ -43,7 +43,8 @@ namespace MusicBeePlugin
             _constants.Viewport = new Vector4(_width, _height, 1f / _width, 1f / _height);
             _constants.AudioMetricsA = new Vector4(snap.LowPulse, snap.Bass, snap.Mid, snap.High);
             _constants.AudioMetricsB = new Vector4(snap.Beat, snap.Rms, snap.Centroid, snap.Transient);
-            _constants.VisualParams = new Vector4((float)time, (float)settings.BarStyle, settings.BloomIntensity, (float)settings.Mode);
+            float bloomIntensity = settings.BloomIntensity > 0.05f ? settings.BloomIntensity : 0.0f;
+            _constants.VisualParams = new Vector4((float)time, (float)settings.BarStyle, bloomIntensity, (float)settings.Mode);
             _constants.BarParams = new Vector4(
                 settings.BarCount,
                 settings.BarGap,

@@ -21,13 +21,16 @@ float4 PSRibbon(FSOut i) : SV_Target
     float pxX = uv.x * Viewport.x;
     float pxY = uv.y * Viewport.y;
     float dpi = max(1.0, RibbonParams.w);
-    float targetThickPx = max(2.0, RibbonParams.x * dpi);
+    float targetThickPx = max(0.8, RibbonParams.x * dpi);
     float halfThick = targetThickPx * 0.5;
 
     // Centerline subtle baseline glow
-    float dCenterLine = abs(uv.y - yBaseline) * Viewport.y;
-    float centerAlpha = exp(-dCenterLine * 0.08) * 0.12;
-    col += PaletteColorB.rgb * centerAlpha;
+    if (dot(PaletteBg.rgb, PaletteBg.rgb) > 0.0001)
+    {
+        float dCenterLine = abs(uv.y - yBaseline) * Viewport.y;
+        float centerAlpha = exp(-dCenterLine * 0.08) * 0.12;
+        col += PaletteColorB.rgb * centerAlpha;
+    }
 
     // Audio-reactive translucent fill under/above the wave towards the baseline
     if (RibbonParams.y > 0.5)
@@ -87,6 +90,15 @@ float4 PSRibbon(FSOut i) : SV_Target
     lineCol += PaletteColorD.rgb * (core * 1.5);
     col = lerp(col, lineCol, lineCov);
     col += lineCol * halo;
+
+    // Optional floor reflection
+    if (RibbonParams.z > 0.5 && uv.y < 0.18)
+    {
+        float floorFade = (1.0 - uv.y / 0.18) * 0.35;
+        float reflDist = (0.18 - uv.y) * Viewport.y;
+        float reflAlpha = exp(-reflDist * 0.05) * floorFade;
+        col += lerp(PaletteColorB.rgb, PaletteColorC.rgb, uv.x) * reflAlpha;
+    }
 
     return float4(col, 1.0);
 }

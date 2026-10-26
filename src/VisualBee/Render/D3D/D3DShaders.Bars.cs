@@ -9,27 +9,25 @@ namespace MusicBeePlugin
 
 float3 CyclePalette(float phase)
 {
-    float p = frac(phase) * 4.0;
+    float p = frac(phase) * 3.0;
     int seg = (int)p;
     float f = frac(p);
     f = f * f * (3.0 - 2.0 * f);
-    if (seg == 0) return lerp(PaletteColorA.rgb, PaletteColorB.rgb, f);
-    if (seg == 1) return lerp(PaletteColorB.rgb, PaletteColorC.rgb, f);
-    if (seg == 2) return lerp(PaletteColorC.rgb, PaletteColorD.rgb, f);
-    return lerp(PaletteColorD.rgb, PaletteColorA.rgb, f);
+    if (seg == 0) return lerp(PaletteColorB.rgb, PaletteColorC.rgb, f);
+    if (seg == 1) return lerp(PaletteColorC.rgb, PaletteColorD.rgb, f);
+    return lerp(PaletteColorD.rgb, PaletteColorB.rgb, f);
 }
 
-float3 GetBarColor(float relY, float barFrac, float time)
+float3 GetBarColor(float relY, float barFrac, float time, float screenY)
 {
     int mode = (int)ColorParams.x;
     bool highlightTip = StyleExtra.z > 0.5;
 
-    if (mode == 1) // Across frequencies (A -> B -> C -> D)
+    if (mode == 1) // Across frequencies (B -> C -> D)
     {
         float3 c;
-        if (barFrac < 0.33) c = lerp(PaletteColorA.rgb, PaletteColorB.rgb, barFrac / 0.33);
-        else if (barFrac < 0.66) c = lerp(PaletteColorB.rgb, PaletteColorC.rgb, (barFrac - 0.33) / 0.33);
-        else c = lerp(PaletteColorC.rgb, PaletteColorD.rgb, (barFrac - 0.66) / 0.34);
+        if (barFrac < 0.5) c = lerp(PaletteColorB.rgb, PaletteColorC.rgb, barFrac * 2.0);
+        else c = lerp(PaletteColorC.rgb, PaletteColorD.rgb, (barFrac - 0.5) * 2.0);
         if (highlightTip)
             c = lerp(c, PaletteColorD.rgb, smoothstep(0.85, 1.0, relY) * 0.45);
         return c;
@@ -46,7 +44,7 @@ float3 GetBarColor(float relY, float barFrac, float time)
         int hueMotion = (int)StyleExtra.x; // 0 = Sideways, 1 = Spin
         int hueSource = (int)StyleExtra.w; // 0 = Palette, 1 = Rainbow
         float speed = ColorParams.y * 0.15;
-        float offset = (hueMotion == 1) ? (barFrac * 0.6 + relY * 0.35) : barFrac;
+        float offset = (hueMotion == 1) ? (barFrac * 0.5 + screenY * 0.25) : barFrac;
         float phase = frac(time * speed + offset);
 
         float3 c;
@@ -160,7 +158,10 @@ float4 PSBars(FSOut i) : SV_Target
     float3 bg = PaletteBg.rgb * lerp(0.85, 0.45, uv.y);
     float dCenter = length(uv - float2(0.5, 0.5));
     bg *= saturate(1.0 - dCenter * ColorParams.w);
-    bg += PaletteColorB.rgb * (0.015 * AudioMetricsA.x * (1.0 - uv.y));
+    if (dot(PaletteBg.rgb, PaletteBg.rgb) > 0.0001)
+    {
+        bg += PaletteColorB.rgb * (0.015 * AudioMetricsA.x * (1.0 - uv.y));
+    }
     float3 col = bg;
 
     // Floor reflection support
@@ -192,7 +193,7 @@ float4 PSBars(FSOut i) : SV_Target
     float covX = saturate(0.5 - dX);
 
     // 1. Contact Light Pool on the ground
-    if (PeakParams.w > 0.5 && !isFloorMirror)
+    if (PeakParams.w > 0.5 && !isFloorMirror && !mirrorV)
     {
         if (yPx < 10.0)
         {
@@ -211,7 +212,7 @@ float4 PSBars(FSOut i) : SV_Target
     // Style 0: Smooth Pills (Top-rounded, flat grounded bottom)
     if (style == 0)
     {
-        float radiusPx = halfBarPx * roundness;
+        float radiusPx = min(halfBarPx * roundness, hPx * 0.5);
         float dY = yPx - (hPx - radiusPx);
         float dCorner = (dY > 0.0 && radiusPx > 0.5)
             ? (length(float2(max(0.0, pxX - (halfBarPx - radiusPx)), dY)) - radiusPx)
@@ -221,7 +222,7 @@ float4 PSBars(FSOut i) : SV_Target
         if (cov > 0.0)
         {
             float relY = yPx / max(1.0, hPx);
-            float3 barCol = GetBarColor(relY, barFrac, VisualParams.x);
+            float3 barCol = GetBarColor(relY, barFrac, VisualParams.x, uv.y);
 
             float rim = 1.0 - saturate(pxX / halfBarPx);
             barCol *= (0.80 + 0.35 * rim);
@@ -253,7 +254,7 @@ float4 PSBars(FSOut i) : SV_Target
         if (!inGap && covX > 0.0)
         {
             float relY = min(1.0, (segIdx * segPeriod) / max(1.0, totalHPx * 0.9));
-            float3 ledCol = GetBarColor(relY, barFrac, VisualParams.x);
+            float3 ledCol = GetBarColor(relY, barFrac, VisualParams.x, uv.y);
 
             float uBevel = segY / segH;
             float bevel = sin(uBevel * 3.14159) * 0.35 + 0.75;
@@ -286,7 +287,7 @@ float4 PSBars(FSOut i) : SV_Target
         if (cov > 0.0)
         {
             float relY = yPx / max(1.0, hPx);
-            float3 barCol = GetBarColor(relY, barFrac, VisualParams.x);
+            float3 barCol = GetBarColor(relY, barFrac, VisualParams.x, uv.y);
 
             if (StyleExtra.z > 0.5 && abs(yPx - hPx) < 1.5)
                 barCol += PaletteColorD.rgb * 0.6;
@@ -314,7 +315,7 @@ float4 PSBars(FSOut i) : SV_Target
         {
             float3 capCol = PaletteColorD.rgb * 1.35;
             int capMode = (int)PeakParams.y;
-            if (capMode == 1) capCol = GetBarColor(1.0, barFrac, VisualParams.x) * 1.25;
+            if (capMode == 1) capCol = GetBarColor(1.0, barFrac, VisualParams.x, uv.y) * 1.25;
             else if (capMode == 2) capCol = PeakColor.rgb * 1.25;
             col = lerp(col, capCol, covPeak);
         }

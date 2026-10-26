@@ -80,9 +80,13 @@ float4 PSBloomBlur(FSOut i) : SV_Target
 float4 PSComposite(FSOut i) : SV_Target
 {
     float3 scene = g_Scene.Sample(g_Linear, i.UV).rgb;
-    float3 bloom = g_Bloom.Sample(g_Linear, i.UV).rgb;
     float bloomWeight = max(0.0, VisualParams.z);
-    float3 col = scene + bloom * bloomWeight;
+    float3 col = scene;
+    if (bloomWeight > 0.001)
+    {
+        float3 bloom = g_Bloom.Sample(g_Linear, i.UV).rgb;
+        col += bloom * bloomWeight;
+    }
 
     // ACES Tone Mapping
     float a = 2.51f;

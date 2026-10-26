@@ -31,6 +31,7 @@ namespace MusicBeePlugin
         private readonly float[] _peakHoldTimerR = new float[MaxBands];
         private readonly float[] _peakVelocityR = new float[MaxBands];
         private readonly float[] _prevTargetR = new float[MaxBands];
+        private readonly float[] _rawTargets = new float[MaxBands];
 
         private int _lastBarCount = -1;
 
@@ -99,14 +100,22 @@ namespace MusicBeePlugin
                 if (hi < lo) hi = lo;
                 if (hi >= MaxBands) hi = MaxBands - 1;
 
-                float target = 0f;
+                float maxVal = 0f;
                 for (int k = lo; k <= hi; k++)
                 {
-                    if (inputBands[k] > target)
-                        target = inputBands[k];
+                    if (inputBands[k] > maxVal)
+                        maxVal = inputBands[k];
                 }
 
-                target = Math.Max(0f, Math.Min(1.0f, target * settings.Sensitivity));
+                _rawTargets[b] = Math.Max(0f, Math.Min(1.0f, maxVal * settings.Sensitivity));
+            }
+
+            for (int b = 0; b < barCount; b++)
+            {
+                float left = (b > 0) ? _rawTargets[b - 1] : _rawTargets[b];
+                float center = _rawTargets[b];
+                float right = (b < barCount - 1) ? _rawTargets[b + 1] : _rawTargets[b];
+                float target = left * 0.18f + center * 0.64f + right * 0.18f;
 
                 if (target >= height[b])
                     height[b] += (target - height[b]) * alphaAttack;
