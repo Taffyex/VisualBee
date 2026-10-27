@@ -4,19 +4,27 @@ VisualBee is an ultra high-performance, hardware-accelerated **Direct3D 11 spect
 
 ---
 
-## Visual Showcase
+## Visual Showcase — Style Gallery
 
-| VFD / Nixie Rungs (Authentic Vacuum Tube) | Solid Neo-Bars (Classic Studio) |
+| VFD Glass Pillars (Vacuum Enclosure) | Synthwave CyberGrid (Mirrored 3D Perspective) |
 | :---: | :---: |
-| ![VFD Nixie Rungs](screenshots/vfd_nixie_rungs.png) | ![Classic Blocky Solid](screenshots/classic_blocky_solid.png) |
+| ![VFD Glass Pillars](screenshots/style_vfd_glass_pillars.png) | ![Synthwave CyberGrid](screenshots/style_cybergrid_synthwave.png) |
 
-| Studio VFD Glass Pillars | Phase-Locked Analog CRT Oscilloscope |
+| Green Matrix LED Ladder Rungs | Amber Studio Segments & Horizon Reflection |
 | :---: | :---: |
-| ![Studio Glass Pillars](screenshots/vfd_studio_glass.png) | ![Analog Oscilloscope](screenshots/visualbee_scope.png) |
+| ![Green Matrix](screenshots/style_green_matrix.png) | ![Amber Segments](screenshots/style_amber_segments.png) |
 
-| Cyberpunk Neon Spectrum | Cyber Grid Horizon & Decibel Grid |
+| Decibel Graticule Studio Solid Bars | Phase-Locked Analog CRT Oscilloscope |
 | :---: | :---: |
-| ![Cyberpunk Neon](screenshots/cyberpunk_neon.png) | ![Cyber Grid Horizon](screenshots/cyber_grid_horizon.png) |
+| ![Studio dB Bars](screenshots/style_studio_db_bars.png) | ![Analog Oscilloscope](screenshots/visualbee_scope.png) |
+
+---
+
+## Real-Time Dark Settings Studio
+
+Configure bar styles, bloom intensity, color palettes, FFT windowing, and audio physics in real time without pausing playback:
+
+![VisualBee Studio Settings](screenshots/settings_studio_dark.png)
 
 ---
 
