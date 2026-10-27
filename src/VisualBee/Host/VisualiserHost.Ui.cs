@@ -15,16 +15,25 @@ internal sealed partial class VisualiserHost
 			CloseFullScreen();
 			return;
 		}
-		Screen screen = Screen.FromControl(from);
+		Screen screen = (from != null) ? Screen.FromControl(from) : Screen.PrimaryScreen;
 		Form form = new Form
 		{
 			FormBorderStyle = FormBorderStyle.None,
 			StartPosition = FormStartPosition.Manual,
 			Bounds = screen.Bounds,
-			ShowInTaskbar = false,
+			ShowInTaskbar = true,
 			TopMost = true,
+			KeyPreview = true,
 			BackColor = Color.FromArgb(Store.Current.Colours[0] | -16777216),
 			Text = Store.Title
+		};
+		form.KeyDown += (object s, KeyEventArgs a) =>
+		{
+			if (a.KeyCode == Keys.Escape || a.KeyCode == Keys.F11)
+			{
+				CloseFullScreen();
+				a.Handled = true;
+			}
 		};
 		GpuView view = _makeView(this, arg2: true);
 		view.Dock = DockStyle.Fill;
@@ -40,9 +49,11 @@ internal sealed partial class VisualiserHost
 		};
 		_fullScreenForm = form;
 		_fullScreenView = view;
-		form.Show(from.FindForm());
+		IWin32Window owner = from?.FindForm();
+		if (owner != null) form.Show(owner); else form.Show();
 		view.Start();
 		view.Focus();
+		view.ShowNotification("Press Esc, F11 or double-click to exit", 3.0);
 	}
 
 	public void OpenSettings(Control near)

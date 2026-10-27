@@ -190,21 +190,32 @@ internal abstract partial class GpuView
 		}
 	}
 
+	internal void ShowNotification(string text, double seconds = 3.0)
+	{
+		lock (_sync)
+		{
+			_hud = text;
+			_hudUntil = _clock.Elapsed.TotalSeconds + seconds;
+		}
+		_dirty = true;
+	}
+
 	protected override bool IsInputKey(Keys keyData)
 	{
-		if (keyData != Keys.Escape)
+		if (keyData == Keys.Escape || keyData == Keys.F11)
 		{
-			return base.IsInputKey(keyData);
+			return true;
 		}
-		return true;
+		return base.IsInputKey(keyData);
 	}
 
 	protected override void OnKeyDown(KeyEventArgs e)
 	{
 		base.OnKeyDown(e);
-		if (FullScreen && e.KeyCode == Keys.Escape)
+		if (FullScreen && (e.KeyCode == Keys.Escape || e.KeyCode == Keys.F11))
 		{
 			Host.ToggleFullScreen(this);
+			e.Handled = true;
 		}
 	}
 
