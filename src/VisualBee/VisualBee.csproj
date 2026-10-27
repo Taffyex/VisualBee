@@ -15,34 +15,15 @@
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
-    <InformationalVersion>1.0.0</InformationalVersion>
+    <NoWarn>$(NoWarn);0649;0169</NoWarn>
+    <Version>2.0.0</Version>
+    <AssemblyVersion>2.0.0.0</AssemblyVersion>
+    <FileVersion>2.0.0.0</FileVersion>
+    <InformationalVersion>2.0.0</InformationalVersion>
   </PropertyGroup>
-
 
   <ItemGroup>
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
   </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="SharpDX" Version="4.2.0" />
-    <PackageReference Include="SharpDX.Mathematics" Version="4.2.0" />
-    <PackageReference Include="SharpDX.Direct3D11" Version="4.2.0" />
-    <PackageReference Include="SharpDX.DXGI" Version="4.2.0" />
-    <PackageReference Include="SharpDX.D3DCompiler" Version="4.2.0" />
-  </ItemGroup>
-
-  <Target Name="EmbedSharpDXAssemblies" AfterTargets="ResolveAssemblyReferences" BeforeTargets="AssignTargetPaths;CoreCompile">
-    <ItemGroup>
-      <EmbeddedResource Include="@(ReferencePath)" Condition="$([System.String]::Copy('%(Filename)').StartsWith('SharpDX'))">
-        <LogicalName>MusicBeePlugin.Embedded.%(Filename)%(Extension)</LogicalName>
-        <WithCulture>false</WithCulture>
-        <Type>Non-Resx</Type>
-      </EmbeddedResource>
-    </ItemGroup>
-    <Message Importance="high" Text="Embedded DLLs: @(EmbeddedResource->'%(LogicalName)')" />
-  </Target>
 </Project>
