@@ -1,94 +1,113 @@
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
+
+[assembly: InternalsVisibleTo("CaptureVisualBee")]
+
+[assembly: InternalsVisibleTo("VisualBeePreview")]
 
 namespace MusicBeePlugin
 {
     public partial class Plugin
     {
-        internal static Plugin Instance;
-        internal static MusicBeeApiInterface Api;
-        internal static VisualBeeSettings Settings;
-        internal static AudioEngine Audio;
-        private VisualBeeControl _control;
+        internal MusicBeeApiInterface _api;
+        private readonly PluginInfo _about = new PluginInfo();
+        internal VisualiserHost _host;
+        private float[] _frames = new float[0];
 
-        static Plugin()
-        {
-            EmbeddedResolver.EnsureRegistered();
-        }
+        public const short PluginInfoVersion = 1;
+        public const short MinInterfaceVersion = 41;
+        public const short MinApiRevision = 53;
 
         public PluginInfo Initialise(IntPtr apiInterfacePtr)
         {
-            EmbeddedResolver.EnsureRegistered();
-            Api = default(MusicBeeApiInterface);
-            Api.Initialise(apiInterfacePtr);
-            Instance = this;
+            _api.Initialise(apiInterfacePtr);
+            LookStore store = SpectrumSettings.Create();
+            _host = new VisualiserHost(store, (VisualiserHost host, bool fullScreen) => new SpectrumView(this, host, fullScreen));
+            _host.SetApi(_api);
+            _host.LoadSettings("mb_VisualBee.ini", (string file) =>
+            {
+                SpectrumSettings.Migrate(store, file);
+                return true;
+            });
 
-            Settings = VisualBeeSettings.Load(Api);
-            PresetManager.Initialize(Api);
-            Audio = new AudioEngine(Api, Settings);
-            try { Audio.Probe(); } catch { }
+            _about.PluginInfoVersion = 1;
+            _about.Name = "VisualBee";
+            _about.Description = "Ultra high-performance hardware-accelerated Direct3D 11 spectrum analyzer and phase-locked oscilloscope with bloom, trails, and custom themes.";
+            _about.Author = "VisualBee";
+            _about.TargetApplication = "VisualBee";
+            _about.Type = PluginType.PanelView;
+            _about.VersionMajor = 2;
+            _about.VersionMinor = 0;
+            _about.Revision = 0;
+            _about.MinInterfaceVersion = 41;
+            _about.MinApiRevision = 53;
+            _about.ReceiveNotifications = ReceiveNotificationFlags.PlayerEvents;
+            _about.ConfigurationPanelHeight = PanelLayout.S(150);
 
             RegisterCommands();
 
-            return new PluginInfo
-            {
-                PluginInfoVersion = MusicBeeApiInfo.PluginInfoVersion,
-                Type = PluginType.General,
-                Name = "VisualBee Visualizer",
-                Description = "Hardware-accelerated Direct3D 11 audio visualizer with high-refresh flip presentation, Gaussian FFT, and customizable bar dynamics.",
-                Author = "VisualBee Team",
-                TargetApplication = "VisualBee",
-                VersionMajor = 1,
-                VersionMinor = 0,
-                Revision = 0,
-                MinInterfaceVersion = MusicBeeApiInfo.MinInterfaceVersion,
-                MinApiRevision = MusicBeeApiInfo.MinApiRevision,
-                ReceiveNotifications = ReceiveNotificationFlags.PlayerEvents | ReceiveNotificationFlags.TagEvents,
-                ConfigurationPanelHeight = 0
-            };
+            return _about;
+        }
+
+        public bool Configure(IntPtr panelHandle)
+        {
+            return _host != null && _host.Configure(panelHandle);
+        }
+
+        public void SaveSettings()
+        {
+            _host?.Store?.Save();
         }
 
         public void Close(PluginCloseReason reason)
         {
-            Teardown();
-            Instance = null;
+            _host?.Remove();
+            _host?.Store?.Save();
         }
 
         public void Uninstall()
         {
-            Teardown();
-            Instance = null;
+            _host?.Remove();
         }
 
         public void ReceiveNotification(string sourceFileUrl, NotificationType type)
         {
-            try
+            if (type == NotificationType.TrackChanged)
             {
-                if ((int)type == 14) // SkinChanged
-                {
-                    _control?.RefreshPalette();
-                }
-                else if (type == NotificationType.TrackChanged)
-                {
-                    Audio?.NotifyTrackChanged();
-                    _control?.NotifyTrackChanged();
-                }
-                else if (type == NotificationType.PlayStateChanged)
-                {
-                    Audio?.NotifyPlayStateChanged();
-                    _control?.NotifyPlayStateChanged();
-                }
+                _host?.TrackChanged();
             }
-            catch { }
+            else if (type == NotificationType.PlayStateChanged)
+            {
+                _host?.PlayStateChanged();
+            }
         }
 
-        private void Teardown()
+        public int OnDockablePanelCreated(Control panel)
         {
-            VisualBeeSettingsForm.CloseIfOpen();
-            DisposePanel();
-            try { Audio?.Dispose(); } catch { }
-            Audio = null;
-            try { Settings?.Save(); } catch { }
+            if (panel == null)
+            {
+                return 112;
+            }
+            if (_host == null)
+            {
+                return -1;
+            }
+            if (panel.InvokeRequired)
+            {
+                panel.Invoke(new Action<Control>(_host.Attach), panel);
+            }
+            else
+            {
+                _host.Attach(panel);
+            }
+            return -1;
+        }
+
+        internal string StatusText()
+        {
+            return _host?.StatusText() ?? "";
         }
     }
 }
