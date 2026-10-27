@@ -3,104 +3,132 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Reflection.Emit;
 
-namespace MusicBeePlugin
+namespace MusicBeePlugin;
+
+internal static class IlScan
 {
-    internal static class IlScan
-    {
-        internal struct Instr
-        {
-            public OpCode Op;
-            public int Operand;
-            public int Offset;
-        }
+	internal struct Instr
+	{
+		public OpCode Op;
 
-        private static readonly Dictionary<short, OpCode> Ops = BuildOps();
+		public int Operand;
 
-        private static Dictionary<short, OpCode> BuildOps()
-        {
-            var map = new Dictionary<short, OpCode>();
-            foreach (FieldInfo f in typeof(OpCodes).GetFields(BindingFlags.Static | BindingFlags.Public))
-            {
-                if (f.GetValue(null) is OpCode op) map[op.Value] = op;
-            }
-            return map;
-        }
+		public int Offset;
+	}
 
-        public static List<Instr> Decode(MethodBase method)
-        {
-            MethodBody body;
-            try { body = method.GetMethodBody(); }
-            catch { return null; }
-            if (body == null) return null;
+	private static readonly Dictionary<short, OpCode> Ops = BuildOps();
 
-            byte[] il = body.GetILAsByteArray();
-            if (il == null) return null;
+	private static Dictionary<short, OpCode> BuildOps()
+	{
+		Dictionary<short, OpCode> dictionary = new Dictionary<short, OpCode>();
+		FieldInfo[] fields = typeof(OpCodes).GetFields(BindingFlags.Static | BindingFlags.Public);
+		for (int i = 0; i < fields.Length; i++)
+		{
+			if (fields[i].GetValue(null) is OpCode value)
+			{
+				dictionary[value.Value] = value;
+			}
+		}
+		return dictionary;
+	}
 
-            var list = new List<Instr>();
-            int i = 0;
-            while (i < il.Length)
-            {
-                int offset = i;
-                short code = il[i++];
-                if (code == 0xFE && i < il.Length)
-                    code = (short)(0xFE00 | il[i++]);
+	public static List<Instr> Decode(MethodBase m)
+	{
+		MethodBody methodBody;
+		try
+		{
+			methodBody = m.GetMethodBody();
+		}
+		catch (Exception)
+		{
+			return null;
+		}
+		if (methodBody == null)
+		{
+			return null;
+		}
+		byte[] iLAsByteArray = methodBody.GetILAsByteArray();
+		if (iLAsByteArray == null)
+		{
+			return null;
+		}
+		List<Instr> list = new List<Instr>();
+		int num = 0;
+		while (num < iLAsByteArray.Length)
+		{
+			int offset = num;
+			short num2 = iLAsByteArray[num++];
+			if (num2 == 254 && num < iLAsByteArray.Length)
+			{
+				num2 = (short)(0xFE00 | iLAsByteArray[num++]);
+			}
+			if (!Ops.TryGetValue(num2, out var value))
+			{
+				return list;
+			}
+			int operand = 0;
+			switch (value.OperandType)
+			{
+			case OperandType.ShortInlineBrTarget:
+			case OperandType.ShortInlineI:
+			case OperandType.ShortInlineVar:
+				num++;
+				break;
+			case OperandType.InlineVar:
+				num += 2;
+				break;
+			case OperandType.InlineI8:
+			case OperandType.InlineR:
+				num += 8;
+				break;
+			case OperandType.InlineSwitch:
+			{
+				int num3 = BitConverter.ToInt32(iLAsByteArray, num);
+				num += 4 + 4 * num3;
+				break;
+			}
+			default:
+				operand = BitConverter.ToInt32(iLAsByteArray, num);
+				num += 4;
+				break;
+			case OperandType.InlineNone:
+				break;
+			}
+			list.Add(new Instr
+			{
+				Op = value,
+				Operand = operand,
+				Offset = offset
+			});
+		}
+		return list;
+	}
 
-                OpCode op;
-                if (!Ops.TryGetValue(code, out op)) return list;
+	public static MethodBase ResolveMethod(MethodBase context, int token)
+	{
+		try
+		{
+			Type[] genericTypeArguments = ((context.DeclaringType != null && context.DeclaringType.IsGenericType) ? context.DeclaringType.GetGenericArguments() : null);
+			Type[] genericMethodArguments = (context.IsGenericMethod ? context.GetGenericArguments() : null);
+			return context.Module.ResolveMethod(token, genericTypeArguments, genericMethodArguments);
+		}
+		catch (Exception)
+		{
+			return null;
+		}
+	}
 
-                int operand = 0;
-                switch (op.OperandType)
-                {
-                    case OperandType.ShortInlineBrTarget:
-                    case OperandType.ShortInlineI:
-                    case OperandType.ShortInlineVar:
-                        i++;
-                        break;
-                    case OperandType.InlineVar:
-                        i += 2;
-                        break;
-                    case OperandType.InlineI8:
-                    case OperandType.InlineR:
-                        i += 8;
-                        break;
-                    case OperandType.InlineSwitch:
-                        int n = BitConverter.ToInt32(il, i);
-                        i += 4 + 4 * n;
-                        break;
-                    case OperandType.InlineNone:
-                        break;
-                    default:
-                        operand = BitConverter.ToInt32(il, i);
-                        i += 4;
-                        break;
-                }
-                list.Add(new Instr { Op = op, Operand = operand, Offset = offset });
-            }
-            return list;
-        }
-
-        public static MethodBase ResolveMethod(MethodBase context, int token)
-        {
-            try
-            {
-                Type[] typeArgs = context.DeclaringType != null && context.DeclaringType.IsGenericType
-                    ? context.DeclaringType.GetGenericArguments() : null;
-                Type[] methodArgs = context.IsGenericMethod ? context.GetGenericArguments() : null;
-                return context.Module.ResolveMethod(token, typeArgs, methodArgs);
-            }
-            catch { return null; }
-        }
-
-        public static FieldInfo ResolveField(MethodBase context, int token)
-        {
-            try
-            {
-                Type[] typeArgs = context.DeclaringType != null && context.DeclaringType.IsGenericType
-                    ? context.DeclaringType.GetGenericArguments() : null;
-                Type[] methodArgs = context.IsGenericMethod ? context.GetGenericArguments() : null;
-                return context.Module.ResolveField(token, typeArgs, methodArgs);
-            }
-            catch { return null; }
-        }
-    }
+	public static FieldInfo ResolveField(MethodBase context, int token)
+	{
+		try
+		{
+			Type[] genericTypeArguments = ((context.DeclaringType != null && context.DeclaringType.IsGenericType) ? context.DeclaringType.GetGenericArguments() : null);
+			Type[] genericMethodArguments = (context.IsGenericMethod ? context.GetGenericArguments() : null);
+			return context.Module.ResolveField(token, genericTypeArguments, genericMethodArguments);
+		}
+		catch (Exception)
+		{
+			return null;
+		}
+	}
 }
