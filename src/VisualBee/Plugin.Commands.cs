@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace MusicBeePlugin
 {
@@ -6,89 +7,58 @@ namespace MusicBeePlugin
     {
         private void RegisterCommands()
         {
-            if (Api.MB_RegisterCommand == null) return;
-
-            Api.MB_RegisterCommand("VisualBee: Next Visualizer Mode", delegate { CycleMode(); });
-            Api.MB_RegisterCommand("VisualBee: Next Color Palette", delegate { CyclePalette(); });
-            Api.MB_RegisterCommand("VisualBee: Cycle Bar Mirror", delegate { CycleMirror(); });
-            Api.MB_RegisterCommand("VisualBee: Cycle Frame Cap", delegate { CycleFrameCap(); });
-            Api.MB_RegisterCommand("VisualBee: Popout Window", delegate { TogglePopout(); });
-            Api.MB_RegisterCommand("VisualBee: Settings", delegate { ShowSettings(); });
-            Api.MB_RegisterCommand("VisualBee: Toggle Diagnostics", delegate { ToggleDiagnostics(); });
-        }
-
-        private void CycleMode()
-        {
-            if (Settings == null) return;
-            int next = ((int)Settings.Mode + 1) % 2;
-            Settings.Mode = (VisualizerMode)next;
-            Settings.NotifyChanged();
-            Settings.RequestSave();
-        }
-
-        private void CyclePalette()
-        {
-            if (Settings == null) return;
-            var presets = PresetManager.GetAllPresets(Api);
-            if (presets.Count == 0) return;
-            int cur = 0;
-            for (int i = 0; i < presets.Count; i++)
+            if (_api.MB_RegisterCommand == null)
             {
-                if (presets[i].Key.Equals(Settings.Palette, StringComparison.OrdinalIgnoreCase))
-                {
-                    cur = i;
-                    break;
-                }
+                return;
             }
-            Settings.Palette = presets[(cur + 1) % presets.Count].Key;
-            Settings.NotifyChanged();
-            Settings.RequestSave();
+
+            _api.MB_RegisterCommand("VisualBee: Next Layout", (s, e) => CycleLayout(1));
+            _api.MB_RegisterCommand("VisualBee: Previous Layout", (s, e) => CycleLayout(-1));
+            _api.MB_RegisterCommand("VisualBee: Next Preset", (s, e) => CyclePreset(1));
+            _api.MB_RegisterCommand("VisualBee: Previous Preset", (s, e) => CyclePreset(-1));
+            _api.MB_RegisterCommand("VisualBee: Toggle Full Screen", (s, e) => _host?.ToggleFullScreen(null));
+            _api.MB_RegisterCommand("VisualBee: Settings", (s, e) => _host?.OpenSettings(null));
         }
 
-        private void CycleMirror()
+        private void CycleLayout(int delta)
         {
-            if (Settings == null) return;
-            int cur = (int)Settings.Mirror;
-            int next = (cur + 1) % 4;
-            Settings.Mirror = (BarMirror)next;
-            Settings.NotifyChanged();
-            Settings.RequestSave();
-        }
-
-        private void CycleFrameCap()
-        {
-            if (Settings == null) return;
-            int[] caps = { 0, 60, 120, 144, 240, 360, -1 };
-            int cur = 0;
-            for (int i = 0; i < caps.Length; i++)
+            if (_host?.Store == null)
             {
-                if (caps[i] == Settings.FrameCap)
-                {
-                    cur = i;
-                    break;
-                }
+                return;
             }
-            Settings.FrameCap = caps[(cur + 1) % caps.Length];
-            Settings.NotifyChanged();
-            Settings.RequestSave();
+            LookStore store = _host.Store;
+            SpectrumLook look = store.Current as SpectrumLook;
+            if (look == null)
+            {
+                return;
+            }
+            int total = SpectrumLook.LayoutNames.Length;
+            int next = (look.Layout + delta) % total;
+            if (next < 0) next += total;
+            Setting s = store.Schema.Find("layout");
+            if (s != null)
+            {
+                store.Set(s, next);
+            }
         }
 
-        private void TogglePopout()
+        private void CyclePreset(int delta)
         {
-            _control?.TogglePopout();
-        }
-
-        private void ShowSettings()
-        {
-            VisualBeeSettingsForm.ShowOrFocus(Api, Settings, _control);
-        }
-
-        private void ToggleDiagnostics()
-        {
-            if (Settings == null) return;
-            Settings.ShowDiagnostics = !Settings.ShowDiagnostics;
-            Settings.NotifyChanged();
-            Settings.RequestSave();
+            if (_host?.Store == null)
+            {
+                return;
+            }
+            LookStore store = _host.Store;
+            List<Preset> presets = new List<Preset>(store.BuiltIn);
+            presets.AddRange(store.UserPresets());
+            if (presets.Count == 0)
+            {
+                return;
+            }
+            int curIdx = presets.FindIndex(p => p.Name == store.PresetName);
+            int nextIdx = (curIdx + delta) % presets.Count;
+            if (nextIdx < 0) nextIdx += presets.Count;
+            store.Apply(presets[nextIdx]);
         }
     }
 }
