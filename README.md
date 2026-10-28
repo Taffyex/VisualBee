@@ -4,32 +4,50 @@ VisualBee is an ultra high-performance, hardware-accelerated **Direct3D 11 spect
 
 ---
 
+## Installation
+
+### 🚀 Quick Install (Recommended)
+1. Download **[`VisualBee_v2.1.0.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.0/VisualBee_v2.1.0.zip)** (or raw **[`mb_VisualBee.dll`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.0/mb_VisualBee.dll)**) from the [latest release](https://github.com/Taffyex/VisualBee/releases/tag/v2.1.0).
+2. In MusicBee, press `Ctrl + O` (or go to **Edit** > **Preferences**).
+3. Select **Plugins** in the sidebar, click **Add Plugin**, and choose the downloaded file (`VisualBee_v2.1.0.zip` or `mb_VisualBee.dll`).
+4. Click **Apply** and restart MusicBee.
+
+### 📁 Manual Drop-in
+1. Close MusicBee.
+2. Copy `mb_VisualBee.dll` into your MusicBee plugins directory:
+   - **Installer edition:** `C:\Program Files (x86)\MusicBee\Plugins\`
+   - **Portable edition:** `<MusicBee Folder>\Plugins\`
+   - **Windows Store:** `%APPDATA%\MusicBee\Plugins\`
+3. Launch MusicBee.
+
+---
+
 ## Visual Showcase — Style Gallery
 
-| Pure Borosilicate VFD Glass | Authentic Nixie Tube Filament Rungs |
+| VFD Glass Pillars (Vacuum Enclosure) | Synthwave CyberGrid (Mirrored 3D Perspective) |
 | :---: | :---: |
-| ![Borosilicate VFD](screenshots/borosilicate_vfd.png) | ![Nixie Amber Tube](screenshots/nixie_amber_tube.png) |
+| ![VFD Glass Pillars](screenshots/style_vfd_glass_pillars.png) | ![Synthwave CyberGrid](screenshots/style_cybergrid_synthwave.png) |
 
-| Tektronix P31 CRT Oscilloscope | Dieter Rams Studio LED Reference |
+| Green Matrix LED Ladder Rungs | Amber Studio Segments & Horizon Reflection |
 | :---: | :---: |
-| ![Tektronix Scope](screenshots/tektronix_p31_scope.png) | ![Dieter Studio](screenshots/dieter_studio_led.png) |
+| ![Green Matrix](screenshots/style_green_matrix.png) | ![Amber Segments](screenshots/style_amber_segments.png) |
 
-| Quartz Prism 3D (Snell Dispersion) | Synthwave CyberGrid (Mirrored 3D Horizon) |
+| Decibel Graticule Studio Solid Bars | Phase-Locked Analog CRT Oscilloscope |
 | :---: | :---: |
-| ![Quartz Prism](screenshots/quartz_prism.png) | ![Synthwave CyberGrid](screenshots/style_cybergrid_synthwave.png) |
+| ![Studio dB Bars](screenshots/style_studio_db_bars.png) | ![Analog Oscilloscope](screenshots/visualbee_scope.png) |
 
 ---
 
 ## Real-Time VisualBee Studio Rack
 
-Configure presets, bar optics, bloom intensity, color palettes, and audio acoustics in real time with our brand-new modular Studio Rack interface:
+Configure presets, bar optics, bloom intensity, color palettes, and audio acoustics in real time with the new modular Studio Rack interface:
 
 ![VisualBee Studio Settings](screenshots/settings_studio_dark.png)
 
 - **Top Studio Deck Navigation**: 5 horizontal tabs (`Presets`, `Studio`, `Optics & FX`, `Colours`, `Audio`).
 - **Persistent Quick-Switch Ribbon**: Instant 1-click preset switching, active palette chips, and live FPS / sample-rate telemetry.
-- **Hardware Rack Architecture**: Responsive gunmetal cards with warm amber indicator lights and per-section resets.
-- **Dual Tooltip Guidance**: Detailed explanations on hover for all bar physics, FFT windowing, and optical post-processing controls.
+- **Hardware Rack Architecture**: Responsive 2-column cards with warm amber indicator lights and per-section resets.
+- **Dual Tooltip Guidance**: Plain-English hover cards explaining exact acoustic physics and shader parameters.
 
 ---
 
@@ -64,30 +82,12 @@ Configure presets, bar optics, bloom intensity, color palettes, and audio acoust
 
 ---
 
-## Installation
-
-### Quick Install (Recommended)
-1. Download **`VisualBee_v2.1.0.zip`** (or raw `mb_VisualBee.dll`) from the [latest release](https://github.com/Taffyex/VisualBee/releases).
-2. In MusicBee, press `Ctrl + O` (or go to **Edit** > **Preferences**).
-3. Select **Plugins** in the sidebar, click **Add Plugin**, and select `VisualBee_v2.1.0.zip` (or `mb_VisualBee.dll`).
-4. Click **Apply** and restart MusicBee.
-
-### Manual Drop-in
-1. Close MusicBee.
-2. Copy `mb_VisualBee.dll` into your MusicBee plugins directory:
-   - **Installer edition:** `C:\Program Files (x86)\MusicBee\Plugins\`
-   - **Portable edition:** `<MusicBee Folder>\Plugins\`
-   - **Windows Store:** `%APPDATA%\MusicBee\Plugins\`
-3. Launch MusicBee.
-
----
-
 ## Usage & Controls
 
 - **Layout Placement**: Go to **View** > **Arrange Panels...**, then drag **VisualBee Visualizer** to your preferred dock slot (main panel, bottom panel, or sidebars).
 - **Popout Window**: Right-click the visualizer and choose **Popout Window** for dedicated multi-monitor viewing.
 - **Full Screen**: Double-click or press `F11` to toggle full-screen visualizer mode. Press `Escape` or `F11` to exit.
-- **Settings Studio**: Right-click the visualizer and select **Open VisualBee Studio...** to open the real-time studio rack.
+- **Settings Studio**: Right-click the visualizer and select **Open VisualBee Studio...** (or `Ctrl + Shift + V`) to open the real-time studio rack.
 - **Quick Keyboard Shortcuts**:
   - `Ctrl + Shift + L`: Next visual layout
   - `Ctrl + Shift + P`: Next preset
