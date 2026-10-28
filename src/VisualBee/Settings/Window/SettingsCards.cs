@@ -53,7 +53,6 @@ internal sealed partial class SettingsWindow : Form
 			int num4 = 0;
 			foreach (Control control in Controls)
 			{
-				if (!control.Visible) continue;
 				if (control is PresetCard)
 				{
 					int num5 = Math.Max(1, (width + num) / (Ui.S(230) + num));

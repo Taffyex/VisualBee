@@ -159,6 +159,12 @@ internal sealed partial class SettingsWindow : Form
 		Palette.DarkTitle(this, Palette.From(Ui.Back, Ui.Text, Ui.Back, Ui.Text));
 	}
 
+	protected override void OnShown(EventArgs e)
+	{
+		base.OnShown(e);
+		LayoutContent();
+	}
+
 	protected override void OnFormClosed(FormClosedEventArgs e)
 	{
 		_store.Changed -= StoreChanged;
