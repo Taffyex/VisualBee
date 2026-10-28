@@ -16,6 +16,8 @@ internal sealed class SpectrumLook : Look
 
 	public const int Slots = 16;
 
+	public const int EngineGaussian = 0;
+
 	public const int EngineFoobar = 0;
 
 	public const int EngineModern = 1;
@@ -142,7 +144,7 @@ internal sealed class SpectrumLook : Look
 
 	public int BarStyle = StyleGlass;
 
-	public int GlassFill = 1;
+	public int GlassFill = 0;
 
 	public int GlassTubeMode = 0;
 
@@ -264,9 +266,9 @@ internal sealed class SpectrumLook : Look
 
 	public static readonly string[] AudioSourceTokens = new string[3] { "auto", "api", "bass" };
 
-	public static readonly string[] EngineNames = new string[2] { "foobar2000 (classic)", "Modern" };
+	public static readonly string[] EngineNames = new string[2] { "Gaussian (Smooth)", "Modern FFT" };
 
-	public static readonly string[] EngineTokens = new string[2] { "foobar", "modern" };
+	public static readonly string[] EngineTokens = new string[2] { "gaussian", "modern" };
 
 	public static readonly string[] LayoutNames = new string[9] { "Bars", "Centred", "Mirrored (lows in the middle)", "Mirrored (lows at the sides)", "Stereo (left up, right down)", "Stereo (left and right halves)", "Radial", "Wave", "Oscilloscope (Waveform)" };
 
@@ -276,9 +278,9 @@ internal sealed class SpectrumLook : Look
 
 	public static readonly string[] StyleTokens = new string[6] { "glass", "pills", "led", "solid", "nixie", "hidden" };
 
-	public static readonly string[] GlassFillNames = new string[4] { "Pure Crystal Glass (See-through)", "Mixed Plasma & VFD Rungs", "Segmented VFD Rungs", "Solid Plasma Core" };
+	public static readonly string[] GlassFillNames = new string[4] { "Pure Crystal Glass", "Liquid Plasma Column", "Twin Filament Anodes", "Hybrid Glass & VFD Rungs" };
 
-	public static readonly string[] GlassFillTokens = new string[4] { "crystal", "mixed", "rungs", "solid" };
+	public static readonly string[] GlassFillTokens = new string[4] { "crystal", "plasma", "filaments", "rungs" };
 
 	public static readonly string[] TubeModeNames = new string[3] { "Full-Height Vacuum Tube", "Dynamic Capsule (Bar Height)", "Off (Interior Only)" };
 

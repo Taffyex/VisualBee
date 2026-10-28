@@ -127,8 +127,9 @@ internal sealed partial class SettingsWindow : Form
 			};
 			Controls.Add(_reset);
 			Controls.Add(_info);
-			tips.SetToolTip(_info, Wrap(s.Hint));
-			tips.SetToolTip(_reset, "Back to the default");
+			tips.SetToolTip(_info, Wrap(s.Hint + "\n(Default: " + s.Format(s.Default) + ")"));
+			tips.SetToolTip(this, Wrap(s.Label + ": " + s.Hint));
+			tips.SetToolTip(_reset, "Reset to default: " + s.Format(s.Default));
 			Hook(this);
 		}
 

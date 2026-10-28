@@ -21,7 +21,7 @@ internal sealed partial class SpectrumView
 		}
 		for (int i = 0; i < _bands; i++)
 		{
-			_centres[i] = ((look.Engine == 0) ? FoobarAnalyzer.BandFrequency(i, _bands) : SpectrumAnalyzer.ToHz(((double)i + 0.5) / (double)_bands, look.MinHz, TopHz(look), look.Scale));
+			_centres[i] = ((look.Engine == 0) ? GaussianAnalyzer.BandFrequency(i, _bands) : SpectrumAnalyzer.ToHz(((double)i + 0.5) / (double)_bands, look.MinHz, TopHz(look), look.Scale));
 			_tiltOctaves[i] = Math.Log(_centres[i] / 1000.0, 2.0);
 		}
 	}

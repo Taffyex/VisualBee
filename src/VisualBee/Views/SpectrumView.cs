@@ -98,10 +98,10 @@ internal sealed partial class SpectrumView : GpuView
 
 	private readonly Plugin _plugin;
 
-	private readonly FoobarAnalyzer[] _classic = new FoobarAnalyzer[2]
+	private readonly GaussianAnalyzer[] _classic = new GaussianAnalyzer[2]
 	{
-		new FoobarAnalyzer(),
-		new FoobarAnalyzer()
+		new GaussianAnalyzer(),
+		new GaussianAnalyzer()
 	};
 
 	private readonly SpectrumAnalyzer[] _modern = new SpectrumAnalyzer[2]
@@ -352,7 +352,7 @@ internal sealed partial class SpectrumView : GpuView
 			{
 				if (look.Engine == 0)
 				{
-					FoobarAnalyzer.BandsFromMagnitudes(magnitudes, magnitudes.Length, 44100, _bands, _raw[j]);
+					GaussianAnalyzer.BandsFromMagnitudes(magnitudes, magnitudes.Length, 44100, _bands, _raw[j]);
 				}
 				else
 				{

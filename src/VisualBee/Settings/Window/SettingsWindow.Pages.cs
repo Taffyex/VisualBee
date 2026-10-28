@@ -23,7 +23,7 @@ internal sealed partial class SettingsWindow : Form
 		}
 		_content.Controls.Clear();
 		_rows.Clear();
-		_headers.Clear();
+		_cards.Clear();
 		_content.AutoScrollPosition = Point.Empty;
 		if (text.Length > 0)
 		{
@@ -45,20 +45,25 @@ internal sealed partial class SettingsWindow : Form
 
 	private void BuildPage(string page)
 	{
-		AddTitle(page);
-		string text = null;
+		string currentSec = null;
+		RackSectionCard currentCard = null;
+
 		foreach (Setting s in _store.Schema.All)
 		{
-			if (s.Page != page)
+			if (s.Page != page) continue;
+
+			if (s.Section != currentSec)
 			{
-				continue;
+				currentSec = s.Section;
+				currentCard = new RackSectionCard(this, currentSec, (Setting x) => x.Page == page && x.Section == s.Section);
+				_cards.Add(currentCard);
+				_content.Controls.Add(currentCard);
 			}
-			if (s.Section != text)
-			{
-				text = s.Section;
-				AddSection(text, (Setting x) => x.Page == page && x.Section == s.Section);
-			}
-			AddRow(s);
+
+			SettingRow row = new SettingRow(this, s, _tips);
+			row.ShowValue(_store.Current);
+			_rows.Add(row);
+			currentCard?.AddRow(row);
 		}
 	}
 
@@ -70,17 +75,25 @@ internal sealed partial class SettingsWindow : Form
 			string text3 = (s.Label + " " + s.Hint + " " + s.Section + " " + s.Page + " " + s.Keywords).ToLowerInvariant();
 			return words.All((string w) => text3.Contains(w));
 		}).ToList();
+
 		AddTitle((list.Count == 0) ? ("Nothing matches “" + query + "”") : (list.Count + " settings match “" + query + "”"));
-		string text = null;
+		string currentSec = null;
+		RackSectionCard currentCard = null;
+
 		foreach (Setting item in list)
 		{
 			string text2 = item.Page + "  ›  " + item.Section;
-			if (text2 != text)
+			if (text2 != currentSec)
 			{
-				text = text2;
-				AddSection(text2, null);
+				currentSec = text2;
+				currentCard = new RackSectionCard(this, currentSec, null);
+				_cards.Add(currentCard);
+				_content.Controls.Add(currentCard);
 			}
-			AddRow(item);
+			SettingRow row = new SettingRow(this, item, _tips);
+			row.ShowValue(_store.Current);
+			_rows.Add(row);
+			currentCard?.AddRow(row);
 		}
 	}
 
@@ -92,48 +105,91 @@ internal sealed partial class SettingsWindow : Form
 			Font = Ui.Heading,
 			ForeColor = Ui.Text,
 			AutoSize = false,
-			Height = Ui.S(46),
+			Height = Ui.S(44),
 			TextAlign = ContentAlignment.BottomLeft,
 			Padding = new Padding(Ui.S(14), 0, 0, Ui.S(6))
 		};
 		_content.Controls.Add(value);
 	}
 
-	private void AddSection(string text, Func<Setting, bool> members)
-	{
-		SectionHeader sectionHeader = new SectionHeader(this, text, members);
-		_headers.Add(sectionHeader);
-		sectionHeader.ShowState(_store.Current);
-		_content.Controls.Add(sectionHeader);
-	}
-
-	private void AddRow(Setting s)
-	{
-		SettingRow settingRow = new SettingRow(this, s, _tips);
-		settingRow.ShowValue(_store.Current);
-		_rows.Add(settingRow);
-		_content.Controls.Add(settingRow);
-	}
-
 	private void LayoutContent()
 	{
 		int contentWidth = _content.ContentWidth;
-		int num = _content.AutoScrollPosition.Y;
-		int num2 = num;
+		int scrollY = _content.AutoScrollPosition.Y;
+		int curY = scrollY;
 		_content.SuspendLayout();
-		foreach (Control control in _content.Controls)
+
+		if (_page == "Presets" || _search.Box.Text.Length > 0)
 		{
-			if (control is SettingRow r && !r.IsRowVisible) continue;
-			if (control is SectionHeader h && !h.IsHeaderVisible) continue;
-			if (control is FlowPanel)
+			foreach (Control control in _content.Controls)
 			{
-				((FlowPanel)control).FitWidth(contentWidth - Ui.S(28));
+				if (control is SettingRow r && !r.IsRowVisible) continue;
+				if (control is RackSectionCard card && !card.IsCardVisible) continue;
+				if (control is FlowPanel fp)
+				{
+					fp.FitWidth(contentWidth - Ui.S(28));
+				}
+				int left = (control is FlowPanel || control is Label) ? Ui.S(14) : Ui.S(14);
+				control.SetBounds(left, curY, contentWidth - Ui.S(28), control.Height);
+				curY += control.Height + ((control is FlowPanel) ? Ui.S(8) : Ui.S(4));
 			}
-			int num3 = ((control is FlowPanel) ? Ui.S(14) : 0);
-			control.SetBounds(num3, num2, (control is FlowPanel) ? (contentWidth - Ui.S(28)) : contentWidth, control.Height);
-			num2 += control.Height + ((control is FlowPanel) ? Ui.S(6) : 0);
 		}
-		_content.AutoScrollMinSize = new Size(0, num2 - num);
+		else
+		{
+			int colGap = Ui.S(14);
+			int padX = Ui.S(14);
+			int numCols = (contentWidth >= Ui.S(740)) ? 2 : 1;
+
+			if (numCols == 2)
+			{
+				int colW = (contentWidth - padX * 2 - colGap) / 2;
+				int yLeft = curY + Ui.S(8);
+				int yRight = curY + Ui.S(8);
+
+				foreach (RackSectionCard card in _cards)
+				{
+					if (!card.IsCardVisible)
+					{
+						card.Visible = false;
+						continue;
+					}
+					card.Visible = true;
+					card.FitWidth(colW);
+
+					if (yLeft <= yRight)
+					{
+						card.SetBounds(padX, yLeft, colW, card.Height);
+						yLeft += card.Height + Ui.S(12);
+					}
+					else
+					{
+						card.SetBounds(padX + colW + colGap, yRight, colW, card.Height);
+						yRight += card.Height + Ui.S(12);
+					}
+				}
+				curY = Math.Max(yLeft, yRight);
+			}
+			else
+			{
+				int colW = contentWidth - padX * 2;
+				int y = curY + Ui.S(8);
+				foreach (RackSectionCard card in _cards)
+				{
+					if (!card.IsCardVisible)
+					{
+						card.Visible = false;
+						continue;
+					}
+					card.Visible = true;
+					card.FitWidth(colW);
+					card.SetBounds(padX, y, colW, card.Height);
+					y += card.Height + Ui.S(12);
+				}
+				curY = y;
+			}
+		}
+
+		_content.AutoScrollMinSize = new Size(0, curY - scrollY + Ui.S(16));
 		_content.ResumeLayout();
 	}
 
@@ -179,5 +235,4 @@ internal sealed partial class SettingsWindow : Form
 		};
 		colourPicker.ShowNear(well);
 	}
-
 }

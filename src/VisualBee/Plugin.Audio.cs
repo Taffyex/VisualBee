@@ -50,7 +50,7 @@ namespace MusicBeePlugin
                     return false;
                 }
                 int rate = tap.Rate;
-                int num = ((engine == 0) ? FoobarAnalyzer.WindowSize(rate) : SpectrumAnalyzer.WindowSize(fftChoice, rate));
+                int num = ((engine == 0) ? GaussianAnalyzer.WindowSize(rate) : SpectrumAnalyzer.WindowSize(fftChoice, rate));
                 long num2 = (long)delayMs * (long)rate / 1000;
                 if (!tap.Read(num + (int)num2, num))
                 {

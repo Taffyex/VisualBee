@@ -4,49 +4,27 @@ namespace MusicBeePlugin;
 
 internal sealed partial class SpectrumView
 {
-	private static Vec4 Gradient(SpectrumLook look, Vec4[] colours, float t)
+	private static RectShape Bar(SpectrumLook look, Vec4[] colours, Geometry g, int slot, int band, float v, float x0, float x1, float baseY, float outward, float opacity)
 	{
-		Vec4 vec = colours[10];
-		if (look.Colouring == 4) return vec;
-		if (!look.UseMiddle) return Vec4.Lerp(vec, colours[12], t);
-		float num = (float)(look.MiddleAt / 100.0);
-		return (t < num) ? Vec4.Lerp(vec, colours[11], t / num) : Vec4.Lerp(colours[11], colours[12], (t - num) / (1f - num));
-	}
-
-	private static Vec4 TipColour(SpectrumLook look, Vec4[] colours, Geometry g, int slot, int band, float v) => look.Colouring switch
-	{
-		1 => Gradient(look, colours, 1f),
-		2 => Gradient(look, colours, (g.Bands > 1) ? ((float)band / (float)(g.Bands - 1)) : 0f),
-		0 or 3 => Gradient(look, colours, v),
-		_ => colours[10]
-	};
-
-	private RectShape Bar(SpectrumLook look, Vec4[] colours, Geometry g, int slot, int band, float v, float x0, float x1, float baseY, float outward, float opacity)
-	{
-		float num = v * g.Span;
-		float num2 = baseY + outward * num;
-		if (look.Snap)
-		{
-			num2 = (float)Math.Round(num2);
-		}
-		float top = Math.Min(baseY, num2);
-		float bottom = Math.Max(baseY, num2);
-		RectShape r = RectShape.Solid(x0, top, x1, bottom, colours[10]);
-		float to = baseY + outward * g.Span;
+		float to = baseY + outward * v * g.Span;
+		RectShape r = RectShape.Solid(x0, Math.Min(baseY, to), x1, Math.Max(baseY, to), colours[10]);
 		switch (look.Colouring)
 		{
-		case 0: Stops(ref r, look, colours, baseY, to); break;
-			
-		case 1: Stops(ref r, look, colours, baseY, num2); break;
+		case 0:
+			Stops(ref r, look, colours, g.Base, g.Base + outward * g.Span);
+			break;
+		case 1:
+			Stops(ref r, look, colours, baseY, to);
+			break;
 		case 2:
 		{
-			Vec4 vec2 = Gradient(look, colours, (g.Bands > 1) ? ((float)band / (float)(g.Bands - 1)) : 0f);
-			r = r.Gradient(vec2, vec2, baseY, to);
+			Vec4 c = TipColour(look, colours, g, slot, band, v);
+			r = r.Gradient(c, c, baseY, to);
 			break;
 		}
-		case 3:
+		case 4:
 		{
-			Vec4 vec = Gradient(look, colours, v);
+			Vec4 vec = Vec4.Lerp(colours[10], colours[12], v);
 			r = r.Gradient(vec, vec, baseY, to);
 			break;
 		}
@@ -86,21 +64,6 @@ internal sealed partial class SpectrumView
 		return r;
 	}
 
-	private static void Stops(ref RectShape r, SpectrumLook look, Vec4[] colours, float from, float to)
-	{
-		if (look.Colouring != 4)
-		{
-			if (look.UseMiddle)
-			{
-				r = r.Gradient(colours[10], colours[11], colours[12], (float)(look.MiddleAt / 100.0), from, to);
-			}
-			else
-			{
-				r = r.Gradient(colours[10], colours[12], from, to);
-			}
-		}
-	}
-
 	private void DrawBars(Canvas c, SpectrumLook look, Geometry g, ref Frame f)
 	{
 		float num = (float)(look.BarOpacity / 100.0);
@@ -128,10 +91,7 @@ internal sealed partial class SpectrumView
 		for (int i = 0; i < g.Slots; i++)
 		{
 			int num3 = g.Band[i];
-			if (num3 >= _bands)
-			{
-				continue;
-			}
+			if (num3 >= _bands) continue;
 			float x = g.X0[i];
 			float x2 = g.X1[i];
 			float halfBarWidth = (x2 - x) / 2f;
@@ -140,11 +100,7 @@ internal sealed partial class SpectrumView
 			for (int j = num4; j <= num5; j++)
 			{
 				float num6 = (float)Norm(look, _level[j][num3]);
-
 				float num7 = (flag ? ((j == 0) ? (-1f) : 1f) : num2);
-
-				float pTop = Math.Min(g.Base, g.Base + num7 * g.Span);
-				float pBottom = Math.Max(g.Base, g.Base + num7 * g.Span);
 
 				float segH = (float)(look.LedSize * (double)PanelLayout.Scale);
 				if (segH < 2f) segH = Math.Max(2f, (x2 - x) * 0.35f);
@@ -154,9 +110,9 @@ internal sealed partial class SpectrumView
 
 				if (flag3)
 				{
-					// 1. Ghost Rungs (only draw beyond lit height)
+					// 1. Ghost Rungs (only for segmented / ladder displays)
 					float ghostAlpha = (float)(look.LedGhost / 100.0) * num;
-					if (ghostAlpha > 0f && (isGlassStyle || isNixieStyle || look.BarStyle == SpectrumLook.StyleLed))
+					if (ghostAlpha > 0f && (isNixieStyle || look.BarStyle == SpectrumLook.StyleLed || (isGlassStyle && look.GlassFill == 3)))
 					{
 						float ghostReach = (look.GhostRange > 0.0) ? Math.Min(1.0f, num6 + (float)(look.GhostRange / 100.0)) : 1.0f;
 						if (ghostReach > num6 + 0.005f)
@@ -174,61 +130,74 @@ internal sealed partial class SpectrumView
 						}
 					}
 
+					// 2. Twin Anode Guide Wires for Vintage Nixie Tubes
+					if (isNixieStyle)
+					{
+						float filW = Math.Max(1.0f, (x2 - x) * 0.08f);
+						float leftRail = x + (x2 - x) * 0.22f;
+						float rightRail = x2 - (x2 - x) * 0.22f - filW;
+						float rTop = Math.Min(g.Base, g.Base + num7 * g.Span);
+						float rBottom = Math.Max(g.Base, g.Base + num7 * g.Span);
+						Vec4 railCol = f.Colours[10].Faded(num * 0.18f);
+						c.Rect(RectShape.Solid(leftRail, rTop, leftRail + filW, rBottom, railCol));
+						c.Rect(RectShape.Solid(rightRail, rTop, rightRail + filW, rBottom, railCol));
+						if (flag2)
+						{
+							float mrTop = Math.Min(g.Base, g.Base - num7 * g.Span);
+							float mrBottom = Math.Max(g.Base, g.Base - num7 * g.Span);
+							c.Rect(RectShape.Solid(leftRail, mrTop, leftRail + filW, mrBottom, railCol));
+							c.Rect(RectShape.Solid(rightRail, mrTop, rightRail + filW, mrBottom, railCol));
+						}
+					}
+
 					float wall = (float)(look.GlassWall / 100.0);
 					float tint = (float)(look.GlassTint / 100.0);
 					float spec = (float)(look.GlassSpecular / 100.0);
 					float caust = (float)(look.GlassCaustics / 100.0);
 					float refr = (float)(look.GlassRefraction / 100.0);
 
-					// 2. Active Interior Fill (drawn BEFORE foreground glass envelope)
+					// 3. Active Interior Fill
 					if (num6 > 0f)
 					{
 						if (isGlassStyle)
 						{
-							if (look.GlassFill == 0)
+							if (look.GlassFill == 0) // Pure Crystal Glass
 							{
-								RectShape innerC = Bar(look, f.Colours, g, i, num3, num6, x, x2, g.Base, num7, num);
-								if (!showTube) innerC = innerC.Glass(num6 * caust, refr, wall, tint, spec);
+								RectShape innerC = Bar(look, f.Colours, g, i, num3, num6, x, x2, g.Base, num7, num)
+									.Glass(num6 * caust, refr, wall, tint, spec);
 								c.Rect(innerC);
+								if (flag2) c.Rect(Bar(look, f.Colours, g, i, num3, num6, x, x2, g.Base, 0f - num7, num).Glass(num6 * caust, refr, wall, tint, spec));
+							}
+							else if (look.GlassFill == 1) // Liquid Plasma Column
+							{
+								float inset = (x2 - x) * 0.14f;
+								c.Rect(Bar(look, f.Colours, g, i, num3, num6, x + inset, x2 - inset, g.Base, num7, num * 0.95f));
+								if (flag2) c.Rect(Bar(look, f.Colours, g, i, num3, num6, x + inset, x2 - inset, g.Base, 0f - num7, num * 0.95f));
+							}
+							else if (look.GlassFill == 2) // Twin Filament Anodes
+							{
+								float filW = Math.Max(1.5f, (x2 - x) * 0.18f);
+								float mid = (x + x2) * 0.5f;
+								float leftFil = mid - filW * 1.3f;
+								float rightFil = mid + filW * 0.3f;
+								c.Rect(Bar(look, f.Colours, g, i, num3, num6, leftFil, leftFil + filW, g.Base, num7, num));
+								c.Rect(Bar(look, f.Colours, g, i, num3, num6, rightFil, rightFil + filW, g.Base, num7, num));
+								float tipY = g.Base + num7 * num6 * g.Span;
+								float tipH = Math.Max(2f, filW);
+								c.Rect(RectShape.Solid(leftFil, (num7 < 0f) ? tipY : tipY - tipH, rightFil + filW, (num7 < 0f) ? tipY + tipH : tipY, f.Colours[12]));
 								if (flag2)
 								{
-									RectShape mInnerC = Bar(look, f.Colours, g, i, num3, num6, x, x2, g.Base, 0f - num7, num);
-									if (!showTube) mInnerC = mInnerC.Glass(num6 * caust, refr, wall, tint, spec);
-									c.Rect(mInnerC);
+									c.Rect(Bar(look, f.Colours, g, i, num3, num6, leftFil, leftFil + filW, g.Base, 0f - num7, num));
+									c.Rect(Bar(look, f.Colours, g, i, num3, num6, rightFil, rightFil + filW, g.Base, 0f - num7, num));
 								}
 							}
-							else if (look.GlassFill == 1)
+							else if (look.GlassFill == 3) // Hybrid Glass & VFD Rungs
 							{
 								RectShape lit = Bar(look, f.Colours, g, i, num3, num6, x, x2, g.Base, num7, num)
 									.Vfd(segH + segGap, segH, origin, num6, look.HdrIncandescence, look.VfdMesh);
 								c.Rect(lit);
 								if (flag2) c.Rect(Bar(look, f.Colours, g, i, num3, num6, x, x2, g.Base, 0f - num7, num).Vfd(segH + segGap, segH, origin, num6, look.HdrIncandescence, look.VfdMesh));
 							}
-							else if (look.GlassFill == 2)
-							{
-								float inset = (x2 - x) * 0.12f;
-								c.Rect(Bar(look, f.Colours, g, i, num3, num6, x + inset, x2 - inset, g.Base, num7, num * 0.95f));
-								if (flag2) c.Rect(Bar(look, f.Colours, g, i, num3, num6, x + inset, x2 - inset, g.Base, 0f - num7, num * 0.95f));
-							}
-							else if (look.GlassFill == 3)
-							{
-								float filamentW = Math.Max(1.5f, (x2 - x) * 0.22f);
-								float mid = (x + x2) * 0.5f;
-								float leftFil = mid - filamentW * 1.1f;
-								float rightFil = mid + filamentW * 0.1f;
-								c.Rect(Bar(look, f.Colours, g, i, num3, num6, leftFil, leftFil + filamentW, g.Base, num7, num));
-								c.Rect(Bar(look, f.Colours, g, i, num3, num6, rightFil, rightFil + filamentW, g.Base, num7, num));
-								if (flag2)
-								{
-									c.Rect(Bar(look, f.Colours, g, i, num3, num6, leftFil, leftFil + filamentW, g.Base, 0f - num7, num));
-									c.Rect(Bar(look, f.Colours, g, i, num3, num6, rightFil, rightFil + filamentW, g.Base, 0f - num7, num));
-								}
-							}
-						}
-						else if (isNixieStyle)
-						{
-							c.Rect(Bar(look, f.Colours, g, i, num3, num6, x, x2, g.Base, num7, num));
-							if (flag2) c.Rect(Bar(look, f.Colours, g, i, num3, num6, x, x2, g.Base, 0f - num7, num));
 						}
 						else
 						{
@@ -236,7 +205,6 @@ internal sealed partial class SpectrumView
 							if (flag2) c.Rect(Bar(look, f.Colours, g, i, num3, num6, x, x2, g.Base, 0f - num7, num));
 						}
 
-						// Tip Highlight Apex Cap
 						if (look.TipHighlight)
 						{
 							float tipY = g.Base + num7 * num6 * g.Span;
@@ -255,7 +223,7 @@ internal sealed partial class SpectrumView
 						}
 					}
 
-					// 3. Foreground Glass Capsule / Tube Envelope (drawn OVER interior)
+					// 4. Outer Glass Enclosures
 					if (showTube)
 					{
 						bool dynamicCap = look.GlassTubeMode == 1;
@@ -285,6 +253,19 @@ internal sealed partial class SpectrumView
 							}
 						}
 					}
+					else if (isNixieStyle)
+					{
+						float capTop = Math.Min(g.Base, g.Base + num7 * g.Span);
+						float capBottom = Math.Max(g.Base, g.Base + num7 * g.Span);
+						Vec4 nixieTube = new Vec4(0.35f, 0.20f, 0.10f, num * 0.18f);
+						c.Rect(RectShape.Solid(x, capTop, x2, capBottom, nixieTube).Rounded(halfBarWidth * 0.75f, 0.5f).Outline(1.0f));
+						if (flag2)
+						{
+							float mcapTop = Math.Min(g.Base, g.Base - num7 * g.Span);
+							float mcapBottom = Math.Max(g.Base, g.Base - num7 * g.Span);
+							c.Rect(RectShape.Solid(x, mcapTop, x2, mcapBottom, nixieTube).Rounded(halfBarWidth * 0.75f, 0.5f).Outline(1.0f));
+						}
+					}
 				}
 
 				if (g.Reflection > 0f && !look.Flip && num6 > 0f)
@@ -295,10 +276,7 @@ internal sealed partial class SpectrumView
 				if (look.Peaks && look.PeakStyle != 2)
 				{
 					DrawPeak(c, look, f.Colours, g, i, num3, j, x, x2, num7, ref f);
-					if (flag2)
-					{
-						DrawPeak(c, look, f.Colours, g, i, num3, j, x, x2, 0f - num7, ref f);
-					}
+					if (flag2) DrawPeak(c, look, f.Colours, g, i, num3, j, x, x2, 0f - num7, ref f);
 				}
 			}
 		}
@@ -330,55 +308,6 @@ internal sealed partial class SpectrumView
 						if (flag2) DrawPeak(c, look, f.Colours, g, k, b, ch, x0, x1, 0f - dir, ref f);
 					}
 				}
-			}
-		}
-	}
-
-	private void Reflection(Canvas c, SpectrumLook look, Vec4[] colours, Geometry g, int slot, int band, float v, float x0, float x1, float opacity)
-	{
-		float num = Math.Min(v * g.Span, g.Reflection);
-		if (!(num <= 0.5f))
-		{
-			float opacity2 = (float)(look.ReflectionOpacity / 100.0) * opacity;
-			RectShape rectShape = Bar(look, colours, g, slot, band, v, x0, x1, g.Base, 1f, 1f);
-			rectShape.Rect = new Vec4(x0, g.Base + Math.Max(1f, PanelLayout.Scale), x1, g.Base + num);
-			float falloff = Math.Max(0.15f, 1f - num / Math.Max(1f, g.Reflection));
-			rectShape.C0 = rectShape.C0.Faded(opacity2);
-			rectShape.C1 = rectShape.C1.Faded(opacity2 * 0.70f);
-			rectShape.C2 = rectShape.C2.Faded(opacity2 * falloff * 0.45f);
-			if (look.LacquerHorizon)
-			{
-				rectShape = rectShape.Lacquer();
-			}
-			c.Rect(rectShape);
-		}
-	}
-
-	private void DrawPeak(Canvas c, SpectrumLook look, Vec4[] colours, Geometry g, int slot, int band, int channel, float x0, float x1, float outward, ref Frame f)
-	{
-		double db = _peak[channel][band];
-		float num = (float)Norm(look, db);
-		if (num > 0f)
-		{
-			float opacity = _peakAlpha[channel][band] * (float)(look.PeakOpacity / 100.0);
-			Vec4 colour = (look.PeakBarColour ? TipColour(look, colours, g, slot, band, num) : colours[13]).Faded(opacity);
-			float num2 = (float)(look.PeakSize * (double)f.Scale);
-			float num3 = g.Base + outward * num * g.Span;
-			if (look.Snap)
-			{
-				num2 = Math.Max(1f, (float)Math.Round(num2));
-				num3 = (float)Math.Round(num3);
-			}
-			float num4 = (look.Snap ? num3 : (num3 - num2 / 2f));
-			switch (look.PeakStyle)
-			{
-			case 2: c.Sprite(SpriteShape.Make((x0 + x1) / 2f, num3, num2 / 2f, SpriteKind.Disc, colour)); break;
-			case 1: c.Rect(RectShape.Solid(x0, (outward < 0f) ? (num3 - num2) : num3, x1, (outward < 0f) ? num3 : (num3 + num2), colour).Rounded(Math.Min((float)(look.Radius * (double)f.Scale), num2 / 2f), look.Snap ? 0.5f : 1f)); break;
-			case 3:
-				c.Rect(RectShape.Solid(x0, num3 - num2 / 2f, x1, num3 + num2 / 2f, colour.Faded(0.35f)).Rounded(num2, num2 * 2.5f));
-				c.Rect(RectShape.Solid(x0, num3 - num2 / 2f, x1, num3 + num2 / 2f, colour).Rounded(num2 / 2f));
-				break;
-			default: c.Rect(RectShape.Solid(x0, num4, x1, num4 + num2, colour).Rounded(0f, look.Snap ? 0.5f : 1f)); break;
 			}
 		}
 	}

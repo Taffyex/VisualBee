@@ -116,6 +116,9 @@ internal sealed class Setting
 		}
 		case SettingKind.Choice:
 		{
+			if (Key == "engine" && string.Equals(text, "foobar", StringComparison.OrdinalIgnoreCase)) return 0;
+			if (Key == "glass.fill" && string.Equals(text, "mixed", StringComparison.OrdinalIgnoreCase)) return 3;
+			if (Key == "glass.fill" && string.Equals(text, "solid", StringComparison.OrdinalIgnoreCase)) return 1;
 			for (int i = 0; i < Tokens.Length; i++)
 			{
 				if (string.Equals(Tokens[i], text, StringComparison.OrdinalIgnoreCase))

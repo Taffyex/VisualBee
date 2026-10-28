@@ -102,14 +102,14 @@ internal static partial class SpectrumSettings
 	{
 		if (!Bars(l)) return false;
 		SpectrumLook sl = (SpectrumLook)l;
-		return sl.BarStyle == SpectrumLook.StyleLed || sl.BarStyle == SpectrumLook.StyleNixie || (sl.BarStyle == SpectrumLook.StyleGlass && sl.GlassFill != 0 && sl.GlassFill != 3);
+		return sl.BarStyle == SpectrumLook.StyleLed || sl.BarStyle == SpectrumLook.StyleNixie || (sl.BarStyle == SpectrumLook.StyleGlass && sl.GlassFill == 3);
 	}
 
 	private static bool HasMesh(Look l)
 	{
 		if (!Bars(l)) return false;
 		SpectrumLook sl = (SpectrumLook)l;
-		return sl.BarStyle == SpectrumLook.StyleNixie || (sl.BarStyle == SpectrumLook.StyleGlass && sl.GlassFill != 0);
+		return sl.BarStyle == SpectrumLook.StyleNixie || (sl.BarStyle == SpectrumLook.StyleGlass && sl.GlassFill == 3);
 	}
 
 	private static void AddBars(Schema s)
@@ -153,7 +153,7 @@ internal static partial class SpectrumSettings
 		}).When(Bars);
 
 		s.Section("Glass & Vacuum Tube Optics");
-		s.Choice("glass.fill", "Interior fill", "Pure Crystal Glass (transparent rising bar), Mixed Plasma & VFD Rungs, Segmented Rungs, or Solid Plasma Core.", SpectrumLook.GlassFillNames, SpectrumLook.GlassFillTokens, (SpectrumLook l) => l.GlassFill, (SpectrumLook l, int v) =>
+		s.Choice("glass.fill", "Interior fill", "Pure Crystal Glass (optical crystal cylinder), Liquid Plasma Column, Twin Filament Anodes, or Hybrid Glass & VFD Rungs.", SpectrumLook.GlassFillNames, SpectrumLook.GlassFillTokens, (SpectrumLook l) => l.GlassFill, (SpectrumLook l, int v) =>
 		{
 			l.GlassFill = v;
 		}).When((Look l) => Bars(l) && ((SpectrumLook)l).BarStyle == 0);

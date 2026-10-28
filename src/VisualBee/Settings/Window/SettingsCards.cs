@@ -20,6 +20,7 @@ internal sealed partial class SettingsWindow : Form
 		public ScrollPane()
 		{
 			AutoScroll = true;
+			BackColor = Ui.Back;
 			SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, value: true);
 		}
 
@@ -52,6 +53,7 @@ internal sealed partial class SettingsWindow : Form
 			int num4 = 0;
 			foreach (Control control in Controls)
 			{
+				if (!control.Visible) continue;
 				if (control is PresetCard)
 				{
 					int num5 = Math.Max(1, (width + num) / (Ui.S(230) + num));
@@ -75,21 +77,23 @@ internal sealed partial class SettingsWindow : Form
 		}
 	}
 
-	private sealed class SectionHeader : Widget
+	private sealed class RackSectionCard : Widget
 	{
 		private readonly SettingsWindow _w;
-
+		private readonly string _title;
 		private readonly Func<Setting, bool> _members;
-
 		private readonly LinkLabel _reset = new LinkLabel();
-		public bool IsHeaderVisible = true;
+		public readonly List<SettingRow> Rows = new List<SettingRow>();
 
-		public SectionHeader(SettingsWindow w, string text, Func<Setting, bool> members)
+		public bool IsCardVisible => Rows.Any(r => r.IsRowVisible);
+
+		public RackSectionCard(SettingsWindow w, string title, Func<Setting, bool> members)
 		{
 			_w = w;
+			_title = title;
 			_members = members;
-			Text = text;
-			Height = Ui.S(38);
+			BackColor = Ui.Card;
+
 			if (members != null)
 			{
 				_reset.Text = "Reset section";
@@ -98,51 +102,78 @@ internal sealed partial class SettingsWindow : Form
 				_reset.LinkColor = Ui.Accent;
 				_reset.ActiveLinkColor = Ui.Text;
 				_reset.LinkBehavior = LinkBehavior.HoverUnderline;
-				_reset.BackColor = Ui.Back;
-				_reset.LinkClicked += (object s, LinkLabelLinkClickedEventArgs a) =>
-				{
-					_w.ResetMembers(_members);
-				};
+				_reset.BackColor = Color.Transparent;
+				_reset.LinkClicked += (s, e) => _w.ResetMembers(_members);
 				Controls.Add(_reset);
 			}
 		}
 
-		public void ShowState(Look l)
+		public void AddRow(SettingRow row)
 		{
-			if (_members != null)
-			{
-				IsHeaderVisible = !_w._hideInactive || !string.IsNullOrEmpty(_w._search.Box.Text.Trim()) || _w._store.Schema.All.Any((Setting s) => _members(s) && s.IsEnabled(l));
-				Visible = IsHeaderVisible;
-				_reset.Visible = _w._store.Schema.All.Any((Setting s) => _members(s) && !s.IsDefault(l));
-			}
+			Rows.Add(row);
+			Controls.Add(row);
 		}
 
-		protected override void OnLayout(LayoutEventArgs e)
+		public void FitWidth(int width)
 		{
-			base.OnLayout(e);
-			_reset.Location = new Point(Width - _reset.Width - Ui.S(22), Height - _reset.Height - Ui.S(6));
+			Width = width;
+			int headerH = Ui.S(38);
+			if (_reset != null && _reset.Visible)
+			{
+				_reset.Location = new Point(width - _reset.Width - Ui.S(16), Ui.S(12));
+			}
+
+			int y = headerH;
+			foreach (SettingRow r in Rows)
+			{
+				if (!r.IsRowVisible)
+				{
+					r.Visible = false;
+					continue;
+				}
+				r.Visible = true;
+				r.SetBounds(Ui.S(10), y, width - Ui.S(20), r.Height);
+				y += r.Height + Ui.S(2);
+			}
+			Height = y + Ui.S(8);
 		}
 
 		protected override void OnPaint(PaintEventArgs e)
 		{
-			e.Graphics.Clear(Ui.Back);
-			Ui.DrawText(r: new Rectangle(Ui.S(16), 0, Width - Ui.S(140), Height - Ui.S(6)), g: e.Graphics, text: Text.ToUpperInvariant(), font: Ui.Section, colour: Ui.Accent, flags: TextFormatFlags.Bottom | TextFormatFlags.EndEllipsis);
-			using Pen pen = new Pen(Ui.Border);
-			e.Graphics.DrawLine(pen, Ui.S(16), Height - 1, Width - Ui.S(16), Height - 1);
+			Graphics g = e.Graphics;
+			Ui.Smooth(g);
+			RectangleF r = new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f);
+			Ui.Fill(g, r, Ui.Sf(8f), Ui.Card);
+			Ui.Stroke(g, r, Ui.Sf(8f), Ui.Border, 1f);
+
+			// Top specular chassis highlight
+			using (Pen specPen = new Pen(Color.FromArgb(45, 55, 78), 1f))
+			{
+				g.DrawLine(specPen, Ui.Sf(10f), 1f, Width - Ui.Sf(10f), 1f);
+			}
+
+			// Amber/cyan module indicator dot
+			using (SolidBrush dotB = new SolidBrush(Ui.Amber))
+			{
+				g.FillEllipse(dotB, Ui.Sf(14f), Ui.Sf(14f), Ui.Sf(6f), Ui.Sf(6f));
+			}
+
+			// Header Title
+			Rectangle titleRect = new Rectangle(Ui.S(26), Ui.S(8), Width - Ui.S(130), Ui.S(24));
+			Ui.DrawText(g, _title.ToUpperInvariant(), Ui.Section, Ui.Text, titleRect, TextFormatFlags.VerticalCenter);
 		}
 	}
 
 	private sealed class PresetCard : Widget
 	{
 		private readonly SettingsWindow _w;
-
 		private readonly Preset _p;
 
 		public PresetCard(SettingsWindow w, Preset p)
 		{
 			_w = w;
 			_p = p;
-			Height = Ui.S(78);
+			Height = Ui.S(92);
 			Width = Ui.S(230);
 			Cursor = Cursors.Hand;
 			if (p.Description.Length > 0)
@@ -153,129 +184,99 @@ internal sealed partial class SettingsWindow : Form
 
 		protected override void OnPaint(PaintEventArgs e)
 		{
-			Graphics graphics = e.Graphics;
-			graphics.Clear(Ui.Back);
-			Ui.Smooth(graphics);
-			bool flag = _w.IsCurrent(_p);
-			RectangleF rectangleF = new RectangleF(0.5f, 0.5f, (float)Width - 1f, (float)Height - 1f);
-			Graphics g = graphics;
-			RectangleF r = rectangleF;
-			float radius = Ui.Sf(8f);
-			Color c;
-			if (Down)
-			{
-				c = Ui.Raised;
-			}
-			else
-			{
-				c = (Hot ? Ui.Hover : Ui.Card);
-			}
-			Ui.Fill(g, r, radius, c);
-			Ui.Stroke(graphics, rectangleF, Ui.Sf(8f), flag ? Ui.Accent : Ui.Border, flag ? Ui.Sf(2f) : 1f);
+			Graphics g = e.Graphics;
+			g.Clear(Ui.Back);
+			Ui.Smooth(g);
+			bool isCurr = _w.IsCurrent(_p);
+			RectangleF rect = new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f);
+			Color bg = Down ? Ui.Raised : (Hot ? Ui.Hover : Ui.Card);
+			Ui.Fill(g, rect, Ui.Sf(8f), bg);
+			Ui.Stroke(g, rect, Ui.Sf(8f), isCurr ? Ui.Accent : Ui.Border, isCurr ? Ui.Sf(2f) : 1f);
+
+			// Swatch dots
 			int[] array = _w.Swatch(_p);
-			float num = Ui.Sf(16f);
-			float num2 = (float)Width - Ui.Sf(12f) - (float)array.Length * (num - Ui.Sf(4f)) - Ui.Sf(4f);
+			float dotSize = Ui.Sf(14f);
+			float startX = Width - Ui.Sf(12f) - array.Length * (dotSize - Ui.Sf(3f));
 			for (int i = 0; i < array.Length; i++)
 			{
-				RectangleF rect = new RectangleF(num2 + (float)i * (num - Ui.Sf(4f)), Ui.Sf(12f), num, num);
-				using (SolidBrush brush = new SolidBrush(Color.FromArgb(array[i] | -16777216)))
+				RectangleF dRect = new RectangleF(startX + i * (dotSize - Ui.Sf(3f)), Ui.Sf(12f), dotSize, dotSize);
+				using (SolidBrush b = new SolidBrush(Color.FromArgb(array[i] | -16777216)))
 				{
-					graphics.FillEllipse(brush, rect);
+					g.FillEllipse(b, dRect);
 				}
-				using Pen pen = new Pen(Ui.Card, Ui.Sf(1.5f));
-				graphics.DrawEllipse(pen, rect);
+				using Pen pPen = new Pen(Ui.Card, Ui.Sf(1.5f));
+				g.DrawEllipse(pPen, dRect);
 			}
-			Ui.DrawText(r: new Rectangle(Ui.S(12), Ui.S(9), (int)num2 - Ui.S(16), Ui.S(22)), g: graphics, text: _p.Name, font: Ui.Bold, colour: Ui.Text, flags: TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter);
-			Rectangle r2 = new Rectangle(Ui.S(12), Ui.S(32), Width - Ui.S(24), Height - Ui.S(38));
-			string text;
-			if (_p.Description.Length > 0)
+
+			// Preset Title
+			Rectangle rTitle = new Rectangle(Ui.S(12), Ui.S(8), (int)startX - Ui.S(16), Ui.S(22));
+			Ui.DrawText(g, _p.Name, Ui.Bold, Ui.Text, rTitle, TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter);
+
+			// Description
+			Rectangle rDesc = new Rectangle(Ui.S(12), Ui.S(34), Width - Ui.S(24), Height - Ui.S(40));
+			string text = _p.Description.Length > 0 ? _p.Description : (_p.BuiltIn ? "" : "Your custom preset");
+			Ui.DrawText(g, text, Ui.Small, Ui.Dim, rDesc, TextFormatFlags.EndEllipsis | TextFormatFlags.WordBreak);
+
+			if (isCurr)
 			{
-				text = _p.Description;
-			}
-			else
-			{
-				text = (_p.BuiltIn ? "" : "Your look · right-click for more");
-			}
-			Ui.DrawText(graphics, text, Ui.Small, Ui.Dim, r2, TextFormatFlags.EndEllipsis | TextFormatFlags.WordBreak);
-			if (flag)
-			{
-				Ui.Glyph(graphics, "\ue73e", Ui.Icons, Ui.Accent, new Rectangle(Width - Ui.S(30), Height - Ui.S(28), Ui.S(22), Ui.S(22)));
+				Ui.Glyph(g, "\ue73e", Ui.Icons, Ui.Accent, new Rectangle(Width - Ui.S(26), Height - Ui.S(24), Ui.S(18), Ui.S(18)));
 			}
 		}
 
 		protected override void OnMouseClick(MouseEventArgs e)
 		{
 			base.OnMouseClick(e);
-			if (e.Button == MouseButtons.Left)
-			{
-				_w.ApplyPreset(_p);
-			}
-			else if (e.Button == MouseButtons.Right)
-			{
-				_w.PresetMenu(_p, this, e.Location);
-			}
+			if (e.Button == MouseButtons.Left) _w.ApplyPreset(_p);
+			else if (e.Button == MouseButtons.Right) _w.PresetMenu(_p, this, e.Location);
 		}
 	}
 
 	private sealed class ThemeChip : Widget
 	{
 		private readonly SettingsWindow _w;
-
 		private readonly Theme _t;
 
 		public ThemeChip(SettingsWindow w, Theme t)
 		{
 			_w = w;
 			_t = t;
-			Height = Ui.S(40);
-			Width = TextRenderer.MeasureText(t.Name, Ui.Body).Width + Ui.S(104);
+			Height = Ui.S(38);
+			Width = TextRenderer.MeasureText(t.Name, Ui.Body).Width + Ui.S(100);
 			Cursor = Cursors.Hand;
+			w._tips.SetToolTip(this, "Palette: " + t.Name);
 		}
 
 		protected override void OnPaint(PaintEventArgs e)
 		{
-			Graphics graphics = e.Graphics;
-			graphics.Clear(Ui.Back);
-			Ui.Smooth(graphics);
-			RectangleF rectangleF = new RectangleF(0.5f, 0.5f, (float)Width - 1f, (float)Height - 1f);
-			Graphics g = graphics;
-			RectangleF r = rectangleF;
-			float radius = Ui.Sf(20f);
-			Color c;
-			if (Down)
-			{
-				c = Ui.Raised;
-			}
-			else
-			{
-				c = (Hot ? Ui.Hover : Ui.Card);
-			}
-			Ui.Fill(g, r, radius, c);
-			Ui.Stroke(graphics, rectangleF, Ui.Sf(20f), Ui.Border);
+			Graphics g = e.Graphics;
+			g.Clear(Ui.Back);
+			Ui.Smooth(g);
+			RectangleF rect = new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f);
+			Color c = Down ? Ui.Raised : (Hot ? Ui.Hover : Ui.Card);
+			Ui.Fill(g, rect, Ui.Sf(18f), c);
+			Ui.Stroke(g, rect, Ui.Sf(18f), Hot ? Ui.Accent : Ui.Border, 1f);
+
 			int[] array = _t.Swatch();
-			float num = Ui.Sf(18f);
+			float num = Ui.Sf(16f);
 			for (int i = 0; i < array.Length; i++)
 			{
-				RectangleF rect = new RectangleF(Ui.Sf(10f) + (float)i * Ui.Sf(13f), ((float)Height - num) / 2f, num, num);
+				RectangleF dRect = new RectangleF(Ui.Sf(8f) + i * Ui.Sf(12f), (Height - num) / 2f, num, num);
 				using (SolidBrush brush = new SolidBrush(Color.FromArgb(array[i])))
 				{
-					graphics.FillEllipse(brush, rect);
+					g.FillEllipse(brush, dRect);
 				}
-				using Pen pen = new Pen(Ui.Card, Ui.Sf(1.5f));
-				graphics.DrawEllipse(pen, rect);
+				using Pen pen = new Pen(Ui.Card, Ui.Sf(1.2f));
+				g.DrawEllipse(pen, dRect);
 			}
-			int num2 = Ui.S(10 + 13 * (array.Length - 1) + 18 + 10);
-			Ui.DrawText(graphics, _t.Name, Ui.Body, Ui.Text, new Rectangle(num2, 0, Width - num2 - Ui.S(8), Height), TextFormatFlags.VerticalCenter);
+
+			int txtX = Ui.S(8 + 12 * (array.Length - 1) + 16 + 8);
+			Ui.DrawText(g, _t.Name, Ui.Body, Ui.Text, new Rectangle(txtX, 0, Width - txtX - Ui.S(6), Height), TextFormatFlags.VerticalCenter);
 		}
 
 		protected override void OnMouseClick(MouseEventArgs e)
 		{
 			base.OnMouseClick(e);
-			if (e.Button == MouseButtons.Left)
-			{
-				_w.ApplyTheme(_t);
-			}
+			if (e.Button == MouseButtons.Left) _w.ApplyTheme(_t);
 		}
 	}
-
 }

@@ -39,7 +39,7 @@ namespace MusicBeePlugin
             _about.TargetApplication = "VisualBee";
             _about.Type = PluginType.PanelView;
             _about.VersionMajor = 2;
-            _about.VersionMinor = 0;
+            _about.VersionMinor = 1;
             _about.Revision = 0;
             _about.MinInterfaceVersion = 41;
             _about.MinApiRevision = 53;
@@ -88,11 +88,11 @@ namespace MusicBeePlugin
         {
             if (panel == null)
             {
-                return 112;
+                return 0;
             }
             if (_host == null)
             {
-                return -1;
+                return 0;
             }
             if (panel.InvokeRequired)
             {
@@ -102,7 +102,7 @@ namespace MusicBeePlugin
             {
                 _host.Attach(panel);
             }
-            return -1;
+            return 0;
         }
 
         internal string StatusText()

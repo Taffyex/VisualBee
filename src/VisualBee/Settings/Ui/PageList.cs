@@ -15,14 +15,11 @@ internal sealed class PageList : Widget
 
 	private int _hot = -1;
 
-	public int RowHeight => Ui.S(34);
+	public int TabHeight => Ui.S(38);
 
 	public int Selected
 	{
-		get
-		{
-			return _selected;
-		}
+		get => _selected;
 		set
 		{
 			_selected = value;
@@ -35,44 +32,67 @@ internal sealed class PageList : Widget
 	public PageList()
 	{
 		Cursor = Cursors.Hand;
+		Height = Ui.S(38);
+	}
+
+	private Rectangle TabRect(int index)
+	{
+		int count = Math.Max(1, Pages.Count);
+		int tabW = Math.Max(Ui.S(60), (Width - Ui.S(16)) / count);
+		int x = Ui.S(8) + index * tabW;
+		return new Rectangle(x, Ui.S(3), tabW - Ui.S(4), Height - Ui.S(6));
 	}
 
 	protected override void OnPaint(PaintEventArgs e)
 	{
-		Graphics graphics = e.Graphics;
-		Ui.Smooth(graphics);
+		Graphics g = e.Graphics;
+		Ui.Smooth(g);
+
 		for (int i = 0; i < Pages.Count; i++)
 		{
-			Rectangle rectangle = new Rectangle(Ui.S(8), i * RowHeight + Ui.S(2), Width - Ui.S(16), RowHeight - Ui.S(4));
-			if (i == _selected)
+			Rectangle r = TabRect(i);
+			bool isSel = (i == _selected);
+			bool isHot = (i == _hot);
+
+			if (isSel)
 			{
-				Ui.Fill(graphics, rectangle, Ui.Sf(6f), Ui.Hover);
-				Ui.Fill(graphics, new RectangleF(rectangle.X, (float)rectangle.Y + Ui.Sf(8f), Ui.Sf(3f), (float)rectangle.Height - Ui.Sf(16f)), Ui.Sf(1.5f), Ui.Accent);
+				Ui.Fill(g, r, Ui.Sf(6f), Ui.Card);
+				Ui.Stroke(g, new RectangleF(r.X, r.Y, r.Width, r.Height), Ui.Sf(6f), Ui.Border, 1f);
+				Ui.Fill(g, new RectangleF(r.X + Ui.Sf(6f), r.Bottom - Ui.Sf(2.5f), r.Width - Ui.Sf(12f), Ui.Sf(2.5f)), Ui.Sf(1.25f), Ui.Accent);
 			}
-			else if (i == _hot)
+			else if (isHot)
 			{
-				Ui.Fill(graphics, rectangle, Ui.Sf(6f), Ui.Card);
+				Ui.Fill(g, r, Ui.Sf(6f), Ui.Hover);
 			}
-			Ui.DrawText(graphics, Pages[i], (i == _selected) ? Ui.Bold : Ui.Body, (i == _selected) ? Ui.Text : Ui.Dim, new Rectangle(rectangle.X + Ui.S(14), rectangle.Y, rectangle.Width - Ui.S(30), rectangle.Height), TextFormatFlags.VerticalCenter);
+
+			Color txtCol = isSel ? Ui.Text : (isHot ? Ui.Text : Ui.Dim);
+			Font font = isSel ? Ui.Bold : Ui.Body;
+			Ui.DrawText(g, Pages[i], font, txtCol, r, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+
 			if (Marked.Contains(Pages[i]))
 			{
-				using SolidBrush brush = new SolidBrush(Ui.Accent);
-				graphics.FillEllipse(brush, (float)rectangle.Right - Ui.Sf(14f), (float)rectangle.Y + (float)rectangle.Height / 2f - Ui.Sf(3f), Ui.Sf(6f), Ui.Sf(6f));
+				using SolidBrush b = new SolidBrush(Ui.Accent);
+				g.FillEllipse(b, (float)r.Right - Ui.Sf(10f), (float)r.Y + Ui.Sf(6f), Ui.Sf(5f), Ui.Sf(5f));
 			}
 		}
+	}
+
+	private int HitIndex(Point pt)
+	{
+		for (int i = 0; i < Pages.Count; i++)
+		{
+			if (TabRect(i).Contains(pt)) return i;
+		}
+		return -1;
 	}
 
 	protected override void OnMouseMove(MouseEventArgs e)
 	{
 		base.OnMouseMove(e);
-		int num = e.Y / RowHeight;
-		if (num >= Pages.Count)
+		int hit = HitIndex(e.Location);
+		if (hit != _hot)
 		{
-			num = -1;
-		}
-		if (num != _hot)
-		{
-			_hot = num;
+			_hot = hit;
 			Invalidate();
 		}
 	}
@@ -87,14 +107,11 @@ internal sealed class PageList : Widget
 	protected override void OnMouseClick(MouseEventArgs e)
 	{
 		base.OnMouseClick(e);
-		int num = e.Y / RowHeight;
-		if (num >= 0 && num < Pages.Count && num != _selected)
+		int hit = HitIndex(e.Location);
+		if (hit >= 0 && hit < Pages.Count && hit != _selected)
 		{
-			Selected = num;
-			if (Changed != null)
-			{
-				Changed(this, EventArgs.Empty);
-			}
+			Selected = hit;
+			Changed?.Invoke(this, EventArgs.Empty);
 		}
 	}
 }

@@ -68,7 +68,7 @@ internal sealed partial class SpectrumView
 		float num4 = (float)width - num;
 		float num5 = (float)height - num;
 		bool flag = look.Layout != 6;
-		geometry.Shown = ((look.Engine == 0 && look.FillWidth) ? FoobarAnalyzer.UsableBands(_bands, _rate) : _bands);
+		geometry.Shown = ((look.Engine == 0 && look.FillWidth) ? GaussianAnalyzer.UsableBands(_bands, _rate) : _bands);
 		float num6 = (float)Math.Round(4f * scale);
 		geometry.DbColumn = flag && look.DbLabels && (float)sIZE.cx + num6 + (float)(geometry.Shown * 2) <= num4 - num2;
 		if (geometry.DbColumn)

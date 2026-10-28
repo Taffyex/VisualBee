@@ -210,4 +210,38 @@ internal sealed partial class LookStore
 		WriteText(file, stringBuilder.ToString());
 	}
 
+	public void DeletePreset(Preset p)
+	{
+		if (p == null || p.BuiltIn) return;
+		try
+		{
+			if (!string.IsNullOrEmpty(p.File) && File.Exists(p.File))
+			{
+				File.Delete(p.File);
+			}
+		}
+		catch { }
+	}
+
+	public void RenamePreset(Preset p, string newName)
+	{
+		if (p == null || p.BuiltIn) return;
+		string oldFile = p.File;
+		p.Name = newName;
+		p.File = null;
+		SavePreset(p);
+		try
+		{
+			if (!string.IsNullOrEmpty(oldFile) && File.Exists(oldFile) && oldFile != p.File)
+			{
+				File.Delete(oldFile);
+			}
+		}
+		catch { }
+	}
+
+	private void DummyEnd()
+	{
+	}
+
 }

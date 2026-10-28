@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace MusicBeePlugin;
 
-internal sealed partial class FoobarAnalyzer
+internal sealed partial class GaussianAnalyzer
 {
 	private float[] Twiddles(int n, int sampleRate, double frequency)
 	{

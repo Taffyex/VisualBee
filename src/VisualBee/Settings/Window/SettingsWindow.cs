@@ -13,52 +13,27 @@ internal sealed partial class SettingsWindow : Form
 	private const string PresetsPage = "Presets";
 
 	private readonly LookStore _store;
-
 	private readonly Func<string> _audioStatus;
-
 	private readonly PageList _pages = new PageList();
-
 	private readonly ScrollPane _content = new ScrollPane();
-
 	private readonly InputBox _search = new InputBox();
-
 	private readonly Label _title = new Label();
-
-	private readonly Label _subtitle = new Label();
-
 	private readonly Label _hintTitle = new Label();
-
 	private readonly Label _hintText = new Label();
-
 	private readonly FlatButton _resetPage = new FlatButton("Reset page", "\ue7a7");
-
 	private readonly FlatButton _resetAll = new FlatButton("Reset all");
-
 	public bool _hideInactive = true;
-
 	private readonly FlatButton _hideBtn = new FlatButton("Hide unused", "\ue71c");
-
 	private readonly FlatButton _quickSave = new FlatButton("Save Look…", "\ue74e");
-
-	private readonly FlatButton _close = new FlatButton("Close")
-	{
-		Primary = true
-	};
-
+	private readonly FlatButton _close = new FlatButton("Close") { Primary = true };
 	private readonly ToolTip _tips = new ToolTip();
-
 	private readonly List<SettingRow> _rows = new List<SettingRow>();
-
-	private readonly List<SectionHeader> _headers = new List<SectionHeader>();
-
-	private readonly Timer _statusTimer = new Timer
-	{
-		Interval = 500
-	};
-
+	private readonly List<RackSectionCard> _cards = new List<RackSectionCard>();
+	private readonly Timer _statusTimer = new Timer { Interval = 500 };
 	private string _page;
-
 	private Label _audio;
+	private Panel _ribbon;
+	private ComboBox _ribbonPresets;
 
 	public LookStore Store => _store;
 
@@ -66,7 +41,7 @@ internal sealed partial class SettingsWindow : Form
 	{
 		_store = store;
 		_audioStatus = audioStatus;
-		Text = store.Title + " settings";
+		Text = "VisualBee Studio";
 		Font = Ui.Body;
 		BackColor = Ui.Back;
 		ForeColor = Ui.Text;
@@ -74,123 +49,192 @@ internal sealed partial class SettingsWindow : Form
 		StartPosition = FormStartPosition.Manual;
 		ShowInTaskbar = false;
 		KeyPreview = true;
-		MinimumSize = new Size(Ui.S(720), Ui.S(520));
-		Size = new Size(Ui.S(940), Ui.S(700));
+		MinimumSize = new Size(Ui.S(740), Ui.S(540));
+		Size = new Size(Ui.S(980), Ui.S(720));
 		Icon = null;
 		ShowIcon = false;
 		SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, value: true);
+
+		// 1. Top Studio Deck Header (Height = 52px)
 		Panel header = new Panel
 		{
 			Dock = DockStyle.Top,
-			Height = Ui.S(64),
+			Height = Ui.S(52),
 			BackColor = Ui.Back
 		};
-		_title.Text = store.Title;
-		_title.Font = Ui.Heading;
-		_title.ForeColor = Ui.Text;
+
+		_title.Text = "🐝 VISUALBEE STUDIO";
+		_title.Font = Ui.Bold;
+		_title.ForeColor = Ui.Accent;
 		_title.AutoSize = true;
-		_title.Location = new Point(Ui.S(20), Ui.S(10));
-		_subtitle.Font = Ui.Small;
-		_subtitle.ForeColor = Ui.Dim;
-		_subtitle.AutoSize = true;
-		_subtitle.Location = new Point(Ui.S(22), Ui.S(38));
-		_search.Size = new Size(Ui.S(240), Ui.S(30));
-		_search.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-		Ui.CueBanner(_search.Box, "Search settings  (Ctrl+F)");
-		_search.Box.TextChanged += (object s, EventArgs a) =>
-		{
-			ShowPage(_page);
-		};
-		_hideBtn.Click += (object s, EventArgs a) => { _hideInactive = !_hideInactive; _hideBtn.Text = _hideInactive ? "Hide unused" : "Show all"; StoreChanged(this, EventArgs.Empty); };
-		_quickSave.Click += (object s, EventArgs a) => SaveLook();
-		_tips.SetToolTip(_hideBtn, "Toggles hiding settings that do not apply to current configuration");
-		_tips.SetToolTip(_quickSave, "Save current configuration as a preset");
-		header.Controls.AddRange(new Control[5] { _title, _subtitle, _quickSave, _hideBtn, _search });
-		header.Resize += (object s, EventArgs a) =>
-		{
-			_search.Location = new Point(header.Width - _search.Width - Ui.S(20), Ui.S(17));
-			_hideBtn.Location = new Point(_search.Left - _hideBtn.Width - Ui.S(8), Ui.S(17));
-			_quickSave.Location = new Point(_hideBtn.Left - _quickSave.Width - Ui.S(8), Ui.S(17));
-		};
-		Panel panel = new Panel
-		{
-			Dock = DockStyle.Left,
-			Width = Ui.S(184),
-			BackColor = Ui.Side
-		};
-		_pages.Dock = DockStyle.Fill;
+		_title.Location = new Point(Ui.S(16), Ui.S(16));
+
 		_pages.Pages.Add("Presets");
 		_pages.Pages.AddRange(store.Schema.Pages());
-		_pages.Changed += (object s, EventArgs a) =>
+		_pages.Height = Ui.S(38);
+		_pages.Changed += (s, a) =>
 		{
 			_search.Box.Text = "";
 			ShowPage(_pages.Pages[_pages.Selected]);
 		};
-		_audio = new Label
+
+		_search.Size = new Size(Ui.S(180), Ui.S(28));
+		Ui.CueBanner(_search.Box, "Search (Ctrl+F)");
+		_search.Box.TextChanged += (s, a) => ShowPage(_page);
+
+		_hideBtn.Click += (s, a) =>
 		{
-			Dock = DockStyle.Bottom,
-			Height = Ui.S(70),
-			ForeColor = Ui.Faint,
-			Font = Ui.Small,
-			Padding = new Padding(Ui.S(14), 0, Ui.S(8), Ui.S(10))
+			_hideInactive = !_hideInactive;
+			_hideBtn.Text = _hideInactive ? "Hide unused" : "Show all";
+			StoreChanged(this, EventArgs.Empty);
 		};
-		panel.Controls.Add(_pages);
-		panel.Controls.Add(_audio);
+		_quickSave.Click += (s, a) => SaveLook();
+		_tips.SetToolTip(_hideBtn, "Toggle hiding inactive controls for the current mode");
+		_tips.SetToolTip(_quickSave, "Save current configuration as a preset");
+
+		header.Controls.AddRange(new Control[5] { _title, _pages, _quickSave, _hideBtn, _search });
+		header.Resize += (s, a) =>
+		{
+			_search.Location = new Point(header.Width - _search.Width - Ui.S(14), Ui.S(12));
+			_hideBtn.Location = new Point(_search.Left - _hideBtn.Width - Ui.S(6), Ui.S(12));
+			_quickSave.Location = new Point(_hideBtn.Left - _quickSave.Width - Ui.S(6), Ui.S(12));
+			int pagesLeft = _title.Right + Ui.S(16);
+			int pagesW = Math.Max(Ui.S(200), _quickSave.Left - pagesLeft - Ui.S(8));
+			_pages.SetBounds(pagesLeft, Ui.S(7), pagesW, Ui.S(38));
+		};
+
+		// 2. Persistent Quick-Switch Ribbon (Height = 40px)
+		BuildRibbon();
+
+		// 3. Bottom Hardware Telemetry Strip (Height = 44px)
 		Panel footer = new Panel
 		{
 			Dock = DockStyle.Bottom,
-			Height = Ui.S(92),
+			Height = Ui.S(44),
 			BackColor = Ui.Side
 		};
+
+		_audio = new Label
+		{
+			AutoSize = false,
+			Width = Ui.S(240),
+			Height = Ui.S(36),
+			Location = new Point(Ui.S(14), Ui.S(4)),
+			ForeColor = Ui.Faint,
+			Font = Ui.Small,
+			TextAlign = ContentAlignment.MiddleLeft
+		};
+
 		_hintTitle.Font = Ui.Bold;
 		_hintTitle.ForeColor = Ui.Text;
 		_hintTitle.AutoSize = false;
-		_hintText.Font = Ui.Body;
+		_hintText.Font = Ui.Small;
 		_hintText.ForeColor = Ui.Dim;
 		_hintText.AutoSize = false;
-		footer.Controls.AddRange(new Control[5] { _hintTitle, _hintText, _resetPage, _resetAll, _close });
-		footer.Resize += (object s, EventArgs a) =>
-		{
-			LayoutFooter(footer);
-		};
-		_resetPage.Click += (object s, EventArgs a) =>
-		{
-			ResetPage();
-		};
-		_resetAll.Click += (object s, EventArgs a) =>
-		{
-			ResetAll();
-		};
-		_close.Click += (object s, EventArgs a) =>
-		{
-			Close();
-		};
-		_tips.SetToolTip(_resetPage, "Puts every setting on this page back to its default");
-		_tips.SetToolTip(_resetAll, "Puts every setting back to its default (your sync delay and frame rate stay)");
+
+		_resetPage.Click += (s, a) => ResetPage();
+		_resetAll.Click += (s, a) => ResetAll();
+		_close.Click += (s, a) => Close();
+		_tips.SetToolTip(_resetPage, "Puts every setting on this page back to default");
+		_tips.SetToolTip(_resetAll, "Reset all visual settings to default");
+
+		footer.Controls.AddRange(new Control[6] { _audio, _hintTitle, _hintText, _resetPage, _resetAll, _close });
+		footer.Resize += (s, a) => LayoutFooter(footer);
+
+		// 4. Main Scrollable Rack Content
 		_content.Dock = DockStyle.Fill;
-		_content.BackColor = Ui.Back;
-		_content.MouseLeave += (object s, EventArgs a) =>
-		{
-			Hint(null);
-		};
-		_content.Resize += (object s, EventArgs a) =>
-		{
-			LayoutContent();
-		};
+		_content.MouseLeave += (s, a) => Hint(null);
+		_content.Resize += (s, a) => LayoutContent();
+
 		Controls.Add(_content);
 		Controls.Add(footer);
-		Controls.Add(panel);
+		Controls.Add(_ribbon);
 		Controls.Add(header);
+
 		_store.Changed += StoreChanged;
-		_statusTimer.Tick += (object s, EventArgs a) =>
-		{
-			ShowAudio();
-		};
+		_statusTimer.Tick += (s, a) => ShowAudio();
 		_statusTimer.Start();
 		ShowAudio();
+
 		ShowPage((_pages.Pages.Count > 1) ? _pages.Pages[1] : "Presets");
 		_pages.Selected = _pages.Pages.IndexOf(_page);
 		ShowStatus();
+	}
+
+	private void BuildRibbon()
+	{
+		_ribbon = new Panel
+		{
+			Dock = DockStyle.Top,
+			Height = Ui.S(38),
+			BackColor = Ui.Side
+		};
+
+		Label lblPre = new Label
+		{
+			Text = "PRESET",
+			Font = Ui.Section,
+			ForeColor = Ui.Dim,
+			AutoSize = true,
+			Location = new Point(Ui.S(14), Ui.S(11))
+		};
+
+		_ribbonPresets = new ComboBox
+		{
+			DropDownStyle = ComboBoxStyle.DropDownList,
+			Width = Ui.S(170),
+			Location = new Point(Ui.S(68), Ui.S(7)),
+			Font = Ui.Small
+		};
+
+		UpdateRibbonPresets();
+		_ribbonPresets.SelectedIndexChanged += (s, a) =>
+		{
+			string name = _ribbonPresets.SelectedItem?.ToString();
+			if (!string.IsNullOrEmpty(name) && name != _store.PresetName)
+			{
+				Preset p = _store.BuiltIn.FirstOrDefault(x => x.Name == name) ?? _store.UserPresets().FirstOrDefault(x => x.Name == name);
+				if (p != null) _store.Apply(p);
+			}
+		};
+
+		Label lblPal = new Label
+		{
+			Text = "PALETTE",
+			Font = Ui.Section,
+			ForeColor = Ui.Dim,
+			AutoSize = true,
+			Location = new Point(Ui.S(252), Ui.S(11))
+		};
+
+		_ribbon.Controls.AddRange(new Control[3] { lblPre, _ribbonPresets, lblPal });
+
+		// Add quick theme swatch pills
+		int curX = Ui.S(314);
+		foreach (Theme t in _store.Themes.Take(7))
+		{
+			FlatButton pill = new FlatButton(t.Name)
+			{
+				Font = Ui.Small,
+				Height = Ui.S(24),
+				Location = new Point(curX, Ui.S(7))
+			};
+			pill.Width = pill.Ideal();
+			pill.Click += (s, a) => _store.Apply(t);
+			_tips.SetToolTip(pill, "Switch palette to " + t.Name);
+			_ribbon.Controls.Add(pill);
+			curX += pill.Width + Ui.S(6);
+		}
+	}
+
+	private void UpdateRibbonPresets()
+	{
+		if (_ribbonPresets == null) return;
+		_ribbonPresets.Items.Clear();
+		foreach (Preset p in _store.BuiltIn) _ribbonPresets.Items.Add(p.Name);
+		foreach (Preset p in _store.UserPresets()) _ribbonPresets.Items.Add(p.Name);
+		int idx = _ribbonPresets.Items.IndexOf(_store.PresetName);
+		if (idx >= 0) _ribbonPresets.SelectedIndex = idx;
 	}
 
 	protected override void OnHandleCreated(EventArgs e)
@@ -232,108 +276,78 @@ internal sealed partial class SettingsWindow : Form
 
 	private void LayoutFooter(Panel footer)
 	{
-		int num = Ui.S(16);
-		int num2 = footer.Width - num;
-		FlatButton[] array = new FlatButton[3] { _close, _resetAll, _resetPage };
-		foreach (FlatButton flatButton in array)
+		int pad = Ui.S(14);
+		int rX = footer.Width - pad;
+		FlatButton[] btns = new FlatButton[3] { _close, _resetAll, _resetPage };
+		foreach (FlatButton b in btns)
 		{
-			flatButton.Width = flatButton.Ideal();
-			num2 -= flatButton.Width;
-			flatButton.Location = new Point(num2, footer.Height - flatButton.Height - Ui.S(14));
-			num2 -= Ui.S(8);
+			b.Width = b.Ideal();
+			rX -= b.Width;
+			b.Location = new Point(rX, Ui.S(8));
+			rX -= Ui.S(6);
 		}
-		int num3 = footer.Width - num;
-		_hintTitle.SetBounds(num, Ui.S(10), num3 - num, Ui.S(18));
-		_hintText.SetBounds(num, Ui.S(29), Math.Max(Ui.S(100), _resetPage.Left - num - Ui.S(16)), footer.Height - Ui.S(33));
+
+		int hintW = Math.Max(Ui.S(120), rX - _audio.Right - Ui.S(24));
+		_hintTitle.SetBounds(_audio.Right + Ui.S(12), Ui.S(4), hintW, Ui.S(18));
+		_hintText.SetBounds(_audio.Right + Ui.S(12), Ui.S(22), hintW, Ui.S(18));
 	}
 
 	private void ShowAudio()
 	{
-		string text = ((_audioStatus != null) ? _audioStatus() : "");
-		if (_audio.Text != text)
-		{
-			_audio.Text = text;
-		}
+		string text = _audioStatus?.Invoke() ?? "";
+		if (_audio.Text != text) _audio.Text = text;
 	}
 
 	private void StoreChanged(object sender, EventArgs e)
 	{
-		if (IsDisposed)
-		{
-			return;
-		}
+		if (IsDisposed) return;
 		if (InvokeRequired)
 		{
-			BeginInvoke((Action)(() =>
-			{
-				StoreChanged(sender, e);
-			}));
+			BeginInvoke(new Action(() => StoreChanged(sender, e)));
 			return;
 		}
+
 		Look current = _store.Current;
-		bool anyVisibilityChanged = false;
+		bool visChanged = false;
 		foreach (SettingRow row in _rows)
 		{
-			bool wasVisible = row.Visible;
+			bool wasVis = row.Visible;
 			row.ShowValue(current);
-			if (row.Visible != wasVisible)
-			{
-				anyVisibilityChanged = true;
-			}
+			if (row.Visible != wasVis) visChanged = true;
 		}
-		foreach (SectionHeader header in _headers)
-		{
-			bool wasVisible = header.Visible;
-			header.ShowState(current);
-			if (header.Visible != wasVisible)
-			{
-				anyVisibilityChanged = true;
-			}
-		}
-		if (anyVisibilityChanged)
-		{
-			LayoutContent();
-		}
+		if (visChanged) LayoutContent();
 
 		if (_page == "Presets")
 		{
-			foreach (Control control in _content.Controls)
-			{
-				control.Invalidate();
-			}
+			foreach (Control control in _content.Controls) control.Invalidate();
 		}
+		UpdateRibbonPresets();
 		ShowStatus();
 	}
 
 	private void ShowStatus()
 	{
 		Look l = _store.Current;
-		string text = ((_store.PresetName.Length > 0) ? (_store.PresetName + (_store.Modified ? " (changed)" : "")) : "your own settings");
-		int num = _store.Schema.All.Count((Setting s) => !s.Personal && !s.IsDefault(l));
-		_subtitle.Text = "Look: " + text + "   ·   " + ((num == 0) ? "all settings at their defaults" : (num + " settings differ from the defaults"));
 		_pages.Marked.Clear();
 		foreach (Setting item in _store.Schema.All)
 		{
-			if (!item.IsDefault(l))
-			{
-				_pages.Marked.Add(item.Page);
-			}
+			if (!item.IsDefault(l)) _pages.Marked.Add(item.Page);
 		}
 		_pages.Invalidate();
-		_resetPage.Enabled = _page != "Presets" && _search.Box.Text.Length == 0 && _store.Schema.All.Any((Setting s) => s.Page == _page && !s.IsDefault(l));
+		_resetPage.Enabled = _page != "Presets" && _search.Box.Text.Length == 0 && _store.Schema.All.Any(s => s.Page == _page && !s.IsDefault(l));
 	}
 
 	public void Hint(Setting s)
 	{
 		if (s == null)
 		{
-			_hintTitle.Text = ((_page == "Presets") ? "Presets" : _page);
+			_hintTitle.Text = (_page == "Presets") ? "Presets" : _page;
 			_hintText.Text = PageHint(_page);
 		}
 		else
 		{
-			_hintTitle.Text = s.Label + (s.IsDefault(_store.Current) ? "" : ("   (default: " + Describe(s, s.Default) + ")"));
-			_hintText.Text = s.Hint + (s.IsEnabled(_store.Current) ? "" : "   Not used with the current settings.");
+			_hintTitle.Text = s.Label + (s.IsDefault(_store.Current) ? "" : " (default: " + Describe(s, s.Default) + ")");
+			_hintText.Text = s.Hint + (s.IsEnabled(_store.Current) ? "" : " [Inactive in current mode]");
 		}
 	}
 
@@ -341,18 +355,10 @@ internal sealed partial class SettingsWindow : Form
 	{
 		switch (s.Kind)
 		{
-		case SettingKind.Toggle:
-			if (!(bool)value)
-			{
-				return "off";
-			}
-			return "on";
-		case SettingKind.Number:
-			return s.Display((double)value);
-		case SettingKind.Choice:
-			return s.Choices[(int)value];
-		default:
-			return ColourMath.ToHex((int)value, s.Alpha);
+		case SettingKind.Toggle: return (bool)value ? "on" : "off";
+		case SettingKind.Number: return s.Display((double)value);
+		case SettingKind.Choice: return s.Choices[(int)value];
+		default: return ColourMath.ToHex((int)value, s.Alpha);
 		}
 	}
 
@@ -360,13 +366,12 @@ internal sealed partial class SettingsWindow : Form
 	{
 		return page switch
 		{
-			"Presets" => "Click a look to use it; colour themes change only the colours. Hover any setting on the other pages to see what it does.", 
-			"Studio" => "Layout arrangement, bar count, shape, transparent glass tubes, symmetry, and waveform.", 
-			"Atmosphere & FX" => "Background, 3D Cyber-Grid horizon, floating particles, bloom glow, afterglow, and screen optics.", 
-			"Colours" => "Every colour the visualisation uses, and how colours move.", 
-			"Audio & System" => "Audio refresh rate, sensitivity gain, FFT analysis resolution, ballistics, and display frame rate.", 
-			_ => "Hover a setting to see what it does. The arrow beside a changed setting puts it back to its default.", 
+			"Presets" => "Select a signature look or palette. Hover any control for its audio specification.",
+			"Studio" => "Rack layout, bar geometry, transparent vacuum tubes, symmetry, and waveform.",
+			"Optics & FX" => "Screen optics, 3D Cyber-Grid horizon, floating particles, bloom glow, and scale lines.",
+			"Colours" => "Complete spectral color balance, gradient stops, and audio-reactive color modulation.",
+			"Audio & System" => "Audio refresh cadence, direct BASS tap, FFT resolution, and display frame rate.",
+			_ => "Hover any control to inspect its hardware telemetry.",
 		};
 	}
-
 }

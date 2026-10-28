@@ -128,7 +128,7 @@ internal sealed partial class SpectrumView
 
 	private static string BandLabel(int band, int bands)
 	{
-		double num = FoobarAnalyzer.BandFrequency(band, bands);
+		double num = GaussianAnalyzer.BandFrequency(band, bands);
 		long num2 = (long)Math.Round(num * 0.001, MidpointRounding.AwayFromZero);
 		if (num2 > 9)
 		{

@@ -12,7 +12,7 @@ internal static class CommonLook
 
 	public static void AddBackground(Schema s)
 	{
-		s.Page("Atmosphere & FX").Section("Background");
+		s.Page("Optics & FX").Section("Background");
 		s.Choice("bg.mode", "Background", "What fills the panel behind the visualisation. Aurora drifts slowly and brightens with the music; Album art shows the playing track's cover, blurred and dimmed.", BackgroundModes.Names, BackgroundModes.Tokens, (Look l) => l.BackgroundMode, (Look l, int v) =>
 		{
 			l.BackgroundMode = v;
@@ -115,7 +115,7 @@ internal static class CommonLook
 
 	public static void AddEffects(Schema s)
 	{
-		s.Page("Atmosphere & FX").Section("Glow");
+		s.Page("Optics & FX").Section("Glow");
 		s.Toggle("fx.bloom", "Glow", "Bright parts bleed light into their surroundings, as on a screen photographed at night. Costs almost nothing: it runs on the graphics card.", (Look l) => l.Bloom, (Look l, bool v) =>
 		{
 			l.Bloom = v;
@@ -190,7 +190,7 @@ internal static class CommonLook
 
 	public static void AddAdvanced(Schema s)
 	{
-		s.Page("Audio & System").Section("Timing & Display");
+		s.Page("Audio").Section("Timing & Display");
 		s.Integer("sync.delayMs", "Sync delay", "Shows the audio this much later, to line the picture up with what you hear (for example through Bluetooth headphones). Ctrl+scroll over the panel changes it too; add Shift for 1 ms steps.", 0, 500, 5, "ms", (Look l) => l.DelayMs, (Look l, int v) =>
 		{
 			l.DelayMs = v;

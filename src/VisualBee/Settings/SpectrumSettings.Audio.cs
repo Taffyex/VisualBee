@@ -47,7 +47,7 @@ internal static partial class SpectrumSettings
 
 	private static void AddParticles(Schema s)
 	{
-		s.Page("Atmosphere & FX").Section("Particles & Embers");
+		s.Page("Optics & FX").Section("Particles & Embers");
 		s.Toggle("particles", "Particles", "Sparks of light that fly off the bars and glow in the bloom pass.", (SpectrumLook l) => l.Particles, (SpectrumLook l, bool v) =>
 		{
 			l.Particles = v;
@@ -113,7 +113,7 @@ internal static partial class SpectrumSettings
 
 	private static void AddAnalysis(Schema s)
 	{
-		s.Page("Audio & System").Section("Audio Engine");
+		s.Page("Audio").Section("Audio Engine");
 		s.Choice("audio.source", "Audio capture hook", "Capture method. Auto uses direct BASS stream with seamless API fallback if direct audio is silent.", SpectrumLook.AudioSourceNames, SpectrumLook.AudioSourceTokens, (SpectrumLook l) => l.AudioSource, (SpectrumLook l, int v) =>
 		{
 			l.AudioSource = v;
@@ -126,11 +126,11 @@ internal static partial class SpectrumSettings
 		{
 			l.Sensitivity = v;
 		}).Words("sensitivity gain volume");
-		s.Choice("engine", "Analyser", "foobar2000 (classic) reproduces foobar's Gaussian analysis; Modern lets you choose frequency range, scale, window and resolution.", SpectrumLook.EngineNames, SpectrumLook.EngineTokens, (SpectrumLook l) => l.Engine, (SpectrumLook l, int v) =>
+		s.Choice("engine", "Analyser", "Gaussian (Smooth) provides analog-smooth Gaussian windowed analysis; Modern lets you choose frequency range, scale, window and resolution.", SpectrumLook.EngineNames, SpectrumLook.EngineTokens, (SpectrumLook l) => l.Engine, (SpectrumLook l, int v) =>
 		{
 			l.Engine = v;
 		});
-		s.Toggle("fill", "Fill the width", "Spreads usable bands over the whole width when using foobar2000 engine.", (SpectrumLook l) => l.FillWidth, (SpectrumLook l, bool v) =>
+		s.Toggle("fill", "Fill the width", "Spreads usable bands over the whole width when using the Gaussian engine.", (SpectrumLook l) => l.FillWidth, (SpectrumLook l, bool v) =>
 		{
 			l.FillWidth = v;
 		}).When((Look l) => ((SpectrumLook)l).Engine == 0);

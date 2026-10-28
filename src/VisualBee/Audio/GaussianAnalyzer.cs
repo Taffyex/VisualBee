@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace MusicBeePlugin;
 
-internal sealed partial class FoobarAnalyzer
+internal sealed partial class GaussianAnalyzer
 {
 	public static readonly double FloorValue = Math.Pow(2.0, -24.0);
 

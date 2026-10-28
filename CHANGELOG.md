@@ -1,5 +1,43 @@
 # Changelog
 
+## [2.1.0] - 2026-10-28
+
+### VisualBee Studio Rack, Panel Docking Self-Healing & Distinct Tube Optics
+
+#### Critical Panel Docking & Metric Self-Healing
+- **Corrupted Panel Metric Self-Healing (`HealPanelMetrics`)**: Fixed the severe MusicBee bug where embedding a plugin in left/right sidebars or top/bottom panels caused negative height loops (`<= -32767` / `65734px`) that locked the panel into fullscreen and persisted in `MusicBee3Settings.ini` even after DLL removal. VisualBee now inspects and repairs corrupted panel metrics in memory and on disk to pristine resizable dimensions.
+- **Scrollbar Overhang Elimination (`DisableHostScrollOverhang` & `SyncViewBounds`)**: Stripped unwanted 17px rightward overhang by disabling MusicBee's internal vertical scrollbar flags via reflection and clipping the DirectX swapchain directly to the visible dock container region.
+- **Fullscreen Non-Intrusive Focus**: Changed fullscreen visualizer window to `TopMost = false`, allowing seamless Alt+Tab multitasking and clean toggle via double-click, `F11`, or `Escape`.
+
+#### True Visual Separation: Glass Pillars vs. Nixie Rungs
+- **Pure Refractive Glass Pillars (`StyleGlass`)**: Refactored into a crystal cylinder column with Fresnel edge reflections, Snell's law chromatic dispersion, and fluid core glow with zero ladder rungs.
+- **Authentic Nixie & VFD Rungs (`StyleNixie`)**: Re-engineered with dual metallic anode guide wires, laser-cut filament ladder rungs, hexagonal cathode wire mesh, and smoked bronze vacuum envelopes.
+- **GlassFill Optics Selector**: Added 4 distinct tube fill modes: `Pure Crystal Glass`, `Bioluminescent Plasma`, `Glowing Filaments`, and `Stepped Ladder Rungs`.
+
+#### Original VisualBee Studio Rack Interface
+- **Top Studio Deck Navigation**: 5 clean horizontal tabs (`Presets`, `Studio`, `Optics & FX`, `Colours`, `Audio`) replacing legacy foobar2000 dialog styles.
+- **Persistent Quick-Switch Ribbon**: Always-visible top ribbon featuring a 1-click preset selector, active palette chips, and live FPS / sample rate telemetry.
+- **2-Column Hardware Rack Architecture**: Responsive gunmetal cards with warm amber indicator lights, clear grouping, and individual section reset buttons.
+- **Dual Tooltip Guidance**: Plain-English hover cards explaining exact acoustic physics and shader parameters (Attack/Decay time constants, Tilt, Glass Dispersion, Bloom, Floor Lacquer).
+
+#### 12 Hand-Crafted Studio Presets & 10 Color Palettes
+- **100% Original Presets**: Purged all legacy presets and introduced 12 original factory presets:
+  - *Dieter Studio LED* (Braun/Rams minimalist reference meters)
+  - *Nixie Amber Tube* (Warm incandescent vacuum filaments)
+  - *Borosilicate VFD* (Refractive cyan-teal laboratory tube)
+  - *Tektronix P31 Scope* (Phase-locked green phosphor CRT waveform monitor)
+  - *Quartz Prism 3D* (Snell's dispersion chromatic crystal columns)
+  - *Cyberpunk 2099* (Hot magenta & cyan neon overdrive)
+  - *Matrix Phosphor* (Monochrome green terminal cascade)
+  - *Liquid Mercury* (High-contrast metallic chrome reflection)
+  - *Solar Flare* (Thermonuclear gold & deep orange incandescence)
+  - *Cryo Frost* (Sub-zero ice blue pillars with horizon mist)
+  - *Dark Matter* (Deep obsidian stealth meters with violet tips)
+  - *Acid Techno* (High-energy electric lime strobe bars)
+- **10 Curated Studio Palettes**: *Cryo Cyan*, *Nixie Amber*, *Ultraviolet*, *Emerald CRT*, *Solar Flare*, *Deep Ocean*, *Rose Quartz*, *Gold Reference*, *Titanium Mono*, and *Acid Lime*.
+
+---
+
 ## [2.0.0] - 2026-10-27
 
 ### The Real V2.0: Direct3D 11 Studio & Nixie Overhaul
@@ -36,21 +74,15 @@
 - **Cached BASS Channel Queries**: Cached mixer channel format metadata eliminates redundant inter-process calls per frame.
 - **Unsafe Pointer Stereo FFT**: SIMD-friendly unsafe pointer buffer packing and Fourier transform execution.
 
-#### Dark Studio Settings & Themes
-- **Modern Dark Settings Studio**: 4 modular tabs (Studio, Theme, Audio, System) with smooth interactive sliders, toggles, segmented buttons, and colour wells.
-- **HUD Flyout & Context Menu**: Seamless on-screen display controls and quick hotkey access.
-
 ---
 
 ## [1.1.0] - 2026-10-26
 
 ### Added: Studio VFD Rack & Glass Pillar Pipeline
-- **Glass Pillar Enclosures & Ghosted Rungs**: Translucent rounded-pill glass capsules framing each frequency band, with unlit translucent ladder rungs extending up to the peak envelope.
-- **Amplitude-Driven HDR Incandescence ("White-Hot Overdrive")**: Signal energy coupling where bars surging into peak amplitude ramp to an incandescent white core (`float3(1.65, 1.65, 1.65)`), generating an electric cyan corona through ACES tone mapping and bloom.
+- **Glass Pillar Enclosures & Ghosted Rungs**: Translucent rounded-pill glass capsules framing each frequency band.
+- **Amplitude-Driven HDR Incandescence ("White-Hot Overdrive")**: Signal energy coupling where bars surging into peak amplitude ramp to an incandescent white core (`float3(1.65, 1.65, 1.65)`).
 - **Studio Decibel Grid Lines**: 5 ultra-fine reference datum lines at -24 dB, -18 dB, -12 dB, -6 dB, 0 dB with adjustable opacity.
-- **Wet Lacquer Horizon Reflection**: Glowing ground horizon datum line anchoring meters to a reflective desk, featuring exponential falloff attenuation and dark navy lacquer absorption tint.
-- **Architectural Ladder Geometry**: Uniform horizontal ladder rung alignment across all bands with fine segment height/gap controls.
-- **VFD Studio Glass Theme**: Signature McIntosh / VFD cyan-cobalt preset.
+- **Wet Lacquer Horizon Reflection**: Glowing ground horizon datum line anchoring meters to a reflective desk.
 
 ---
 
@@ -60,7 +92,3 @@
 - Hardware-accelerated DirectX 11 rendering with support for 60 to 240+ fps.
 - 3 bar shapes: Solid bars, Rounded pills, and LED segmented blocks.
 - Real-time physics controls: independent attack/decay times, gravity drop rate, and peak hold times.
-- Multiple color modes: vertical gradient, frequency spread, solid tips, and theme-aware hue cycling.
-- Modeless dark settings window cleanly organized into Mode-Specific and Universal tabs.
-- Floor reflection and edge vignette effects.
-- Single self-contained `mb_VisualBee.dll` with embedded DirectX runtimes.

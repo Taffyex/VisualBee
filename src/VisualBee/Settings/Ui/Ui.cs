@@ -8,11 +8,11 @@ namespace MusicBeePlugin;
 
 internal static class Ui
 {
-	public static readonly Color Back = Color.FromArgb(11, 14, 20);
+	public static readonly Color Back = Color.FromArgb(9, 11, 16);
 
-	public static readonly Color Side = Color.FromArgb(15, 19, 28);
+	public static readonly Color Side = Color.FromArgb(13, 16, 24);
 
-	public static readonly Color Card = Color.FromArgb(20, 26, 38);
+	public static readonly Color Card = Color.FromArgb(18, 22, 32);
 
 	public static readonly Color Hover = Color.FromArgb(26, 34, 48);
 
@@ -22,7 +22,7 @@ internal static class Ui
 
 	public static readonly Color Pressed = Color.FromArgb(46, 60, 86);
 
-	public static readonly Color Border = Color.FromArgb(34, 44, 62);
+	public static readonly Color Border = Color.FromArgb(30, 37, 54);
 
 	public static readonly Color Text = Color.FromArgb(235, 240, 248);
 
@@ -30,7 +30,9 @@ internal static class Ui
 
 	public static readonly Color Faint = Color.FromArgb(92, 104, 124);
 
-	public static readonly Color Accent = Color.FromArgb(0, 224, 210);
+	public static readonly Color Accent = Color.FromArgb(0, 232, 214);
+
+	public static readonly Color Amber = Color.FromArgb(255, 176, 32);
 
 	public static readonly Color AccentDeep = Color.FromArgb(14, 68, 78);
 

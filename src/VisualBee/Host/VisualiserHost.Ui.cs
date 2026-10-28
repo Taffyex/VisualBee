@@ -22,7 +22,7 @@ internal sealed partial class VisualiserHost
 			StartPosition = FormStartPosition.Manual,
 			Bounds = screen.Bounds,
 			ShowInTaskbar = true,
-			TopMost = true,
+			TopMost = false,
 			KeyPreview = true,
 			BackColor = Color.FromArgb(Store.Current.Colours[0] | -16777216),
 			Text = Store.Title
@@ -135,7 +135,7 @@ internal sealed partial class VisualiserHost
 		host.Controls.Clear();
 		Label label = new Label
 		{
-			Text = "Look",
+			Text = "Preset",
 			AutoSize = true,
 			Left = 8,
 			Top = 12
@@ -167,7 +167,7 @@ internal sealed partial class VisualiserHost
 		};
 		Button button = new Button
 		{
-			Text = "Open settings window…",
+			Text = "Open VisualBee Studio…",
 			Left = 260,
 			Top = 7,
 			Width = 170,

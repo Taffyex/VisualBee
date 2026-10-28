@@ -12,8 +12,23 @@ internal sealed partial class SettingsWindow : Form
 {
 	private void BuildPresets()
 	{
-		AddTitle("Your Presets");
-		AddSection("Custom looks you saved or imported", null);
+		AddTitle("Signature Presets");
+		FlowPanel flowPanelBuiltin = new FlowPanel();
+		foreach (Preset item in _store.BuiltIn)
+		{
+			flowPanelBuiltin.Controls.Add(new PresetCard(this, item));
+		}
+		_content.Controls.Add(flowPanelBuiltin);
+
+		AddTitle("Studio Colour Palettes");
+		FlowPanel flowPanelThemes = new FlowPanel();
+		foreach (Theme theme in _store.Themes)
+		{
+			flowPanelThemes.Controls.Add(new ThemeChip(this, theme));
+		}
+		_content.Controls.Add(flowPanelThemes);
+
+		AddTitle("User Presets");
 		FlowPanel flowPanelUser = new FlowPanel();
 		List<Preset> list = _store.UserPresets();
 		foreach (Preset item2 in list)
@@ -24,45 +39,18 @@ internal sealed partial class SettingsWindow : Form
 		{
 			Primary = true
 		};
-		flatButton.Click += (object s, EventArgs a) =>
-		{
-			SaveLook();
-		};
+		flatButton.Click += (object s, EventArgs a) => SaveLook();
 		FlatButton flatButton2 = new FlatButton("Import…", "\ue8b5");
-		flatButton2.Click += (object s, EventArgs a) =>
-		{
-			ImportLook();
-		};
+		flatButton2.Click += (object s, EventArgs a) => ImportLook();
 		FlatButton flatButton3 = new FlatButton("Open folder", "\ue838");
-		flatButton3.Click += (object s, EventArgs a) =>
-		{
-			OpenFolder();
-		};
-		_tips.SetToolTip(flatButton, "Saves every setting that differs from the defaults as a preset of your own");
-		_tips.SetToolTip(flatButton2, "Adds a preset file (.ini) someone shared");
-		_tips.SetToolTip(flatButton3, "Shows where your presets are kept, to copy or share them");
+		flatButton3.Click += (object s, EventArgs a) => OpenFolder();
+		_tips.SetToolTip(flatButton, "Saves every setting that differs from defaults as a preset");
+		_tips.SetToolTip(flatButton2, "Import preset file (.ini)");
+		_tips.SetToolTip(flatButton3, "Shows where your presets are stored");
 		flowPanelUser.Controls.Add(flatButton);
 		flowPanelUser.Controls.Add(flatButton2);
 		flowPanelUser.Controls.Add(flatButton3);
 		_content.Controls.Add(flowPanelUser);
-
-		AddTitle("Signature Looks");
-		AddSection("Built-in studio presets", null);
-		FlowPanel flowPanelBuiltin = new FlowPanel();
-		foreach (Preset item in _store.BuiltIn)
-		{
-			flowPanelBuiltin.Controls.Add(new PresetCard(this, item));
-		}
-		_content.Controls.Add(flowPanelBuiltin);
-
-		AddTitle("Colour Themes");
-		AddSection("Changes only the colours; your layout & timing stay", null);
-		FlowPanel flowPanelThemes = new FlowPanel();
-		foreach (Theme theme in _store.Themes)
-		{
-			flowPanelThemes.Controls.Add(new ThemeChip(this, theme));
-		}
-		_content.Controls.Add(flowPanelThemes);
 	}
 
 	public void ApplyPreset(Preset p)
@@ -128,34 +116,50 @@ internal sealed partial class SettingsWindow : Form
 
 	private void OpenFolder()
 	{
-		string presetFolder = _store.PresetFolder;
-		if (string.IsNullOrEmpty(presetFolder))
-		{
-			return;
-		}
+		string text = _store.PresetFolder;
+		Directory.CreateDirectory(text);
 		try
 		{
-			Directory.CreateDirectory(presetFolder);
-			Process.Start("explorer.exe", "\"" + presetFolder + "\"");
+			Process.Start(new ProcessStartInfo
+			{
+				FileName = text,
+				UseShellExecute = true
+			});
 		}
 		catch (Exception)
 		{
 		}
 	}
 
-	public void PresetMenu(Preset p, Control at, Point where)
+	private void PresetMenu(Preset p, Control near, Point at)
 	{
-		if (p.BuiltIn)
+		ContextMenuStrip contextMenuStrip = new ContextMenuStrip();
+		ToolStripMenuItem toolStripMenuItem = new ToolStripMenuItem("Use", null, (object s, EventArgs a) => ApplyPreset(p));
+		toolStripMenuItem.Font = Ui.Bold;
+		contextMenuStrip.Items.Add(toolStripMenuItem);
+		if (!p.BuiltIn)
 		{
-			return;
+			contextMenuStrip.Items.Add(new ToolStripMenuItem("Rename…", null, (object s, EventArgs a) => RenameLook(p)));
+			contextMenuStrip.Items.Add(new ToolStripMenuItem("Update with current settings", null, (object s, EventArgs a) => OverwriteLook(p)));
+			contextMenuStrip.Items.Add(new ToolStripSeparator());
+			contextMenuStrip.Items.Add(new ToolStripMenuItem("Delete", null, (object s, EventArgs a) => DeleteLook(p)));
 		}
-		ContextMenuStrip menu = new ContextMenuStrip
+		contextMenuStrip.Show(near, at);
+	}
+
+	private void RenameLook(Preset p)
+	{
+		string text = Prompt.Ask(this, "Rename look", "New name for “" + p.Name + "”:", p.Name);
+		if (!string.IsNullOrWhiteSpace(text) && !(text == p.Name))
 		{
-			Renderer = new DarkMenuRenderer(),
-			ShowImageMargin = false,
-			Font = Ui.Body
-		};
-		menu.Items.Add("Update with the current look", null, (object s, EventArgs a) =>
+			_store.RenamePreset(p, text.Trim());
+			ShowPage("Presets");
+		}
+	}
+
+	private void OverwriteLook(Preset p)
+	{
+		if (MessageBox.Show(this, "Replace the settings in “" + p.Name + "” with the settings you have now?", _store.Title, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
 		{
 			Preset preset = _store.Capture(p.Name, p.Description);
 			preset.File = p.File;
@@ -164,63 +168,15 @@ internal sealed partial class SettingsWindow : Form
 			_store.Modified = false;
 			_store.Save();
 			ShowPage("Presets");
-		});
-		menu.Items.Add("Rename…", null, (object s, EventArgs a) =>
-		{
-			string text = Prompt.Ask(this, "Rename look", "New name:", p.Name);
-			if (!string.IsNullOrWhiteSpace(text) && !(text.Trim() == p.Name))
-			{
-				string file = p.File;
-				p.Name = text.Trim();
-				p.File = null;
-				_store.SavePreset(p);
-				TryDelete(file);
-				ShowPage("Presets");
-			}
-		});
-		menu.Items.Add("Export…", null, (object s, EventArgs a) =>
-		{
-			using SaveFileDialog saveFileDialog = new SaveFileDialog
-			{
-				Filter = "Presets (*.ini)|*.ini",
-				FileName = LookStore.SafeName(p.Name) + ".ini"
-			};
-			if (saveFileDialog.ShowDialog(this) == DialogResult.OK)
-			{
-				_store.WritePreset(p, saveFileDialog.FileName);
-			}
-		});
-		menu.Items.Add(new ToolStripSeparator());
-		menu.Items.Add("Delete", null, (object s, EventArgs a) =>
-		{
-			if (MessageBox.Show(this, "Delete your look “" + p.Name + "”?", _store.Title, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
-			{
-				TryDelete(p.File);
-				ShowPage("Presets");
-			}
-		});
-		foreach (ToolStripItem item in menu.Items)
-		{
-			item.ForeColor = Ui.Text;
 		}
-		menu.Closed += (object s, ToolStripDropDownClosedEventArgs a) =>
-		{
-			BeginInvoke(new Action(menu.Dispose));
-		};
-		menu.Show(at, where);
 	}
 
-	private static void TryDelete(string file)
+	private void DeleteLook(Preset p)
 	{
-		try
+		if (MessageBox.Show(this, "Delete your look “" + p.Name + "”?", _store.Title, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
 		{
-			if (!string.IsNullOrEmpty(file) && File.Exists(file))
-			{
-				File.Delete(file);
-			}
-		}
-		catch (Exception)
-		{
+			_store.DeletePreset(p);
+			ShowPage("Presets");
 		}
 	}
 }
