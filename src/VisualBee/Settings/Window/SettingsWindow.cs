@@ -1,9 +1,7 @@
 using System.Linq;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
-using System.IO;
 using System.Windows.Forms;
 
 namespace MusicBeePlugin;
@@ -32,8 +30,6 @@ internal sealed partial class SettingsWindow : Form
 	private readonly Timer _statusTimer = new Timer { Interval = 500 };
 	private string _page;
 	private Label _audio;
-	private Panel _ribbon;
-	private ComboBox _ribbonPresets;
 
 	public LookStore Store => _store;
 
@@ -49,8 +45,8 @@ internal sealed partial class SettingsWindow : Form
 		StartPosition = FormStartPosition.Manual;
 		ShowInTaskbar = false;
 		KeyPreview = true;
-		MinimumSize = new Size(Ui.S(740), Ui.S(540));
-		Size = new Size(Ui.S(980), Ui.S(720));
+		MinimumSize = new Size(Ui.S(740), Ui.S(520));
+		Size = new Size(Ui.S(980), Ui.S(680));
 		Icon = null;
 		ShowIcon = false;
 		SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, value: true);
@@ -103,10 +99,7 @@ internal sealed partial class SettingsWindow : Form
 			_pages.SetBounds(pagesLeft, Ui.S(7), pagesW, Ui.S(38));
 		};
 
-		// 2. Persistent Quick-Switch Ribbon (Height = 40px)
-		BuildRibbon();
-
-		// 3. Bottom Hardware Telemetry Strip (Height = 44px)
+		// 2. Bottom Hardware Telemetry Strip (Height = 44px)
 		Panel footer = new Panel
 		{
 			Dock = DockStyle.Bottom,
@@ -141,14 +134,13 @@ internal sealed partial class SettingsWindow : Form
 		footer.Controls.AddRange(new Control[6] { _audio, _hintTitle, _hintText, _resetPage, _resetAll, _close });
 		footer.Resize += (s, a) => LayoutFooter(footer);
 
-		// 4. Main Scrollable Rack Content
+		// 3. Main Scrollable Rack Content
 		_content.Dock = DockStyle.Fill;
 		_content.MouseLeave += (s, a) => Hint(null);
 		_content.Resize += (s, a) => LayoutContent();
 
 		Controls.Add(_content);
 		Controls.Add(footer);
-		Controls.Add(_ribbon);
 		Controls.Add(header);
 
 		_store.Changed += StoreChanged;
@@ -156,85 +148,9 @@ internal sealed partial class SettingsWindow : Form
 		_statusTimer.Start();
 		ShowAudio();
 
-		ShowPage((_pages.Pages.Count > 1) ? _pages.Pages[1] : "Presets");
+		ShowPage("Presets");
 		_pages.Selected = _pages.Pages.IndexOf(_page);
 		ShowStatus();
-	}
-
-	private void BuildRibbon()
-	{
-		_ribbon = new Panel
-		{
-			Dock = DockStyle.Top,
-			Height = Ui.S(38),
-			BackColor = Ui.Side
-		};
-
-		Label lblPre = new Label
-		{
-			Text = "PRESET",
-			Font = Ui.Section,
-			ForeColor = Ui.Dim,
-			AutoSize = true,
-			Location = new Point(Ui.S(14), Ui.S(11))
-		};
-
-		_ribbonPresets = new ComboBox
-		{
-			DropDownStyle = ComboBoxStyle.DropDownList,
-			Width = Ui.S(170),
-			Location = new Point(Ui.S(68), Ui.S(7)),
-			Font = Ui.Small
-		};
-
-		UpdateRibbonPresets();
-		_ribbonPresets.SelectedIndexChanged += (s, a) =>
-		{
-			string name = _ribbonPresets.SelectedItem?.ToString();
-			if (!string.IsNullOrEmpty(name) && name != _store.PresetName)
-			{
-				Preset p = _store.BuiltIn.FirstOrDefault(x => x.Name == name) ?? _store.UserPresets().FirstOrDefault(x => x.Name == name);
-				if (p != null) _store.Apply(p);
-			}
-		};
-
-		Label lblPal = new Label
-		{
-			Text = "PALETTE",
-			Font = Ui.Section,
-			ForeColor = Ui.Dim,
-			AutoSize = true,
-			Location = new Point(Ui.S(252), Ui.S(11))
-		};
-
-		_ribbon.Controls.AddRange(new Control[3] { lblPre, _ribbonPresets, lblPal });
-
-		// Add quick theme swatch pills
-		int curX = Ui.S(314);
-		foreach (Theme t in _store.Themes.Take(7))
-		{
-			FlatButton pill = new FlatButton(t.Name)
-			{
-				Font = Ui.Small,
-				Height = Ui.S(24),
-				Location = new Point(curX, Ui.S(7))
-			};
-			pill.Width = pill.Ideal();
-			pill.Click += (s, a) => _store.Apply(t);
-			_tips.SetToolTip(pill, "Switch palette to " + t.Name);
-			_ribbon.Controls.Add(pill);
-			curX += pill.Width + Ui.S(6);
-		}
-	}
-
-	private void UpdateRibbonPresets()
-	{
-		if (_ribbonPresets == null) return;
-		_ribbonPresets.Items.Clear();
-		foreach (Preset p in _store.BuiltIn) _ribbonPresets.Items.Add(p.Name);
-		foreach (Preset p in _store.UserPresets()) _ribbonPresets.Items.Add(p.Name);
-		int idx = _ribbonPresets.Items.IndexOf(_store.PresetName);
-		if (idx >= 0) _ribbonPresets.SelectedIndex = idx;
 	}
 
 	protected override void OnHandleCreated(EventArgs e)
@@ -255,46 +171,46 @@ internal sealed partial class SettingsWindow : Form
 	{
 		switch (keyData)
 		{
-		case Keys.F | Keys.Control:
-			_search.Box.Focus();
-			_search.Box.SelectAll();
-			return true;
-		case Keys.Escape:
-			if (_search.Box.Focused && _search.Box.Text.Length > 0)
-			{
-				_search.Box.Text = "";
-			}
-			else
-			{
-				Close();
-			}
-			return true;
-		default:
-			return base.ProcessCmdKey(ref msg, keyData);
+			case Keys.F | Keys.Control:
+				_search.Box.Focus();
+				_search.Box.SelectAll();
+				return true;
+			case Keys.Escape:
+				if (_search.Box.Focused && _search.Box.Text.Length > 0)
+				{
+					_search.Box.Text = "";
+				}
+				else
+				{
+					Close();
+				}
+				return true;
+			default:
+				return base.ProcessCmdKey(ref msg, keyData);
 		}
 	}
 
 	private void LayoutFooter(Panel footer)
 	{
 		int pad = Ui.S(14);
-		int rX = footer.Width - pad;
+		int curRight = footer.Width - pad;
 		FlatButton[] btns = new FlatButton[3] { _close, _resetAll, _resetPage };
 		foreach (FlatButton b in btns)
 		{
 			b.Width = b.Ideal();
-			rX -= b.Width;
-			b.Location = new Point(rX, Ui.S(8));
-			rX -= Ui.S(6);
+			curRight -= b.Width;
+			b.Location = new Point(curRight, footer.Height - b.Height - Ui.S(8));
+			curRight -= Ui.S(6);
 		}
 
-		int hintW = Math.Max(Ui.S(120), rX - _audio.Right - Ui.S(24));
-		_hintTitle.SetBounds(_audio.Right + Ui.S(12), Ui.S(4), hintW, Ui.S(18));
-		_hintText.SetBounds(_audio.Right + Ui.S(12), Ui.S(22), hintW, Ui.S(18));
+		int hintW = Math.Max(Ui.S(120), curRight - _audio.Right - Ui.S(16));
+		_hintTitle.SetBounds(_audio.Right + Ui.S(10), Ui.S(4), hintW, Ui.S(16));
+		_hintText.SetBounds(_audio.Right + Ui.S(10), Ui.S(22), hintW, Ui.S(18));
 	}
 
 	private void ShowAudio()
 	{
-		string text = _audioStatus?.Invoke() ?? "";
+		string text = (_audioStatus != null) ? _audioStatus() : "";
 		if (_audio.Text != text) _audio.Text = text;
 	}
 
@@ -321,17 +237,18 @@ internal sealed partial class SettingsWindow : Form
 		{
 			foreach (Control control in _content.Controls) control.Invalidate();
 		}
-		UpdateRibbonPresets();
 		ShowStatus();
 	}
 
 	private void ShowStatus()
 	{
 		Look l = _store.Current;
+		string text = (_store.PresetName.Length > 0) ? (_store.PresetName + (_store.Modified ? " (changed)" : "")) : "your own settings";
+		int diff = _store.Schema.All.Count(s => !s.Personal && !s.IsDefault(l));
 		_pages.Marked.Clear();
-		foreach (Setting item in _store.Schema.All)
+		foreach (Setting s in _store.Schema.All)
 		{
-			if (!item.IsDefault(l)) _pages.Marked.Add(item.Page);
+			if (!s.IsDefault(l)) _pages.Marked.Add(s.Page);
 		}
 		_pages.Invalidate();
 		_resetPage.Enabled = _page != "Presets" && _search.Box.Text.Length == 0 && _store.Schema.All.Any(s => s.Page == _page && !s.IsDefault(l));
@@ -341,25 +258,25 @@ internal sealed partial class SettingsWindow : Form
 	{
 		if (s == null)
 		{
-			_hintTitle.Text = (_page == "Presets") ? "Presets" : _page;
+			_hintTitle.Text = (_page == "Presets") ? "Signature Presets" : _page;
 			_hintText.Text = PageHint(_page);
 		}
 		else
 		{
-			_hintTitle.Text = s.Label + (s.IsDefault(_store.Current) ? "" : " (default: " + Describe(s, s.Default) + ")");
-			_hintText.Text = s.Hint + (s.IsEnabled(_store.Current) ? "" : " [Inactive in current mode]");
+			_hintTitle.Text = s.Label + (s.IsDefault(_store.Current) ? "" : ("   (default: " + Describe(s, s.Default) + ")"));
+			_hintText.Text = s.Hint + (s.IsEnabled(_store.Current) ? "" : "   Not used with current settings.");
 		}
 	}
 
 	private static string Describe(Setting s, object value)
 	{
-		switch (s.Kind)
+		return s.Kind switch
 		{
-		case SettingKind.Toggle: return (bool)value ? "on" : "off";
-		case SettingKind.Number: return s.Display((double)value);
-		case SettingKind.Choice: return s.Choices[(int)value];
-		default: return ColourMath.ToHex((int)value, s.Alpha);
-		}
+			SettingKind.Toggle => (bool)value ? "on" : "off",
+			SettingKind.Number => s.Display((double)value),
+			SettingKind.Choice => s.Choices[(int)value],
+			_ => ColourMath.ToHex((int)value, s.Alpha)
+		};
 	}
 
 	private static string PageHint(string page)
