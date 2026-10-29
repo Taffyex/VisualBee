@@ -73,19 +73,25 @@ internal sealed partial class Canvas : IDisposable
 			{
 				return true;
 			}
+			int itemSize = Marshal.SizeOf(typeof(T));
 			if (Count > _capacity)
 			{
 				Free();
 				int num = Math.Max(Count, Math.Max(256, _capacity * 2));
-				if (!gpu.CreateStructured(sizeof(T), num, out Buffer, out View))
+				if (!gpu.CreateStructured(itemSize, num, out Buffer, out View))
 				{
 					return false;
 				}
 				_capacity = num;
 			}
-			fixed (T* items = Items)
+			GCHandle handle = GCHandle.Alloc(Items, GCHandleType.Pinned);
+			try
 			{
-				return gpu.Upload(Buffer, items, Count * sizeof(T));
+				return gpu.Upload(Buffer, (void*)handle.AddrOfPinnedObject(), Count * itemSize);
+			}
+			finally
+			{
+				handle.Free();
 			}
 		}
 

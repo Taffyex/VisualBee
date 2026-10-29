@@ -58,13 +58,9 @@ internal sealed class WasapiLoopback : IDisposable
 	[StructLayout(LayoutKind.Sequential, Pack = 2)]
 	private struct WaveFormatEx
 	{
-		public ushort wFormatTag;
-		public ushort nChannels;
-		public uint nSamplesPerSec;
-		public uint nAvgBytesPerSec;
-		public ushort nBlockAlign;
-		public ushort wBitsPerSample;
-		public ushort cbSize;
+		public ushort wFormatTag, nChannels;
+		public uint nSamplesPerSec, nAvgBytesPerSec;
+		public ushort nBlockAlign, wBitsPerSample, cbSize;
 	}
 
 	private const int RingSize = 65536;
@@ -143,32 +139,31 @@ internal sealed class WasapiLoopback : IDisposable
 			fresh = false;
 			return false;
 		}
-		long head;
 		lock (_sync)
 		{
-			head = _head;
-		}
-		fresh = head != lastReadHead;
-		lastReadHead = head;
-		long start = head - count;
-		for (int k = 0; k < count; k++)
-		{
-			int idx = (int)((start + k) & RingMask);
-			float l = _ringL[idx];
-			float r = _ringR[idx];
-			if (stereo)
+			long head = _head;
+			fresh = head != lastReadHead;
+			lastReadHead = head;
+			long start = head - count;
+			for (int k = 0; k < count; k++)
 			{
-				dstL[k] = l;
-				dstR[k] = r;
-			}
-			else
-			{
-				switch (channelMode)
+				int idx = (int)((start + k) & RingMask);
+				float l = _ringL[idx];
+				float r = _ringR[idx];
+				if (stereo)
 				{
-					case 1: dstL[k] = l; break;
-					case 2: dstL[k] = r; break;
-					case 4: dstL[k] = (l - r) * 0.5f; break;
-					default: dstL[k] = (l + r) * 0.5f; break;
+					dstL[k] = l;
+					dstR[k] = r;
+				}
+				else
+				{
+					switch (channelMode)
+					{
+						case 1: dstL[k] = l; break;
+						case 2: dstL[k] = r; break;
+						case 4: dstL[k] = (l - r) * 0.5f; break;
+						default: dstL[k] = (l + r) * 0.5f; break;
+					}
 				}
 			}
 		}
@@ -204,7 +199,7 @@ internal sealed class WasapiLoopback : IDisposable
 				int chans = 2;
 				int rate = 48000;
 				int bits = 32;
-				int tag = 3;
+				bool isFloat = true;
 				int hr = 0;
 				try
 				{
@@ -218,7 +213,11 @@ internal sealed class WasapiLoopback : IDisposable
 					chans = Math.Max(1, (int)fmt.nChannels);
 					rate = Math.Max(8000, (int)fmt.nSamplesPerSec);
 					bits = fmt.wBitsPerSample;
-					tag = fmt.wFormatTag;
+					isFloat = (fmt.wFormatTag == 3);
+					if (fmt.wFormatTag == 0xFFFE && fmt.cbSize >= 22)
+					{
+						isFloat = (Marshal.ReadInt32(pFormat, 24) == 3);
+					}
 					_sampleRate = rate;
 
 					hr = client.Initialize(0, AudclntStreamflagsLoopback, 2000000, 0, pFormat, IntPtr.Zero);
@@ -258,7 +257,7 @@ internal sealed class WasapiLoopback : IDisposable
 						hr = capture.GetBuffer(out var pData, out var frames, out var flags, out _, out _);
 						if (hr < 0) break;
 						bool silent = (flags & AudclntBufferflagsSilent) != 0;
-						ProcessFrames(pData, (int)frames, chans, bits, tag, silent);
+						ProcessFrames(pData, (int)frames, chans, bits, isFloat, silent);
 						capture.ReleaseBuffer(frames);
 						hr = capture.GetNextPacketSize(out packetLength);
 						if (hr < 0) break;
@@ -279,22 +278,19 @@ internal sealed class WasapiLoopback : IDisposable
 				if (endpoint != null) { try { Marshal.ReleaseComObject(endpoint); } catch { } endpoint = null; }
 				if (enumerator != null) { try { Marshal.ReleaseComObject(enumerator); } catch { } enumerator = null; }
 			}
-			if (!_stopEvent.WaitOne(0))
-			{
-				_stopEvent.WaitOne(500);
-			}
+			if (!_stopEvent.WaitOne(0)) _stopEvent.WaitOne(500);
 		}
 		_status = "Stopped";
 	}
 
-	private unsafe void ProcessFrames(IntPtr pData, int frames, int chans, int bits, int tag, bool silent)
+	private unsafe void ProcessFrames(IntPtr pData, int frames, int chans, int bits, bool isFloat, bool silent)
 	{
 		if (frames <= 0) return;
 		float maxAmp = 0f;
 		lock (_sync)
 		{
 			long head = _head;
-			if (silent || pData == IntPtr.Zero)
+			if (silent || pData == IntPtr.Zero || (bits != 16 && bits != 24 && bits != 32))
 			{
 				for (int i = 0; i < frames; i++)
 				{
@@ -303,7 +299,7 @@ internal sealed class WasapiLoopback : IDisposable
 					_ringR[idx] = 0f;
 				}
 			}
-			else if (bits == 32)
+			else if (bits == 32 && isFloat)
 			{
 				float* p = (float*)pData.ToPointer();
 				for (int i = 0; i < frames; i++)
@@ -313,6 +309,21 @@ internal sealed class WasapiLoopback : IDisposable
 					float r = (chans > 1) ? p[baseIdx + 1] : l;
 					if (float.IsNaN(l) || float.IsInfinity(l)) l = 0f;
 					if (float.IsNaN(r) || float.IsInfinity(r)) r = 0f;
+					int idx = (int)((head + i) & RingMask);
+					_ringL[idx] = l;
+					_ringR[idx] = r;
+					float a = Math.Max(Math.Abs(l), Math.Abs(r));
+					if (a > maxAmp) maxAmp = a;
+				}
+			}
+			else if (bits == 32 && !isFloat)
+			{
+				int* p = (int*)pData.ToPointer();
+				for (int i = 0; i < frames; i++)
+				{
+					int baseIdx = i * chans;
+					float l = p[baseIdx] * (1f / 2147483648f);
+					float r = (chans > 1) ? p[baseIdx + 1] * (1f / 2147483648f) : l;
 					int idx = (int)((head + i) & RingMask);
 					_ringL[idx] = l;
 					_ringR[idx] = r;
@@ -356,15 +367,6 @@ internal sealed class WasapiLoopback : IDisposable
 					_ringR[idx] = r;
 					float a = Math.Max(Math.Abs(l), Math.Abs(r));
 					if (a > maxAmp) maxAmp = a;
-				}
-			}
-			else
-			{
-				for (int i = 0; i < frames; i++)
-				{
-					int idx = (int)((head + i) & RingMask);
-					_ringL[idx] = 0f;
-					_ringR[idx] = 0f;
 				}
 			}
 			_head = head + frames;

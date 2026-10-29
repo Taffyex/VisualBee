@@ -51,7 +51,8 @@ internal sealed partial class VisualiserHost
 
 	public void SyncLoopbackState()
 	{
-		if (Store?.Current is SpectrumLook look && look.NeedsLoopback)
+		bool hasActiveView = (_view != null || _fullScreenView != null);
+		if (hasActiveView && Store?.Current is SpectrumLook look && look.NeedsLoopback)
 		{
 			Loopback.Start();
 		}
@@ -64,6 +65,7 @@ internal sealed partial class VisualiserHost
 	public void SetApi(MusicBeeApiInterface api)
 	{
 		_api = api;
+		State();
 	}
 
 	public void LoadSettings(string fileName, Func<string, bool> migrate)
@@ -188,6 +190,7 @@ internal sealed partial class VisualiserHost
 		_view.Dock = DockStyle.Fill;
 		panel.Controls.Add(_view);
 		panel.Disposed += PanelDisposed;
+		State();
 		_view.Start();
 		ArtMaybeWanted();
 		SyncLoopbackState();
@@ -243,6 +246,7 @@ internal sealed partial class VisualiserHost
 		Form fullScreenForm = _fullScreenForm;
 		_fullScreenForm = null;
 		_fullScreenView = null;
+		SyncLoopbackState();
 		if (fullScreenForm == null)
 		{
 			return;

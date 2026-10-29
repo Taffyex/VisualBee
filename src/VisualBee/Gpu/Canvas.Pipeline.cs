@@ -268,15 +268,17 @@ internal sealed partial class Canvas
 		_ctx.ClearRenderTargetView(_target, _clear);
 	}
 
+	[ThreadStatic]
+	private static float[] _staticClear;
+
 	public static void Clear(GpuDevice gpu, GpuTexture target, Vec4 colour)
 	{
-		gpu.Context.ClearRenderTargetView(target.Rtv, new float[4]
-		{
-			colour.X * colour.W,
-			colour.Y * colour.W,
-			colour.Z * colour.W,
-			colour.W
-		});
+		float[] clear = _staticClear ?? (_staticClear = new float[4]);
+		clear[0] = colour.X * colour.W;
+		clear[1] = colour.Y * colour.W;
+		clear[2] = colour.Z * colour.W;
+		clear[3] = colour.W;
+		gpu.Context.ClearRenderTargetView(target.Rtv, clear);
 	}
 
 	private void Bind(IntPtr vs, IntPtr ps, IntPtr view, IntPtr texture, BlendMode blend)

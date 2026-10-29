@@ -19,7 +19,7 @@
     <Version>2.1.1</Version>
     <AssemblyVersion>2.1.1.0</AssemblyVersion>
     <FileVersion>2.1.1.0</FileVersion>
-    <InformationalVersion>2.1.1-beta</InformationalVersion>
+    <InformationalVersion>2.1.1</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>

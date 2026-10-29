@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.InteropServices;
@@ -171,27 +172,32 @@ internal sealed partial class AudioTap
 	{
 		try
 		{
-			DynamicMethod dm = new DynamicMethod("GetTrackHandle", typeof(int), null, typeof(AudioTap).Module, skipVisibility: true);
-			ILGenerator il = dm.GetILGenerator();
+			if (_handleField == null)
+			{
+				_handleGetter = null;
+				return;
+			}
 			if (_playerField != null)
 			{
-				il.Emit(OpCodes.Ldsfld, _playerField);
-				Label nullLabel = il.DefineLabel();
-				il.Emit(OpCodes.Dup);
-				il.Emit(OpCodes.Brfalse_S, nullLabel);
-				il.Emit(OpCodes.Ldfld, _handleField);
-				il.Emit(OpCodes.Ret);
-				il.MarkLabel(nullLabel);
-				il.Emit(OpCodes.Pop);
-				il.Emit(OpCodes.Ldc_I4_0);
-				il.Emit(OpCodes.Ret);
+				MemberExpression playerExpr = Expression.Field(null, _playerField);
+				MemberExpression handleExpr = Expression.Field(playerExpr, _handleField);
+				Expression body;
+				if (!_playerField.FieldType.IsValueType)
+				{
+					BinaryExpression nullCheck = Expression.Equal(playerExpr, Expression.Constant(null, _playerField.FieldType));
+					body = Expression.Condition(nullCheck, Expression.Constant(0), handleExpr);
+				}
+				else
+				{
+					body = handleExpr;
+				}
+				_handleGetter = Expression.Lambda<Func<int>>(body).Compile();
 			}
 			else
 			{
-				il.Emit(OpCodes.Ldsfld, _handleField);
-				il.Emit(OpCodes.Ret);
+				MemberExpression handleExpr = Expression.Field(null, _handleField);
+				_handleGetter = Expression.Lambda<Func<int>>(handleExpr).Compile();
 			}
-			_handleGetter = (Func<int>)dm.CreateDelegate(typeof(Func<int>));
 		}
 		catch
 		{
@@ -203,16 +209,31 @@ internal sealed partial class AudioTap
 	{
 		if (_handleGetter != null)
 		{
-			return _handleGetter();
+			try
+			{
+				return _handleGetter();
+			}
+			catch
+			{
+				_handleGetter = null;
+			}
 		}
-		object obj = null;
-		if (_playerField != null)
+		if (_handleField == null) return 0;
+		try
 		{
-			obj = _playerField.GetValue(null);
-			if (obj == null) return 0;
+			object obj = null;
+			if (_playerField != null)
+			{
+				obj = _playerField.GetValue(null);
+				if (obj == null) return 0;
+			}
+			object value = _handleField.GetValue(obj);
+			return (value is int i) ? i : 0;
 		}
-		object value = _handleField.GetValue(obj);
-		return (value is int i) ? i : 0;
+		catch
+		{
+			return 0;
+		}
 	}
 
 	private int PickSource(int current)

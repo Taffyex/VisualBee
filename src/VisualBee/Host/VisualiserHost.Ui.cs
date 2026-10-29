@@ -46,9 +46,11 @@ internal sealed partial class VisualiserHost
 				_fullScreenView = null;
 			}
 			view.Dispose();
+			SyncLoopbackState();
 		};
 		_fullScreenForm = form;
 		_fullScreenView = view;
+		SyncLoopbackState();
 		IWin32Window owner = from?.FindForm();
 		if (owner != null) form.Show(owner); else form.Show();
 		view.Start();

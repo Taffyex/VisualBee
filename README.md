@@ -1,4 +1,4 @@
-# VisualBee v2.1
+# VisualBee v2.1.1
 
 VisualBee is an ultra high-performance, hardware-accelerated **Direct3D 11 spectrum analyzer and phase-locked analog oscilloscope** for [MusicBee](https://getmusicbee.com/). Engineered with zero managed wrappers and pure native DirectX 11 P/Invoke, it delivers buttery-smooth 120Hz/144Hz visuals, physical optical glass refraction, authentic VFD/Nixie vacuum tube incandescence, and studio CRT waveform monitoring at <1% CPU and <3% GPU load.
 
@@ -6,10 +6,15 @@ VisualBee is an ultra high-performance, hardware-accelerated **Direct3D 11 spect
 
 ## Installation
 
+> [!IMPORTANT]
+> **Downloading from GitHub:** Always download **[`VisualBee_v2.1.1.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.1/VisualBee_v2.1.1.zip)** or raw **`mb_VisualBee.dll`** directly from the official **[GitHub Releases](https://github.com/Taffyex/VisualBee/releases)** page (under the "Assets" dropdown).
+> **DO NOT** right-click `mb_VisualBee.dll` in the GitHub file repository view and click *"Save link as..."*! GitHub will save the GitHub HTML webpage instead of the actual compiled DLL, causing MusicBee to display the error:  
+> `Unable to install plugin: mb_VisualBee.dll, Common language runtime detected an invalid program`.
+
 ### 🚀 Quick Install (Recommended)
-1. Download **[`VisualBee_v2.1.0.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.0/VisualBee_v2.1.0.zip)** (or raw **[`mb_VisualBee.dll`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.0/mb_VisualBee.dll)**) from the [latest release](https://github.com/Taffyex/VisualBee/releases/tag/v2.1.0).
+1. Download **[`VisualBee_v2.1.1.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.1/VisualBee_v2.1.1.zip)** (or raw **[`mb_VisualBee.dll`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.1/mb_VisualBee.dll)**) from the [latest release](https://github.com/Taffyex/VisualBee/releases).
 2. In MusicBee, press `Ctrl + O` (or go to **Edit** > **Preferences**).
-3. Select **Plugins** in the sidebar, click **Add Plugin**, and choose the downloaded file (`VisualBee_v2.1.0.zip` or `mb_VisualBee.dll`).
+3. Select **Plugins** in the sidebar, click **Add Plugin**, and choose the downloaded file (`VisualBee_v2.1.1.zip` or `mb_VisualBee.dll`).
 4. Click **Apply** and restart MusicBee.
 
 ### 📁 Manual Drop-in
@@ -48,6 +53,21 @@ Configure presets, bar optics, bloom intensity, color palettes, and audio acoust
 - **Persistent Quick-Switch Ribbon**: Instant 1-click preset switching, active palette chips, and live FPS / sample-rate telemetry.
 - **Hardware Rack Architecture**: Responsive 2-column cards with warm amber indicator lights and per-section resets.
 - **Dual Tooltip Guidance**: Plain-English hover cards explaining exact acoustic physics and shader parameters.
+
+---
+
+## What's New in VisualBee v2.1.1
+
+### 1. Robust Audio Engine & Startup Hook Binding
+- **Direct BASS Audio Hook Fix**: Eliminated the startup race condition where Direct BASS audio capture remained unbound until manual pause/unpause. Audio capture now automatically and lazily binds on the very first audio frame rendered and on player state changes.
+- **Resilient Method Handle Generation**: Replaced dynamic IL opcode generation with strongly typed, CLR-verified Expression Trees and fallback reflection to ensure seamless execution across all .NET runtime configurations.
+- **Smart WASAPI Loopback Lifecycle**: WASAPI loopback capture now dynamically starts and stops with visualizer panel visibility, preventing background thread execution and idle CPU usage when the visualizer is closed.
+- **32-bit Integer PCM Support**: Fixed distorted or silent audio on WASAPI loopback for 32-bit integer audio interfaces by properly detecting `WAVE_FORMAT_EXTENSIBLE` subformats and normalizing signed PCM.
+
+### 2. High-Performance Math & Zero-Allocation Render Loop
+- **Zero Heap Allocations**: Added thread-static target clear vectors to Direct3D 11 pass pipelines, completely eliminating GC allocations in the 144Hz render loop.
+- **Pinned Pointer Math**: Re-engineered Discrete Fourier Transform (DFT) windowing and Fast Fourier Transform (FFT) passes with unsafe pinned pointer arithmetic, stripping out array bounds checks in time-critical audio calculation paths.
+- **Open Generic Memory Safety**: Upgraded generic vertex and geometry streams to pinned `GCHandle` marshaling, fully passing strict CLR verifications.
 
 ---
 

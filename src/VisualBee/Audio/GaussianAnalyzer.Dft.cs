@@ -52,55 +52,54 @@ internal sealed partial class GaussianAnalyzer
 			_dftNorm = ((num > 0.0) ? (1.0 / num + 1.0 / num) : 0.0);
 		}
 		double[] windowed = _windowed;
-		for (int j = 0; j < n; j++)
+		unsafe
 		{
-			windowed[j] = (double)mono[j] * _dftWindow[j];
-		}
-		int k;
-		for (k = 0; k + 4 <= count; k += 4)
-		{
-			float[] array = _narrowTw[k];
-			float[] array2 = _narrowTw[k + 1];
-			float[] array3 = _narrowTw[k + 2];
-			float[] array4 = _narrowTw[k + 3];
-			double num6 = 0.0;
-			double num7 = 0.0;
-			double num8 = 0.0;
-			double num9 = 0.0;
-			double num10 = 0.0;
-			double num11 = 0.0;
-			double num12 = 0.0;
-			double num13 = 0.0;
-			for (int l = 0; l < n; l++)
+			fixed (float* pMono = mono)
+			fixed (double* pDftWin = _dftWindow)
+			fixed (double* pWin = windowed)
 			{
-				double num14 = windowed[l];
-				int num15 = 2 * l;
-				num6 += (double)array[num15] * num14;
-				num7 += (double)array[num15 + 1] * num14;
-				num8 += (double)array2[num15] * num14;
-				num9 += (double)array2[num15 + 1] * num14;
-				num10 += (double)array3[num15] * num14;
-				num11 += (double)array3[num15 + 1] * num14;
-				num12 += (double)array4[num15] * num14;
-				num13 += (double)array4[num15 + 1] * num14;
+				for (int j = 0; j < n; j++) pWin[j] = (double)pMono[j] * pDftWin[j];
+				int k;
+				for (k = 0; k + 4 <= count; k += 4)
+				{
+					fixed (float* p1 = _narrowTw[k], p2 = _narrowTw[k + 1], p3 = _narrowTw[k + 2], p4 = _narrowTw[k + 3])
+					{
+						double num6 = 0.0, num7 = 0.0, num8 = 0.0, num9 = 0.0;
+						double num10 = 0.0, num11 = 0.0, num12 = 0.0, num13 = 0.0;
+						for (int l = 0; l < n; l++)
+						{
+							double num14 = pWin[l];
+							int num15 = 2 * l;
+							num6 += (double)p1[num15] * num14;
+							num7 += (double)p1[num15 + 1] * num14;
+							num8 += (double)p2[num15] * num14;
+							num9 += (double)p2[num15 + 1] * num14;
+							num10 += (double)p3[num15] * num14;
+							num11 += (double)p3[num15 + 1] * num14;
+							num12 += (double)p4[num15] * num14;
+							num13 += (double)p4[num15 + 1] * num14;
+						}
+						dbOut[_narrowBand[k]] = ToDb(Math.Sqrt(num7 * num7 + num6 * num6) * _dftNorm);
+						dbOut[_narrowBand[k + 1]] = ToDb(Math.Sqrt(num9 * num9 + num8 * num8) * _dftNorm);
+						dbOut[_narrowBand[k + 2]] = ToDb(Math.Sqrt(num11 * num11 + num10 * num10) * _dftNorm);
+						dbOut[_narrowBand[k + 3]] = ToDb(Math.Sqrt(num13 * num13 + num12 * num12) * _dftNorm);
+					}
+				}
+				for (; k < count; k++)
+				{
+					fixed (float* p5 = _narrowTw[k])
+					{
+						double num16 = 0.0, num17 = 0.0;
+						for (int m = 0; m < n; m++)
+						{
+							double num18 = pWin[m];
+							num16 += (double)p5[2 * m] * num18;
+							num17 += (double)p5[2 * m + 1] * num18;
+						}
+						dbOut[_narrowBand[k]] = ToDb(Math.Sqrt(num17 * num17 + num16 * num16) * _dftNorm);
+					}
+				}
 			}
-			dbOut[_narrowBand[k]] = ToDb(Math.Sqrt(num7 * num7 + num6 * num6) * _dftNorm);
-			dbOut[_narrowBand[k + 1]] = ToDb(Math.Sqrt(num9 * num9 + num8 * num8) * _dftNorm);
-			dbOut[_narrowBand[k + 2]] = ToDb(Math.Sqrt(num11 * num11 + num10 * num10) * _dftNorm);
-			dbOut[_narrowBand[k + 3]] = ToDb(Math.Sqrt(num13 * num13 + num12 * num12) * _dftNorm);
-		}
-		for (; k < count; k++)
-		{
-			float[] array5 = _narrowTw[k];
-			double num16 = 0.0;
-			double num17 = 0.0;
-			for (int m = 0; m < n; m++)
-			{
-				double num18 = windowed[m];
-				num16 += (double)array5[2 * m] * num18;
-				num17 += (double)array5[2 * m + 1] * num18;
-			}
-			dbOut[_narrowBand[k]] = ToDb(Math.Sqrt(num17 * num17 + num16 * num16) * _dftNorm);
 		}
 	}
 
@@ -160,41 +159,48 @@ internal sealed partial class GaussianAnalyzer
 		_swapB = list2.ToArray();
 	}
 
-	private void Fft()
+	private unsafe void Fft()
 	{
 		int fftSize = _fftSize;
-		float[] re = _re;
-		float[] im = _im;
-		for (int i = 0; i < _swapA.Length; i++)
+		fixed (float* pRe = _re)
+		fixed (float* pIm = _im)
+		fixed (int* pSwapA = _swapA)
+		fixed (int* pSwapB = _swapB)
+		fixed (float* pCos = _cos)
+		fixed (float* pSin = _sin)
 		{
-			int num = _swapA[i];
-			int num2 = _swapB[i];
-			float num3 = re[num];
-			re[num] = re[num2];
-			re[num2] = num3;
-			num3 = im[num];
-			im[num] = im[num2];
-			im[num2] = num3;
-		}
-		for (int num4 = 2; num4 <= fftSize; num4 <<= 1)
-		{
-			int num5 = num4 >> 1;
-			int num6 = fftSize / num4;
-			for (int j = 0; j < fftSize; j += num4)
+			int swapLen = _swapA.Length;
+			for (int i = 0; i < swapLen; i++)
 			{
-				int num7 = 0;
-				for (int k = j; k < j + num5; k++)
+				int num = pSwapA[i];
+				int num2 = pSwapB[i];
+				float num3 = pRe[num];
+				pRe[num] = pRe[num2];
+				pRe[num2] = num3;
+				num3 = pIm[num];
+				pIm[num] = pIm[num2];
+				pIm[num2] = num3;
+			}
+			for (int num4 = 2; num4 <= fftSize; num4 <<= 1)
+			{
+				int num5 = num4 >> 1;
+				int num6 = fftSize / num4;
+				for (int j = 0; j < fftSize; j += num4)
 				{
-					float num8 = _cos[num7];
-					float num9 = _sin[num7];
+					int num7 = 0;
+					for (int k = j; k < j + num5; k++)
+					{
+						float num8 = pCos[num7];
+						float num9 = pSin[num7];
 					int num10 = k + num5;
-					float num11 = re[num10] * num8 - im[num10] * num9;
-					float num12 = re[num10] * num9 + im[num10] * num8;
-					re[num10] = re[k] - num11;
-					im[num10] = im[k] - num12;
-					re[k] += num11;
-					im[k] += num12;
-					num7 += num6;
+						float num11 = pRe[num10] * num8 - pIm[num10] * num9;
+						float num12 = pRe[num10] * num9 + pIm[num10] * num8;
+						pRe[num10] = pRe[k] - num11;
+						pIm[num10] = pIm[k] - num12;
+						pRe[k] += num11;
+						pIm[k] += num12;
+						num7 += num6;
+					}
 				}
 			}
 		}

@@ -45,6 +45,10 @@ namespace MusicBeePlugin
             AudioTap tap = _host.Tap;
             lock (tap)
             {
+                if (!tap.BindTried && _api.NowPlaying_GetSpectrumData != null)
+                {
+                    tap.Bind(_api.NowPlaying_GetSpectrumData);
+                }
                 if (!tap.Direct || !tap.Begin())
                 {
                     return false;

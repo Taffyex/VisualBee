@@ -123,6 +123,8 @@ internal sealed partial class AudioTap
 
 	private bool _bindTried;
 
+	internal bool BindTried => _bindTried;
+
 	private float[] _interleaved = new float[0];
 
 	private readonly float[] _apiFft = new float[2048];
