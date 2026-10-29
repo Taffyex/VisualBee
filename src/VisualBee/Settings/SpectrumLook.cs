@@ -94,7 +94,13 @@ internal sealed class SpectrumLook : Look
 
 	public const int AudioSourceBassOnly = 2;
 
+	public const int AudioSourceWasapiLoopback = 3;
+
+	public const int AudioSourcePlayerOnly = 4;
+
 	public int AudioSource = AudioSourceAuto;
+
+	public bool NeedsLoopback => AudioSource == AudioSourceWasapiLoopback || AudioSource == AudioSourceAuto;
 
 	public int Engine = 1;
 
@@ -262,9 +268,23 @@ internal sealed class SpectrumLook : Look
 
 	public double LabelSize = 100.0;
 
-	public static readonly string[] AudioSourceNames = new string[3] { "Auto (Direct BASS + API Fallback)", "Always MusicBee API (Universal Safe)", "Direct BASS Stream Only" };
+	public static readonly string[] AudioSourceNames = new string[5]
+	{
+		"Auto (Direct BASS + API + Loopback Fallback)",
+		"Always MusicBee API (Universal Safe)",
+		"Direct BASS Stream Only",
+		"WASAPI Loopback (Browser & System Audio)",
+		"MusicBee Player Only (Auto BASS + API)"
+	};
 
-	public static readonly string[] AudioSourceTokens = new string[3] { "auto", "api", "bass" };
+	public static readonly string[] AudioSourceTokens = new string[5]
+	{
+		"auto",
+		"api",
+		"bass",
+		"loopback",
+		"player"
+	};
 
 	public static readonly string[] EngineNames = new string[2] { "Gaussian (Smooth)", "Modern FFT" };
 

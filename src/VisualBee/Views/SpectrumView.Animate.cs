@@ -123,7 +123,7 @@ internal sealed partial class SpectrumView
 		{
 			flag |= MoveParticles(look, dt, ref f);
 		}
-		if (look.Layout == 8) flag = true;
+		if (look.Layout == 8 && _hasAudio) flag = true;
 		return flag;
 	}
 

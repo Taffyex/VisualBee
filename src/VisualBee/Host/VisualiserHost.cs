@@ -12,6 +12,8 @@ internal sealed partial class VisualiserHost
 
 	public readonly AudioTap Tap = new AudioTap();
 
+	public readonly WasapiLoopback Loopback = new WasapiLoopback();
+
 	private readonly Func<VisualiserHost, bool, GpuView> _makeView;
 
 	private MusicBeeApiInterface _api;
@@ -43,7 +45,20 @@ internal sealed partial class VisualiserHost
 		store.Changed += (object s, EventArgs a) =>
 		{
 			ArtMaybeWanted();
+			SyncLoopbackState();
 		};
+	}
+
+	public void SyncLoopbackState()
+	{
+		if (Store?.Current is SpectrumLook look && look.NeedsLoopback)
+		{
+			Loopback.Start();
+		}
+		else
+		{
+			Loopback.Stop();
+		}
 	}
 
 	public void SetApi(MusicBeeApiInterface api)
@@ -55,12 +70,13 @@ internal sealed partial class VisualiserHost
 	{
 		string path = StorageFolder();
 		string text = Path.Combine(path, fileName);
-		string presetFolder = Path.Combine(path, "VisualBee", "Presets");
+		string presetFolder = Path.Combine(path, "mb_Visuals", "presets", Store.Key);
 		if (!Store.Load(text, presetFolder))
 		{
 			migrate?.Invoke(text);
 			Store.Save();
 		}
+		SyncLoopbackState();
 	}
 
 	public string StorageFolder()
@@ -168,19 +184,14 @@ internal sealed partial class VisualiserHost
 	{
 		Remove();
 		_panel = panel;
-		HealPanelMetrics(panel);
-		DisableHostScrollOverhang(panel);
 		_view = _makeView(this, arg2: false);
-		_view.Dock = DockStyle.None;
+		_view.Dock = DockStyle.Fill;
 		panel.Controls.Add(_view);
 		panel.Disposed += PanelDisposed;
-		panel.Resize += PanelResized;
-		SyncViewBounds();
 		_view.Start();
 		ArtMaybeWanted();
+		SyncLoopbackState();
 	}
-
-	private void PanelResized(object sender, EventArgs e) => SyncViewBounds();
 
 	private void PanelDisposed(object sender, EventArgs e)
 	{
@@ -206,20 +217,25 @@ internal sealed partial class VisualiserHost
 		if (_panel != null)
 		{
 			_panel.Disposed -= PanelDisposed;
-			_panel.Resize -= PanelResized;
 		}
 		_panel = null;
-		if (view == null)
+		if (view != null)
 		{
-			return;
+			try
+			{
+				view.Dispose();
+			}
+			catch (Exception)
+			{
+			}
 		}
-		try
-		{
-			view.Dispose();
-		}
-		catch (Exception)
-		{
-		}
+		Loopback.Stop();
+	}
+
+	public void Dispose()
+	{
+		Remove();
+		Loopback.Dispose();
 	}
 
 	private void CloseFullScreen()
@@ -243,7 +259,11 @@ internal sealed partial class VisualiserHost
 	public string StatusText()
 	{
 		string text;
-		if (Tap.Polls != 0)
+		if (Store?.Current is SpectrumLook look && (look.AudioSource == SpectrumLook.AudioSourceWasapiLoopback || (look.AudioSource == SpectrumLook.AudioSourceAuto && Loopback.HasActiveAudio())))
+		{
+			text = "WASAPI loopback, " + Loopback.Status;
+		}
+		else if (Tap.Polls != 0)
 		{
 			if (Tap.Direct)
 			{

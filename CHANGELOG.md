@@ -1,6 +1,24 @@
 # Changelog
 
-## [2.1.0] - 2026-10-28
+## [2.1.1-beta] - 2026-10-29
+
+### Browser2 (YouTube Music, SoundCloud) & Windows System Audio Support
+
+#### Native WASAPI Loopback Capture Engine
+- **Pure COM WASAPI Loopback**: Integrated native WASAPI loopback capture (`AUDCLNT_STREAMFLAGS_LOOPBACK`) with zero external dependencies. Taps into the Windows default multimedia render endpoint to visualize audio played through the [Browser2](https://github.com/tumuyan/mb_browser2) plugin (YouTube Music, SoundCloud, YouTube videos, streams) as well as any other system audio.
+- **Auto Source Fallback**: Defaults to **Auto (Direct BASS + API + Loopback Fallback)**. Automatically hooks MusicBee's direct BASS stream during local track playback and seamlessly falls back to loopback when MusicBee is idle or paused and Browser2 audio plays.
+- **Audio Capture Hook Selector**: Added user-selectable capture modes in Settings -> Audio -> Audio Engine:
+  1. *Auto (Direct BASS + API + Loopback Fallback) [Default]*
+  2. *Always MusicBee API (Universal Safe)*
+  3. *Direct BASS Stream Only*
+  4. *WASAPI Loopback (Browser & System Audio)*
+  5. *MusicBee Player Only (Auto BASS + API)*
+
+#### Concurrency, Lifecycle & Power Optimization
+- **Per-View Independent Read Heads**: Eliminates frame drops and stuttering when Full Screen is open concurrently with the docked panel by decoupling reader state across views.
+- **Zero Idle GPU & CPU Drain**: Smoothly settles and sleeps to 0% GPU / 0% CPU when audio is stopped or paused in both spectrum bar and oscilloscope layouts.
+- **Clean COM RCWs & Device Invalidation**: Full COM RCW cleanup and automatic reconnection if audio endpoints change, disconnect, or reset.
+
 
 ### VisualBee Studio Rack, Panel Docking Self-Healing & Distinct Tube Optics
 

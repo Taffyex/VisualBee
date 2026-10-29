@@ -40,7 +40,7 @@ namespace MusicBeePlugin
             _about.Type = PluginType.PanelView;
             _about.VersionMajor = 2;
             _about.VersionMinor = 1;
-            _about.Revision = 0;
+            _about.Revision = 1;
             _about.MinInterfaceVersion = 41;
             _about.MinApiRevision = 53;
             _about.ReceiveNotifications = ReceiveNotificationFlags.PlayerEvents;
@@ -63,13 +63,13 @@ namespace MusicBeePlugin
 
         public void Close(PluginCloseReason reason)
         {
-            _host?.Remove();
+            _host?.Dispose();
             _host?.Store?.Save();
         }
 
         public void Uninstall()
         {
-            _host?.Remove();
+            _host?.Dispose();
         }
 
         public void ReceiveNotification(string sourceFileUrl, NotificationType type)

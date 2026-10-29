@@ -114,10 +114,10 @@ internal static partial class SpectrumSettings
 	private static void AddAnalysis(Schema s)
 	{
 		s.Page("Audio").Section("Audio Engine");
-		s.Choice("audio.source", "Audio capture hook", "Capture method. Auto uses direct BASS stream with seamless API fallback if direct audio is silent.", SpectrumLook.AudioSourceNames, SpectrumLook.AudioSourceTokens, (SpectrumLook l) => l.AudioSource, (SpectrumLook l, int v) =>
+		s.Choice("audio.source", "Audio capture hook", "Capture method. Auto uses direct BASS when MusicBee plays and falls back to WASAPI Loopback for Browser2 (YouTube Music) or system audio.", SpectrumLook.AudioSourceNames, SpectrumLook.AudioSourceTokens, (SpectrumLook l) => l.AudioSource, (SpectrumLook l, int v) =>
 		{
 			l.AudioSource = v;
-		}).Words("audio source direct bass wasapi asio capture fallback");
+		}).Words("audio source direct bass wasapi loopback browser youtube asio capture fallback");
 		s.Choice("audio.hz", "Audio refresh rate", "Rate of FFT audio analysis. Sync matches the display refresh; 60–500 Hz sets an explicit cadence.", SpectrumLook.AnalysisHzNames, SpectrumLook.AnalysisHzTokens, (SpectrumLook l) => l.AnalysisHz, (SpectrumLook l, int v) =>
 		{
 			l.AnalysisHz = v;

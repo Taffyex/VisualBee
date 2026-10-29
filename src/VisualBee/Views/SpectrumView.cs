@@ -112,6 +112,8 @@ internal sealed partial class SpectrumView : GpuView
 
 	private Plugin.WindowKey _window;
 
+	private long _lastLoopbackHead = -1;
+
 	private float[] _left;
 
 	private float[] _right;
@@ -216,9 +218,14 @@ internal sealed partial class SpectrumView : GpuView
 		{
 			Allocate(num2, num);
 		}
-		bool flag = state == PlayState.Playing;
-		bool flag2 = state == PlayState.Paused;
-		if (flag)
+		bool isPlaying = state == PlayState.Playing;
+		bool isPaused = state == PlayState.Paused;
+		bool isLoopback = spectrumLook.AudioSource == SpectrumLook.AudioSourceWasapiLoopback;
+		bool isAuto = spectrumLook.AudioSource == SpectrumLook.AudioSourceAuto;
+		bool hasLoopbackAudio = Host?.Loopback?.HasActiveAudio() == true;
+
+		bool shouldAnalyse = isPlaying || ((isAuto || isLoopback) && hasLoopbackAudio);
+		if (shouldAnalyse)
 		{
 			int targetHz = SpectrumLook.AnalysisHzRates[Math.Max(0, Math.Min(SpectrumLook.AnalysisHzRates.Length - 1, spectrumLook.AnalysisHz))];
 			if (targetHz <= 0)
@@ -236,10 +243,11 @@ internal sealed partial class SpectrumView : GpuView
 				}
 			}
 		}
-		else if (!flag2 && _hasAudio)
+		else if (!isPaused && _hasAudio)
 		{
 			_hasAudio = false;
 			_window = default;
+			_lastLoopbackHead = -1;
 			_plugin.StopAudio();
 			for (int i = 0; i < _channels; i++)
 			{
@@ -269,6 +277,7 @@ internal sealed partial class SpectrumView : GpuView
 		}
 		_flow = new float[bands * 2];
 		_window = default;
+		_lastLoopbackHead = -1;
 		_geo = null;
 	}
 
@@ -277,88 +286,6 @@ internal sealed partial class SpectrumView : GpuView
 		for (int i = 0; i < a.Length; i++)
 		{
 			a[i] = v;
-		}
-	}
-
-	private void Analyse(SpectrumLook look, bool stereo)
-	{
-		bool needCentres = false;
-		if (look.Engine != _engine || _analysedBands != _bands || look.FftSize != _fftChoice || look.Window != _windowShape || look.Value != _value || look.Scale != _scale || look.MinHz != _minHz || look.MaxHz != _maxHz || look.Channels != _channelMode || stereo != _stereo)
-		{
-			_engine = look.Engine;
-			_analysedBands = _bands;
-			_fftChoice = look.FftSize;
-			_windowShape = look.Window;
-			_value = look.Value;
-			_scale = look.Scale;
-			_minHz = look.MinHz;
-			_maxHz = look.MaxHz;
-			_channelMode = look.Channels;
-			_stereo = stereo;
-			_window = default;
-			_geo = null;
-			needCentres = true;
-		}
-		bool directAllowed = look.AudioSource != SpectrumLook.AudioSourceAlwaysApi;
-		if (directAllowed && _plugin.ReadWindow(look.Engine, look.FftSize, look.Channels, stereo, look.DelayMs, ref _window, ref _left, ref _right, out var fresh))
-		{
-			if (_window.Rate != _rate)
-			{
-				_rate = _window.Rate;
-				_geo = null;
-				needCentres = true;
-			}
-			_hasAudio = true;
-			if (needCentres || _centres.Length != _bands) Centres(look);
-			if (!fresh)
-			{
-				return;
-			}
-			int size = _window.Size;
-			if (look.Engine != 0 && _channels == 2)
-			{
-				_modern[0].AnalyzeStereo(_left, _right, size, _rate, look.Window, look.Value, _bands, look.MinHz, TopHz(look), look.Scale, _raw[0], _raw[1], _modern[1]);
-			}
-			else
-			{
-				for (int i = 0; i < _channels; i++)
-				{
-					float[] array = ((i == 0) ? _left : _right);
-					if (look.Engine == 0)
-					{
-						_classic[i].Analyze(array, size, _rate, _bands, _raw[i]);
-					}
-					else
-					{
-						_modern[i].Analyze(array, size, _rate, look.Window, look.Value, _bands, look.MinHz, TopHz(look), look.Scale, _raw[i]);
-					}
-				}
-			}
-		}
-		else
-		{
-			if (look.AudioSource == SpectrumLook.AudioSourceBassOnly || !_plugin.ReadApiFft(out var magnitudes))
-			{
-				return;
-			}
-			_hasAudio = true;
-			if (_rate != 44100)
-			{
-				_rate = 44100;
-				needCentres = true;
-			}
-			if (needCentres || _centres.Length != _bands) Centres(look);
-			for (int j = 0; j < _channels; j++)
-			{
-				if (look.Engine == 0)
-				{
-					GaussianAnalyzer.BandsFromMagnitudes(magnitudes, magnitudes.Length, 44100, _bands, _raw[j]);
-				}
-				else
-				{
-					_modern[j].FromMagnitudes(magnitudes, magnitudes.Length, 44100, look.Value, _bands, look.MinHz, TopHz(look), look.Scale, _raw[j]);
-				}
-			}
 		}
 	}
 
