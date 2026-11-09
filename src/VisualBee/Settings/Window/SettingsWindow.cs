@@ -233,9 +233,9 @@ internal sealed partial class SettingsWindow : Form
 		bool visChanged = false;
 		foreach (SettingRow row in _rows)
 		{
-			bool wasVis = row.Visible;
+			bool wasVis = row.IsRowVisible;
 			row.ShowValue(current);
-			if (row.Visible != wasVis) visChanged = true;
+			if (row.IsRowVisible != wasVis) visChanged = true;
 		}
 		if (visChanged) LayoutContent();
 
@@ -293,6 +293,7 @@ internal sealed partial class SettingsWindow : Form
 			"Studio" => "Rack layout, bar geometry, transparent vacuum tubes, symmetry, and waveform.",
 			"Optics & FX" => "Screen optics, 3D Cyber-Grid horizon, floating particles, bloom glow, and scale lines.",
 			"Colours" => "Complete spectral color balance, gradient stops, and audio-reactive color modulation.",
+			"Audio" => "Audio refresh cadence, direct BASS tap, FFT resolution, and display frame rate.",
 			"Audio & System" => "Audio refresh cadence, direct BASS tap, FFT resolution, and display frame rate.",
 			_ => "Hover any control to inspect its hardware telemetry.",
 		};

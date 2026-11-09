@@ -117,7 +117,7 @@ internal sealed partial class SettingsWindow : Form
 		{
 			Width = width;
 			int headerH = Ui.S(38);
-			if (_reset != null && _reset.Visible)
+			if (_reset != null && _members != null)
 			{
 				_reset.Location = new Point(width - _reset.Width - Ui.S(16), Ui.S(12));
 			}

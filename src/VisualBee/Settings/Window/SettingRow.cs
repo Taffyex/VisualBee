@@ -90,7 +90,7 @@ internal sealed partial class SettingsWindow : Form
 			case SettingKind.Choice:
 			{
 				Segmented segmented = new Segmented(s.Choices);
-				if (s.Choices.Length <= 4 && segmented.Ideal() <= Ui.S(360))
+				if (s.Choices.Length <= 3 && segmented.Ideal() <= Ui.S(210))
 				{
 					_segments = segmented;
 					_segments.Changed += (object o, EventArgs a) =>
@@ -281,7 +281,7 @@ internal sealed partial class SettingsWindow : Form
 		protected override void OnLayout(LayoutEventArgs e)
 		{
 			base.OnLayout(e);
-			int num = Ui.S(200);
+			int num = Math.Min(Ui.S(185), Math.Max(Ui.S(125), (int)(Width * 0.38)));
 			int num2 = Ui.S(16) + num + Ui.S(10);
 			int num3 = Width - Ui.S(16) - Ui.S(26) * 2 - Ui.S(10);
 			int num4 = Math.Max(Ui.S(80), num3 - num2);
@@ -321,7 +321,8 @@ internal sealed partial class SettingsWindow : Form
 				Ui.Smooth(graphics);
 				Ui.Fill(graphics, new RectangleF(Ui.Sf(8f), Ui.Sf(2f), (float)Width - Ui.Sf(16f), (float)Height - Ui.Sf(4f)), Ui.Sf(6f), Ui.Card);
 			}
-			Ui.DrawText(r: new Rectangle(Ui.S(16), 0, Ui.S(200), Height), g: graphics, text: _s.Label, font: Ui.Body, colour: _dim ? Ui.Faint : Ui.Text, flags: TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter);
+			int labelW = Math.Min(Ui.S(185), Math.Max(Ui.S(125), (int)(Width * 0.38)));
+			Ui.DrawText(r: new Rectangle(Ui.S(16), 0, labelW, Height), g: graphics, text: _s.Label, font: Ui.Body, colour: _dim ? Ui.Faint : Ui.Text, flags: TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter);
 		}
 	}
 
