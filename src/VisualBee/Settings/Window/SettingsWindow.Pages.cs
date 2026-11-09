@@ -124,14 +124,23 @@ internal sealed partial class SettingsWindow : Form
 			foreach (Control control in _content.Controls)
 			{
 				if (control is SettingRow r && !r.IsRowVisible) continue;
-				if (control is RackSectionCard card && !card.IsCardVisible) continue;
-				if (control is FlowPanel fp)
+				if (control is RackSectionCard card)
+				{
+					if (!card.IsCardVisible)
+					{
+						card.Visible = false;
+						continue;
+					}
+					card.Visible = true;
+					card.FitWidth(contentWidth - Ui.S(28));
+				}
+				else if (control is FlowPanel fp)
 				{
 					fp.FitWidth(contentWidth - Ui.S(28));
 				}
-				int left = (control is FlowPanel || control is Label) ? Ui.S(14) : Ui.S(14);
+				int left = Ui.S(14);
 				control.SetBounds(left, curY, contentWidth - Ui.S(28), control.Height);
-				curY += control.Height + ((control is FlowPanel) ? Ui.S(8) : Ui.S(4));
+				curY += control.Height + ((control is FlowPanel || control is RackSectionCard) ? Ui.S(10) : Ui.S(4));
 			}
 		}
 		else
