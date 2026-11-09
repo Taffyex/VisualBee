@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.1.2] - 2026-11-10
+
+### Bug Fixes & UX Polish
+
+#### Settings Window & Search (#4, #3)
+- **Invisible Search Results Fixed (#4)**: Called `FitWidth` on `RackSectionCard` containers in search results layout so matching setting rows are correctly sized, positioned, and rendered.
+- **Dynamic Section Card Visibility (#3)**: Checked `SettingRow.IsRowVisible` instead of ancestor-masked `row.Visible` so conditional sections (such as `Album art`, `Aurora`, `LED / VFD segments`, `Radial`, etc.) unhide immediately when dependencies switch without requiring page navigation.
+- **Reset Link Placement**: Fixed section `Reset section` link positioning during initialization before form display.
+- **Responsive Label Scaling & 4-Choice Dropdowns**: Scaled label widths responsively in 2-column cards and constrained `Segmented` widgets to <=3 choices to prevent text truncation and control overflow.
+- **Audio Page Hint**: Fixed hint banner for the Audio page.
+
+#### Background Optics & Skin Transparency (#2)
+- **Transparent Background Option (#2)**: Added `Transparent` mode under `Optics & FX` -> `Background` that dynamically resolves the active MusicBee skin background color and gradients directly from the docked container hierarchy, seamlessly blending the visualizer into custom MusicBee skins.
+- **Dynamic Skin Change Tracking**: Automatically invalidates and repaints the background texture when MusicBee skin colors change at runtime.
+
+#### Presets & Docking Self-Healing
+- **Cover Art Chameleon Preset**: Corrected preset keys to properly enable adaptive cover colors (`anim.artColours`), cover blur (`art.blur`), and opacity (`art.opacity`).
+- **Obsidian Capsules Preset**: Corrected peak gravity fall token mapping.
+- **Restored Dock Self-Healing & Metrics**: Re-hooked `HealPanelMetrics`, `DisableHostScrollOverhang`, and `SyncViewBounds` to eliminate the +17px scrollbar overhang and protect against negative panel height loops.
+- **Preset Path Migration**: Migrated preset directory to `MusicBee\VisualBee\Presets` with automatic fallback/migration from legacy paths.
+
 ## [2.1.1-beta] - 2026-10-29
 
 ### Browser2 (YouTube Music, SoundCloud) & Windows System Audio Support

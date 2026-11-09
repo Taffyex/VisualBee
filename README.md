@@ -1,4 +1,4 @@
-# VisualBee v2.1.1
+# VisualBee v2.1.2
 
 VisualBee is an ultra high-performance, hardware-accelerated **Direct3D 11 spectrum analyzer and phase-locked analog oscilloscope** for [MusicBee](https://getmusicbee.com/). Engineered with zero managed wrappers and pure native DirectX 11 P/Invoke, it delivers buttery-smooth 120Hz/144Hz visuals, physical optical glass refraction, authentic VFD/Nixie vacuum tube incandescence, and studio CRT waveform monitoring at <1% CPU and <3% GPU load.
 
@@ -7,12 +7,12 @@ VisualBee is an ultra high-performance, hardware-accelerated **Direct3D 11 spect
 ## Installation
 
 > [!IMPORTANT]
-> **Downloading from GitHub:** Always download **[`VisualBee_v2.1.1.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.1/VisualBee_v2.1.1.zip)** or raw **`mb_VisualBee.dll`** directly from the official **[GitHub Releases](https://github.com/Taffyex/VisualBee/releases)** page (under the "Assets" dropdown).
+> **Downloading from GitHub:** Always download **[`VisualBee_v2.1.2.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.2/VisualBee_v2.1.2.zip)** or raw **`mb_VisualBee.dll`** directly from the official **[GitHub Releases](https://github.com/Taffyex/VisualBee/releases)** page (under the "Assets" dropdown).
 > **DO NOT** right-click `mb_VisualBee.dll` in the GitHub file repository view and click *"Save link as..."*! GitHub will save the GitHub HTML webpage instead of the actual compiled DLL, causing MusicBee to display the error:  
 > `Unable to install plugin: mb_VisualBee.dll, Common language runtime detected an invalid program`.
 
 ### 🚀 Quick Install (Recommended)
-1. Download **[`VisualBee_v2.1.1.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.1/VisualBee_v2.1.1.zip)** (or raw **[`mb_VisualBee.dll`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.1/mb_VisualBee.dll)**) from the [latest release](https://github.com/Taffyex/VisualBee/releases).
+1. Download **[`VisualBee_v2.1.2.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.2/VisualBee_v2.1.2.zip)** (or raw **[`mb_VisualBee.dll`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.2/mb_VisualBee.dll)**) from the [latest release](https://github.com/Taffyex/VisualBee/releases).
 2. In MusicBee, press `Ctrl + O` (or go to **Edit** > **Preferences**).
 3. Select **Plugins** in the sidebar, click **Add Plugin**, and choose the downloaded file (`VisualBee_v2.1.1.zip` or `mb_VisualBee.dll`).
 4. Click **Apply** and restart MusicBee.
