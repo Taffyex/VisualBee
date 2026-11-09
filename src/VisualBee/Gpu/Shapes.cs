@@ -228,6 +228,10 @@ internal struct Frame
 	public bool LookChanged;
 
 	public bool SizeChanged;
+
+	public int SkinTop;
+
+	public int SkinBottom;
 }
 
 internal struct Effects

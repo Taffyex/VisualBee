@@ -184,4 +184,76 @@ internal sealed partial class VisualiserHost
 			}
 		}
 	}
+
+	public bool TryGetSkinBackground(out int topArgb, out int bottomArgb)
+	{
+		topArgb = 0;
+		bottomArgb = 0;
+		try
+		{
+			Control c = _panel;
+			while (c != null)
+			{
+				FieldInfo[] fields = c.GetType().GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+				foreach (FieldInfo f in fields)
+				{
+					if (f.Name.IndexOf("GcmmNeE", StringComparison.Ordinal) >= 0)
+					{
+						object palette = f.GetValue(c);
+						if (palette != null)
+						{
+							FieldInfo pElem = palette.GetType().GetField("_0023_003DzPd7X_tI_003D");
+							if (pElem != null)
+							{
+								object elem = pElem.GetValue(palette);
+								if (elem != null)
+								{
+									FieldInfo fTop = elem.GetType().GetField("_0023_003DzYvysjhY_003D");
+									FieldInfo fBot = elem.GetType().GetField("_0023_003DztKiwES4g_zje");
+									if (fTop != null && fBot != null)
+									{
+										Color top = (Color)fTop.GetValue(elem);
+										Color bot = (Color)fBot.GetValue(elem);
+										if (top.A > 0)
+										{
+											topArgb = top.ToArgb();
+											bottomArgb = (bot.A > 0) ? bot.ToArgb() : topArgb;
+											return true;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+				if (c.BackColor.A > 0 && c.BackColor != Color.Transparent && c.BackColor != SystemColors.Control)
+				{
+					topArgb = c.BackColor.ToArgb();
+					bottomArgb = topArgb;
+					return true;
+				}
+				c = c.Parent;
+			}
+		}
+		catch { }
+
+		try
+		{
+			if (_api.Setting_GetSkinElementColour != null)
+			{
+				int bg = _api.Setting_GetSkinElementColour(SkinElement.SkinSubPanel, ElementState.ElementStateDefault, ElementComponent.ComponentBackground);
+				if (bg != 0)
+				{
+					topArgb = bg;
+					bottomArgb = bg;
+					return true;
+				}
+			}
+		}
+		catch { }
+
+		topArgb = -15722458;
+		bottomArgb = topArgb;
+		return false;
+	}
 }

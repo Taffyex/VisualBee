@@ -85,6 +85,10 @@ internal abstract partial class GpuView : Control
 
 	private PlayState _cachedPlayState = PlayState.Playing;
 
+	private int _lastSkinTop;
+
+	private int _lastSkinBottom;
+
 	private string _fpsText = "";
 
 	private volatile string _gpuStatus = "starting";
@@ -209,6 +213,14 @@ internal abstract partial class GpuView : Control
 			{
 				return false;
 			}
+			Host.TryGetSkinBackground(out int skinTop, out int skinBottom);
+			if (current.BackgroundMode == BackgroundModes.Transparent && (skinTop != _lastSkinTop || skinBottom != _lastSkinBottom))
+			{
+				_lastSkinTop = skinTop;
+				_lastSkinBottom = skinBottom;
+				if (_post != null) _post.BackgroundValid = false;
+				_dirty = true;
+			}
 			long timestamp = Stopwatch.GetTimestamp();
 			Frame f = new Frame
 			{
@@ -221,7 +233,9 @@ internal abstract partial class GpuView : Control
 				Time = (float)totalSeconds,
 				Scale = PanelLayout.Scale,
 				LookChanged = (current != _drawnLook),
-				SizeChanged = (rect.right != _drawnW || rect.bottom != _drawnH)
+				SizeChanged = (rect.right != _drawnW || rect.bottom != _drawnH),
+				SkinTop = skinTop,
+				SkinBottom = skinBottom
 			};
 			_animator.Update(current, ArtLook(current), dt, totalSeconds);
 			f.Colours = _animator.Shown;
@@ -320,7 +334,7 @@ internal abstract partial class GpuView : Control
 			Look look = f.Look;
 			if (!_post.BackgroundValid || f.LookChanged || f.SizeChanged || _animator.Moving || _backdrop.Animated(look) || BackgroundNeedsRedraw(ref f))
 			{
-				_backdrop.Draw(_gpu, canvas, _post.Background, look, f.Colours, f.Time, Energy, Host.Art);
+				_backdrop.Draw(_gpu, canvas, _post.Background, look, f.Colours, f.Time, Energy, Host.Art, f.SkinTop, f.SkinBottom);
 				canvas.Begin(_post.Background, f.Time);
 				canvas.Blend = BlendMode.Over;
 				DrawBackground(ref f);

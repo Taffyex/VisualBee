@@ -13,11 +13,11 @@ internal static class CommonLook
 	public static void AddBackground(Schema s)
 	{
 		s.Page("Optics & FX").Section("Background");
-		s.Choice("bg.mode", "Background", "What fills the panel behind the visualisation. Aurora drifts slowly and brightens with the music; Album art shows the playing track's cover, blurred and dimmed.", BackgroundModes.Names, BackgroundModes.Tokens, (Look l) => l.BackgroundMode, (Look l, int v) =>
+		s.Choice("bg.mode", "Background", "What fills the panel behind the visualisation. Transparent matches the active MusicBee skin background; Aurora drifts slowly and brightens with the music; Album art shows the playing track's cover, blurred and dimmed.", BackgroundModes.Names, BackgroundModes.Tokens, (Look l) => l.BackgroundMode, (Look l, int v) =>
 		{
 			l.BackgroundMode = v;
 		});
-		s.Colour("bg.colour", "Colour", "The background colour; where the panel has a gradient, the colour it starts from (the top of a linear gradient, the centre of a radial glow). Also shows through dim album art.", 0);
+		s.Colour("bg.colour", "Colour", "The background colour; where the panel has a gradient, the colour it starts from (the top of a linear gradient, the centre of a radial glow). Also shows through dim album art.", 0).When((Look l) => l.BackgroundMode != BackgroundModes.Transparent);
 		s.Colour("bg.end", "Gradient end", "Where the gradient ends: the bottom of a linear gradient, the edges of a radial glow.", 1).When((Look l) => l.BackgroundMode == 1 || l.BackgroundMode == 2);
 		s.Toggle("bg.useMiddle", "Middle colour", "Adds a third colour part way along the gradient.", (Look l) => l.BackgroundUseMiddle, (Look l, bool v) =>
 		{

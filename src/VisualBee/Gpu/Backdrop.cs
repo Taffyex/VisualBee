@@ -30,7 +30,7 @@ internal sealed class Backdrop : IDisposable
 		return false;
 	}
 
-	public void Draw(GpuDevice gpu, Canvas c, GpuTexture target, Look l, Vec4[] colours, float time, float energy, ArtImage art)
+	public void Draw(GpuDevice gpu, Canvas c, GpuTexture target, Look l, Vec4[] colours, float time, float energy, ArtImage art, int skinTopArgb = 0, int skinBottomArgb = 0)
 	{
 		c.Begin(target, time);
 		if (l.BackgroundMode == 3)
@@ -61,15 +61,41 @@ internal sealed class Backdrop : IDisposable
 				return;
 			}
 		}
-		int num = ((l.BackgroundMode == 1) ? 1 : ((l.BackgroundMode == 2) ? 2 : 0));
+		Vec4 p0 = colours[0];
+		Vec4 p1 = colours[1];
+		Vec4 p2 = colours[2];
+		int num = 0;
+		float angle = 0f;
+		float middle = -1f;
+		if (l.BackgroundMode == BackgroundModes.Transparent)
+		{
+			p0 = (skinTopArgb != 0) ? Vec4.Colour(skinTopArgb) : colours[0];
+			if (skinBottomArgb != 0 && skinBottomArgb != skinTopArgb)
+			{
+				num = 1;
+				p1 = Vec4.Colour(skinBottomArgb);
+				angle = 0f;
+			}
+			else
+			{
+				num = 0;
+				p1 = p0;
+			}
+		}
+		else
+		{
+			num = ((l.BackgroundMode == 1) ? 1 : ((l.BackgroundMode == 2) ? 2 : 0));
+			angle = (float)(l.BackgroundAngle * Math.PI / 180.0);
+			middle = l.BackgroundUseMiddle ? ((float)(l.BackgroundMiddleAt / 100.0)) : (-1f);
+		}
 		float num2 = (float)target.Width / (float)Math.Max(1, target.Height);
 		PassData pass2 = new PassData
 		{
-			P0 = colours[0],
-			P1 = colours[1],
-			P2 = colours[2],
-			P3 = new Vec4(num, (float)(l.BackgroundAngle * Math.PI / 180.0), 0.5f, 0.5f),
-			P4 = new Vec4((float)Math.Sqrt(0.25 * (double)num2 * (double)num2 + 0.25), l.BackgroundUseMiddle ? ((float)(l.BackgroundMiddleAt / 100.0)) : (-1f), 0f, 0f),
+			P0 = p0,
+			P1 = p1,
+			P2 = p2,
+			P3 = new Vec4(num, angle, 0.5f, 0.5f),
+			P4 = new Vec4((float)Math.Sqrt(0.25 * (double)num2 * (double)num2 + 0.25), middle, 0f, 0f),
 			P5 = new Vec4(l.CyberGrid ? 1f : 0f, (float)(l.CyberGridSpeed / 100.0), (float)(l.CyberGridIntensity / 100.0), Math.Max(0f, Math.Min(1f, energy))),
 			P6 = new Vec4(0.60f, 0f, 0f, 0f),
 			P7 = colours[4]
