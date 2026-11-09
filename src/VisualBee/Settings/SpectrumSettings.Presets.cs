@@ -98,7 +98,7 @@ internal static partial class SpectrumSettings
 		list.Add(new Preset("Obsidian Capsules", "Pitch-black OLED backdrop with floating indigo-violet pills and gravity peak blocks.",
 			"bars.style", "pills", "bars.width", "68", "colours.mode", "bar",
 			"colour.low", "#3A0CA3", "colour.mid", "#7209B7", "colour.high", "#F72585", "colour.peak", "#4CC9F0",
-			"bg.mode", "solid", "bg.colour", "#000000", "peaks", "1", "peaks.style", "gravity", "peaks.size", "4.0",
+			"bg.mode", "solid", "bg.colour", "#000000", "peaks", "1", "peaks.style", "block", "peaks.fall", "gravity", "peaks.size", "4.0",
 			"reflection.opacity", "0", "fx.bloom", "1", "fx.bloomStrength", "45", "fx.bloomThreshold", "40"));
 
 		// 8. Dieter Studio LED
@@ -132,8 +132,8 @@ internal static partial class SpectrumSettings
 		// 12. Cover Art Chameleon
 		list.Add(new Preset("Cover Art Chameleon", "Adaptive album-artwork colour extraction with blurred cover backdrop and glass pillars.",
 			"bars.style", "glass", "glass.fill", "crystal", "glass.tube", "full", "glass.refraction", "70", "glass.wall", "18",
-			"bars.width", "75", "bars.radius", "4", "colours.mode", "bar", "colours.art", "1",
-			"bg.mode", "art", "bg.artBlur", "60", "bg.artDim", "70",
+			"bars.width", "75", "bars.radius", "4", "colours.mode", "bar", "anim.artColours", "1",
+			"bg.mode", "art", "art.blur", "60", "art.opacity", "45",
 			"reflection.opacity", "30", "reflection.horizon", "1", "fx.bloom", "1", "fx.bloomStrength", "40", "fx.bloomThreshold", "45"));
 
 		return list;

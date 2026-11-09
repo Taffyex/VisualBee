@@ -72,7 +72,24 @@ internal sealed partial class VisualiserHost
 	{
 		string path = StorageFolder();
 		string text = Path.Combine(path, fileName);
-		string presetFolder = Path.Combine(path, "mb_Visuals", "presets", Store.Key);
+		string legacyFolder = Path.Combine(path, "mb_Visuals", "presets", Store.Key);
+		string presetFolder = Path.Combine(path, "VisualBee", "Presets");
+		try
+		{
+			if (Directory.Exists(legacyFolder))
+			{
+				Directory.CreateDirectory(presetFolder);
+				foreach (string oldFile in Directory.GetFiles(legacyFolder, "*.ini"))
+				{
+					string targetFile = Path.Combine(presetFolder, Path.GetFileName(oldFile));
+					if (!File.Exists(targetFile))
+					{
+						File.Copy(oldFile, targetFile);
+					}
+				}
+			}
+		}
+		catch { }
 		if (!Store.Load(text, presetFolder))
 		{
 			migrate?.Invoke(text);
@@ -186,14 +203,24 @@ internal sealed partial class VisualiserHost
 	{
 		Remove();
 		_panel = panel;
+		HealPanelMetrics(panel);
+		DisableHostScrollOverhang(panel);
 		_view = _makeView(this, arg2: false);
-		_view.Dock = DockStyle.Fill;
+		_view.Dock = DockStyle.None;
+		SyncViewBounds();
 		panel.Controls.Add(_view);
 		panel.Disposed += PanelDisposed;
+		panel.Resize += PanelResized;
 		State();
 		_view.Start();
 		ArtMaybeWanted();
 		SyncLoopbackState();
+	}
+
+	private void PanelResized(object sender, EventArgs e)
+	{
+		DisableHostScrollOverhang(_panel);
+		SyncViewBounds();
 	}
 
 	private void PanelDisposed(object sender, EventArgs e)
@@ -220,6 +247,7 @@ internal sealed partial class VisualiserHost
 		if (_panel != null)
 		{
 			_panel.Disposed -= PanelDisposed;
+			_panel.Resize -= PanelResized;
 		}
 		_panel = null;
 		if (view != null)
