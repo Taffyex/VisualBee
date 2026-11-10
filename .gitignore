@@ -15,6 +15,10 @@ $RECYCLE.BIN/
 *.tmp
 *~
 
+## Agent Handoff Artifacts
+HANDOFF*.md
+*HANDOFF*.md
+
 ## Exclude local build output, but explicitly KEEP the release/ directory for precompiled binaries
 !release/
 !release/**
