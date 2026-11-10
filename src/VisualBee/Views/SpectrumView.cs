@@ -224,7 +224,7 @@ internal sealed partial class SpectrumView : GpuView
 		bool isAuto = spectrumLook.AudioSource == SpectrumLook.AudioSourceAuto;
 		bool hasLoopbackAudio = Host?.Loopback?.HasActiveAudio() == true;
 
-		bool shouldAnalyse = isPlaying || ((isAuto || isLoopback) && hasLoopbackAudio);
+		bool shouldAnalyse = isPlaying || isLoopback || (isAuto && hasLoopbackAudio);
 		if (shouldAnalyse)
 		{
 			int targetHz = SpectrumLook.AnalysisHzRates[Math.Max(0, Math.Min(SpectrumLook.AnalysisHzRates.Length - 1, spectrumLook.AnalysisHz))];
@@ -335,6 +335,11 @@ internal sealed partial class SpectrumView : GpuView
 				if (s != null)
 				{
 					Host.Store.Set(s, dev.Id);
+					Setting sSrc = Host.Store.Schema.Find("audio.source");
+					if (sSrc != null && !string.Equals(dev.Id, "default", StringComparison.OrdinalIgnoreCase) && !string.Equals(dev.Id, "process", StringComparison.OrdinalIgnoreCase))
+					{
+						Host.Store.Set(sSrc, SpectrumLook.AudioSourceWasapiLoopback);
+					}
 					ShowNotification("Capture: " + dev.Name, 2.5);
 				}
 			})

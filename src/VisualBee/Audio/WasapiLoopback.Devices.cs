@@ -43,7 +43,7 @@ internal sealed partial class WasapiLoopback
 		[PreserveSig] int Item(uint nDevice, out IMMDevice ppDevice);
 	}
 
-	[Guid("1BE09788-68F6-41ea-96DE-0DF0BDDEE341"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	[Guid("1BE09788-6894-4089-8586-9A2A6C265AC5"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 	private interface IMMEndpoint
 	{
 		[PreserveSig] int GetDataFlow(out int pDataFlow);
@@ -164,6 +164,12 @@ internal sealed partial class WasapiLoopback
 	private static readonly PropertyKey PKeyDeviceFriendlyName = new PropertyKey(new Guid("A45C254E-DF1C-4EFD-8020-67D146A850E0"), 14);
 	private static readonly object _nameCacheLock = new object();
 	private static readonly Dictionary<string, string> _displayNameCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+	public static bool IsCaptureDeviceId(string id)
+	{
+		if (string.IsNullOrEmpty(id)) return false;
+		return id.IndexOf("{0.0.1.", StringComparison.OrdinalIgnoreCase) >= 0;
+	}
 
 	public static bool IsProcessLoopbackSupported()
 	{

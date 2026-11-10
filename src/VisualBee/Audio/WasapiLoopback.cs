@@ -201,6 +201,7 @@ internal sealed partial class WasapiLoopback : IDisposable
 			string deviceDisplayName = "Default";
 			bool isCapture = false;
 			bool isFallback = false;
+			var iidClient = new Guid("1CB9AD4C-DBFA-4c32-B178-C2F568A703B2");
 
 			try
 			{
@@ -245,12 +246,12 @@ internal sealed partial class WasapiLoopback : IDisposable
 						deviceDisplayName = isFallback ? ("Fallback -> " + GetDeviceDisplayName(activeEndpointId)) : GetDeviceDisplayName(activeEndpointId);
 					}
 
-					if (endpoint is IMMEndpoint ep && ep.GetDataFlow(out int flow) == 0 && flow == 1)
+					if (IsCaptureDeviceId(activeEndpointId) ||
+					    (endpoint is IMMEndpoint ep && ep.GetDataFlow(out int flow) == 0 && flow == 1))
 					{
 						isCapture = true;
 					}
 
-					var iidClient = new Guid("1CB9AD4C-DBFA-4c32-B178-C2F568A703B2");
 					if (endpoint.Activate(ref iidClient, 23, IntPtr.Zero, out var clientObj) != 0 || clientObj == null)
 					{
 						_status = "AudioClient activation failed";
@@ -294,9 +295,15 @@ internal sealed partial class WasapiLoopback : IDisposable
 					{
 						isEventDriven = true;
 					}
-					else
+					else if (endpoint != null)
 					{
-						hr = client.Initialize(0, streamFlags, 500000, 0, pFormat, IntPtr.Zero);
+						try { Marshal.ReleaseComObject(client); } catch { }
+						client = null;
+						if (endpoint.Activate(ref iidClient, 23, IntPtr.Zero, out var freshObj) == 0 && freshObj is IAudioClient freshClient)
+						{
+							client = freshClient;
+							hr = client.Initialize(0, streamFlags, 500000, 0, pFormat, IntPtr.Zero);
+						}
 					}
 
 					if (hr != 0)
