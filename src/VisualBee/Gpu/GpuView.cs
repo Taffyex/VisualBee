@@ -109,6 +109,10 @@ internal abstract partial class GpuView : Control
 
 	protected virtual float Beat => 0f;
 
+	protected virtual float BackdropAlpha => 1f;
+
+	protected virtual float MasterAlpha => 1f;
+
 	protected GpuView(VisualiserHost host, bool fullScreen, string threadName)
 	{
 		Host = host;
@@ -334,7 +338,7 @@ internal abstract partial class GpuView : Control
 			Look look = f.Look;
 			if (!_post.BackgroundValid || f.LookChanged || f.SizeChanged || _animator.Moving || _backdrop.Animated(look) || BackgroundNeedsRedraw(ref f))
 			{
-				_backdrop.Draw(_gpu, canvas, _post.Background, look, f.Colours, f.Time, Energy, Host.Art, f.SkinTop, f.SkinBottom);
+				_backdrop.Draw(_gpu, canvas, _post.Background, look, f.Colours, f.Time, Energy, Host.Art, f.SkinTop, f.SkinBottom, BackdropAlpha);
 				canvas.Begin(_post.Background, f.Time);
 				canvas.Blend = BlendMode.Over;
 				DrawBackground(ref f);
@@ -349,7 +353,7 @@ internal abstract partial class GpuView : Control
 			f.Content = _post.Content;
 			DrawContent(ref f);
 			canvas.Flush();
-			_post.Present(_gpu, canvas, CommonLook.Effects(look, f.Colours, Beat), f.Dt, f.Time, _gpu.BackBufferView, f.Width, f.Height);
+			_post.Present(_gpu, canvas, CommonLook.Effects(look, f.Colours, Beat), f.Dt, f.Time, _gpu.BackBufferView, f.Width, f.Height, MasterAlpha);
 			DrawOverlays(ref f, now);
 			canvas.Flush();
 		}

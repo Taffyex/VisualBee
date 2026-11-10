@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.2.31] - 2026-11-10
+## [2.1.31] - 2026-11-10
 
 ### Low-Latency WASAPI Loopback, Level Matching (AGC) & Process Loopback Overhaul
 

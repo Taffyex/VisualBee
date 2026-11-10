@@ -1,4 +1,4 @@
-# VisualBee v2.2.31
+# VisualBee v2.1.31
 
 VisualBee is an ultra high-performance, hardware-accelerated **Direct3D 11 spectrum analyzer and phase-locked analog oscilloscope** for [MusicBee](https://getmusicbee.com/). Engineered with zero managed wrappers and pure native DirectX 11 P/Invoke, it delivers buttery-smooth 120Hz/144Hz visuals, physical optical glass refraction, authentic VFD/Nixie vacuum tube incandescence, and studio CRT waveform monitoring at <1% CPU and <3% GPU load.
 
@@ -7,9 +7,9 @@ VisualBee is an ultra high-performance, hardware-accelerated **Direct3D 11 spect
 ## Installation
 
 ### Quick Install (Recommended)
-1. Download **[`VisualBee_v2.2.31.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.2.31/VisualBee_v2.2.31.zip)** (or raw **[`mb_VisualBee.dll`](https://github.com/Taffyex/VisualBee/releases/download/v2.2.31/mb_VisualBee.dll)**) from the [latest release](https://github.com/Taffyex/VisualBee/releases).
+1. Download **[`VisualBee_v2.1.31.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.31/VisualBee_v2.1.31.zip)** (or raw **[`mb_VisualBee.dll`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.31/mb_VisualBee.dll)**) from the [latest release](https://github.com/Taffyex/VisualBee/releases).
 2. In MusicBee, press `Ctrl + O` (or go to **Edit** > **Preferences**).
-3. Select **Plugins** in the sidebar, click **Add Plugin**, and choose the downloaded file (`VisualBee_v2.2.31.zip` or `mb_VisualBee.dll`).
+3. Select **Plugins** in the sidebar, click **Add Plugin**, and choose the downloaded file (`VisualBee_v2.1.31.zip` or `mb_VisualBee.dll`).
 4. Click **Apply** and restart MusicBee.
 
 ### Manual Drop-in
@@ -51,7 +51,7 @@ Configure presets, bar optics, bloom intensity, color palettes, and audio acoust
 
 ---
 
-## What's New in VisualBee v2.2.31
+## What's New in VisualBee v2.1.31
 
 ### 1. Low-Latency Causal Windowing & AGC Level Matching
 - **Zero-Latency Transients**: Standard symmetric analysis windows place their peak in the past ($N/2$), introducing 85–340 ms visual lag. Causal windowing weights live samples near the playhead ($0.82(N-1)$), synchronizing visual bars instantly with sound transients.

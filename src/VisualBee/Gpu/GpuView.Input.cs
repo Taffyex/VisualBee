@@ -61,8 +61,13 @@ internal abstract partial class GpuView
 	{
 	}
 
+	protected virtual void DrawCustomOverlays(ref Frame f, double now)
+	{
+	}
+
 	private void DrawOverlays(ref Frame f, double now)
 	{
+		DrawCustomOverlays(ref f, now);
 		string text = "";
 		if (f.Look.ShowFps)
 		{

@@ -30,7 +30,7 @@ internal sealed class Backdrop : IDisposable
 		return false;
 	}
 
-	public void Draw(GpuDevice gpu, Canvas c, GpuTexture target, Look l, Vec4[] colours, float time, float energy, ArtImage art, int skinTopArgb = 0, int skinBottomArgb = 0)
+	public void Draw(GpuDevice gpu, Canvas c, GpuTexture target, Look l, Vec4[] colours, float time, float energy, ArtImage art, int skinTopArgb = 0, int skinBottomArgb = 0, float bgAlpha = 1f)
 	{
 		c.Begin(target, time);
 		if (l.BackgroundMode == 3)
@@ -56,7 +56,7 @@ internal sealed class Backdrop : IDisposable
 				c.Pass(c.AuroraPs, pass, BlendMode.Replace, null);
 				c.Begin(target, time);
 				c.Blend = BlendMode.Replace;
-				c.Quad(_aurora, TexQuad.Make(0f, 0f, target.Width, target.Height, 0f, 0f, 1f, 1f, new Vec4(1f, 1f, 1f, 1f), mask: false));
+				c.Quad(_aurora, TexQuad.Make(0f, 0f, target.Width, target.Height, 0f, 0f, 1f, 1f, new Vec4(1f, 1f, 1f, bgAlpha), mask: false));
 				c.Flush();
 				return;
 			}
@@ -97,7 +97,7 @@ internal sealed class Backdrop : IDisposable
 			P3 = new Vec4(num, angle, 0.5f, 0.5f),
 			P4 = new Vec4((float)Math.Sqrt(0.25 * (double)num2 * (double)num2 + 0.25), middle, 0f, 0f),
 			P5 = new Vec4(l.CyberGrid ? 1f : 0f, (float)(l.CyberGridSpeed / 100.0), (float)(l.CyberGridIntensity / 100.0), Math.Max(0f, Math.Min(1f, energy))),
-			P6 = new Vec4(0.60f, 0f, 0f, 0f),
+			P6 = new Vec4(0.60f, bgAlpha, 0f, 0f),
 			P7 = colours[4]
 		};
 		c.Pass(c.BackgroundPs, pass2, BlendMode.Replace, null);

@@ -54,7 +54,7 @@ internal sealed class PostFx : IDisposable
 		_trailFresh = true;
 	}
 
-	public void Present(GpuDevice gpu, Canvas canvas, Effects fx, float dt, float time, IntPtr output, int width, int height)
+	public void Present(GpuDevice gpu, Canvas canvas, Effects fx, float dt, float time, IntPtr output, int width, int height, float masterAlpha = 1f)
 	{
 		GpuTexture gpuTexture = Content;
 		if (fx.Trails && fx.TrailSeconds > 0f)
@@ -108,7 +108,8 @@ internal sealed class PostFx : IDisposable
 			P1 = new Vec4(fx.BloomTint.X, fx.BloomTint.Y, fx.BloomTint.Z, fx.Vignette),
 			P2 = new Vec4(fx.ShadowColour.X, fx.ShadowColour.Y, fx.ShadowColour.Z, fx.Scanlines),
 			P3 = new Vec4(fx.Aberration, fx.Grain * 0.08f, fx.VignetteStart, num),
-			P4 = fx.Flash
+			P4 = fx.Flash,
+			P5 = new Vec4(0f, 0f, 0f, masterAlpha)
 		};
 		canvas.Begin(output, width, height, time);
 		canvas.Pass(canvas.CompositePs, pass2, BlendMode.Replace, Background, gpuTexture, gpuTexture2, gpuTexture3);

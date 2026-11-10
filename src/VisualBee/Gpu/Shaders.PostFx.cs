@@ -143,7 +143,8 @@ float4 BackgroundPS(FullOut i) : SV_Target
             c.rgb += P[7].rgb * horizonGlow;
         }
     }
-    return float4(c.rgb, 1.0);
+    float bgAlpha = saturate(P[6].y);
+    return float4(c.rgb * bgAlpha, bgAlpha);
 }
 
 float Hash21(float2 p)
@@ -213,11 +214,12 @@ float4 CompositePS(FullOut i) : SV_Target
     int3 px = int3(i.Pos.xy, 0);
     float2 uv = i.Uv;
     uint flags = (uint)P[3].w;
-    float3 bg = Src0.Load(px).rgb;
+    float4 bg = Src0.Load(px);
     if (flags & 2)
     {
         float shadow = Src3.Sample(LinearClamp, uv - P[0].zw * InvViewSize).a * P[0].y;
-        bg = lerp(bg, P[2].rgb, saturate(shadow));
+        bg.rgb = lerp(bg.rgb, P[2].rgb, saturate(shadow));
+        bg.a = max(bg.a, saturate(shadow));
     }
     float4 fg;
     if (P[3].x > 0.0)
@@ -230,9 +232,8 @@ float4 CompositePS(FullOut i) : SV_Target
     }
     else
         fg = Src1.Load(px);
-    float3 col = bg * (1.0 - saturate(fg.a)) + fg.rgb;
-    if (flags & 1)
-        col += Src2.Sample(LinearClamp, uv).rgb * P[0].x * P[1].rgb;
+    float3 bloom = (flags & 1) ? (Src2.Sample(LinearClamp, uv).rgb * P[0].x * P[1].rgb) : float3(0.0, 0.0, 0.0);
+    float3 col = bg.rgb * (1.0 - saturate(fg.a)) + fg.rgb + bloom;
     col += P[4].rgb * P[4].a;
     if (P[1].w > 0.0)
     {
@@ -246,7 +247,10 @@ float4 CompositePS(FullOut i) : SV_Target
     col = AcesFilmic(col);
     if (flags & 4)
         col += (Ign(i.Pos.xy) - 0.5) * (0.98 / 255.0);
-    return float4(saturate(col), 1.0);
+
+    float masterAlpha = (P[5].w > 0.001) ? P[5].w : 1.0;
+    float outAlpha = saturate(bg.a + fg.a * (1.0 - bg.a) + max(bloom.r, max(bloom.g, bloom.b)));
+    return float4(saturate(col * masterAlpha), saturate(outAlpha * masterAlpha));
 }
 ";
 

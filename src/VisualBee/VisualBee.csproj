@@ -16,10 +16,10 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>$(NoWarn);0649;0169</NoWarn>
-    <Version>2.2.31</Version>
-    <AssemblyVersion>2.2.31.0</AssemblyVersion>
-    <FileVersion>2.2.31.0</FileVersion>
-    <InformationalVersion>2.2.31</InformationalVersion>
+    <Version>2.1.31</Version>
+    <AssemblyVersion>2.1.31.0</AssemblyVersion>
+    <FileVersion>2.1.31.0</FileVersion>
+    <InformationalVersion>2.1.31</InformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
