@@ -13,24 +13,18 @@ internal sealed partial class SettingsWindow : Form
 	private sealed class SettingRow : Widget
 	{
 		private readonly SettingsWindow _w;
-
 		private readonly Setting _s;
 		public bool IsRowVisible = true;
 
 		private Slider _slider;
-
 		private InputBox _number;
-
 		private Toggle _toggle;
-
 		private Segmented _segments;
-
 		private Dropdown _dropdown;
-
 		private ColourWell _well;
+		private List<WasapiLoopback.DeviceInfo> _deviceList;
 
 		private readonly IconButton _reset = new IconButton("\ue7a7");
-
 		private readonly IconButton _info = new IconButton("\ue946")
 		{
 			Passive = true,
@@ -38,9 +32,7 @@ internal sealed partial class SettingsWindow : Form
 		};
 
 		private bool _showing;
-
 		private bool _hover;
-
 		private bool _dim;
 
 		public SettingRow(SettingsWindow w, Setting s, ToolTip tips)
@@ -109,6 +101,9 @@ internal sealed partial class SettingsWindow : Form
 				Controls.Add(_dropdown);
 				break;
 			}
+			case SettingKind.Device:
+				InitDeviceDropdown();
+				break;
 			default:
 				_well = new ColourWell
 				{
@@ -127,10 +122,67 @@ internal sealed partial class SettingsWindow : Form
 			};
 			Controls.Add(_reset);
 			Controls.Add(_info);
-			tips.SetToolTip(_info, Wrap(s.Hint + "\n(Default: " + s.Format(s.Default) + ")"));
+
+			string defDisplay = (s.Kind == SettingKind.Device)
+				? WasapiLoopback.GetDeviceDisplayName(s.Default as string)
+				: s.Format(s.Default);
+			tips.SetToolTip(_info, Wrap(s.Hint + "\n(Default: " + defDisplay + ")"));
 			tips.SetToolTip(this, Wrap(s.Label + ": " + s.Hint));
-			tips.SetToolTip(_reset, "Reset to default: " + s.Format(s.Default));
+			tips.SetToolTip(_reset, "Reset to default: " + defDisplay);
 			Hook(this);
+		}
+
+		private void InitDeviceDropdown()
+		{
+			RefreshDeviceList();
+			_dropdown = new Dropdown(GetDeviceNames());
+			_dropdown.BeforeOpen = () =>
+			{
+				RefreshDeviceList();
+				_dropdown.SetItems(GetDeviceNames());
+				SyncDeviceDropdownSelection();
+			};
+			_dropdown.Changed += (object o, EventArgs a) =>
+			{
+				if (_deviceList != null && _dropdown.Selected >= 0 && _dropdown.Selected < _deviceList.Count)
+				{
+					Commit(_deviceList[_dropdown.Selected].Id);
+				}
+			};
+			Controls.Add(_dropdown);
+		}
+
+		private void RefreshDeviceList()
+		{
+			string currentId = _s.Get(_w._store.Current) as string ?? "default";
+			_deviceList = WasapiLoopback.EnumerateDevices(currentId);
+		}
+
+		private string[] GetDeviceNames()
+		{
+			if (_deviceList == null) return new string[0];
+			string[] names = new string[_deviceList.Count];
+			for (int i = 0; i < _deviceList.Count; i++)
+			{
+				names[i] = _deviceList[i].Name;
+			}
+			return names;
+		}
+
+		private void SyncDeviceDropdownSelection()
+		{
+			if (_dropdown == null || _deviceList == null) return;
+			string currentId = _s.Get(_w._store.Current) as string ?? "default";
+			int idx = 0;
+			for (int i = 0; i < _deviceList.Count; i++)
+			{
+				if (string.Equals(_deviceList[i].Id, currentId, StringComparison.OrdinalIgnoreCase))
+				{
+					idx = i;
+					break;
+				}
+			}
+			_dropdown.Selected = idx;
 		}
 
 		private static string Wrap(string text)
@@ -258,6 +310,12 @@ internal sealed partial class SettingsWindow : Form
 						_dropdown.Enabled = flag;
 					}
 					break;
+				case SettingKind.Device:
+					RefreshDeviceList();
+					_dropdown.SetItems(GetDeviceNames());
+					SyncDeviceDropdownSelection();
+					_dropdown.Enabled = flag;
+					break;
 				default:
 					_well.Argb = (int)obj;
 					_well.Enabled = flag;
@@ -325,5 +383,4 @@ internal sealed partial class SettingsWindow : Form
 			Ui.DrawText(r: new Rectangle(Ui.S(16), 0, labelW, Height), g: graphics, text: _s.Label, font: Ui.Body, colour: _dim ? Ui.Faint : Ui.Text, flags: TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter);
 		}
 	}
-
 }

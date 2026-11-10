@@ -97,7 +97,7 @@ internal sealed partial class SpectrumView
 		if (rate <= 0) rate = 48000;
 		int size = Math.Min(65536, (look.Engine == 0) ? GaussianAnalyzer.WindowSize(rate) : SpectrumAnalyzer.WindowSize(look.FftSize, rate));
 		EnsureBuffers(size, stereo);
-		if (!loopback.ReadWindow(size, _left, _right, stereo, look.Channels, ref _lastLoopbackHead, out int actualRate, out bool fresh))
+		if (!loopback.ReadWindow(size, look.DelayMs, _left, _right, stereo, look.Channels, ref _lastLoopbackHead, out int actualRate, out bool fresh))
 		{
 			return false;
 		}

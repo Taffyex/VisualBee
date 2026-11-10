@@ -310,11 +310,41 @@ internal sealed partial class SpectrumView : GpuView
 	protected override void AddMenuItems(Menu.MenuItemCollection items)
 	{
 		items.Add("-");
+		items.Add(ChoiceItem("Audio &source", "audio.source"));
+		items.Add(DeviceMenuItem("Capture &device"));
 		items.Add(ChoiceItem("&Layout", "layout"));
 		items.Add(ChoiceItem("Bar &style", "bars.style"));
 		items.Add(ToggleItem("Floor &reflection", "reflection.horizon"));
 		items.Add(ToggleItem("Pea&ks", "peaks"));
 		items.Add(ToggleItem("&Glow", "fx.bloom"));
 		items.Add(ToggleItem("Pa&rticles", "particles"));
+	}
+
+	private MenuItem DeviceMenuItem(string text)
+	{
+		MenuItem root = new MenuItem(text);
+		var look = Host.Store.Current as SpectrumLook;
+		string curId = look?.AudioDeviceId ?? "default";
+		var devices = WasapiLoopback.EnumerateDevices(curId);
+		for (int i = 0; i < devices.Count; i++)
+		{
+			var dev = devices[i];
+			MenuItem item = new MenuItem(dev.Name, (o, a) =>
+			{
+				Setting s = Host.Store.Schema.Find("audio.device");
+				if (s != null)
+				{
+					Host.Store.Set(s, dev.Id);
+					ShowNotification("Capture: " + dev.Name, 2.5);
+				}
+			})
+			{
+				RadioCheck = true,
+				Checked = string.Equals(dev.Id, curId, StringComparison.OrdinalIgnoreCase)
+			};
+			root.MenuItems.Add(item);
+		}
+		root.Enabled = look != null && look.NeedsLoopback;
+		return root;
 	}
 }

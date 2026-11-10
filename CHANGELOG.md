@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.1.3] - 2026-11-10
+
+### Audio Device Selection & Low-Latency Event-Driven WASAPI Loopback
+
+#### Dynamic Audio Endpoint Selection
+- **Output Device Selector**: Choose any active playback endpoint (Speakers, Headphones, HDMI, USB DAC) or virtual audio routing cable (VB-CABLE Input, Voicemeeter, Virtual Audio Router).
+- **Hot-Plug & Dynamic Re-Enumeration**: Scans and populates available endpoints whenever the device dropdown opens, allowing on-the-fly switching without restarting MusicBee.
+- **Context Menu Routing**: Right-click context submenus to quickly toggle between internal BASS tapping and WASAPI loopback, or switch the capture device on the fly.
+
+#### Windows 10/11 Process-Isolated Loopback
+- **Targeted Application Audio**: Uses CoreAudio process activation (`VAD\Process_Loopback`) on Windows 10 build 20348+ and Windows 11 to isolate and capture audio strictly from MusicBee and secondary media players without recording VoIP communications (Discord, Teams), game audio, or system alerts.
+
+#### Engine Optimization & Telemetry
+- **Event-Driven Capture Engine**: Upgraded WASAPI capture to `AUDCLNT_STREAMFLAGS_EVENTCALLBACK` with a 50 ms ring buffer, automatic PCM channel/sample rate negotiation, and smooth idle decay when audio stops.
+- **Audio Sync Delay Compensation**: Added 0 ms to 500 ms audio sync delay slider in settings to align visual feedback with high-latency Bluetooth headphones or external DAC DSP buffering.
+- **Status HUD & Diagnostics Tooltip**: Live display and hover tooltip showing active endpoint ID, sample rate, channel format, and capture state.
+
 ## [2.1.2] - 2026-11-10
 
 ### Bug Fixes & UX Polish

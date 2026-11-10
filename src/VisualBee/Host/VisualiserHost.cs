@@ -54,6 +54,7 @@ internal sealed partial class VisualiserHost
 		bool hasActiveView = (_view != null || _fullScreenView != null);
 		if (hasActiveView && Store?.Current is SpectrumLook look && look.NeedsLoopback)
 		{
+			Loopback.SetDevice(look.AudioDeviceId);
 			Loopback.Start();
 		}
 		else

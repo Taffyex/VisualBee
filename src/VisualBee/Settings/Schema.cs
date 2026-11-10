@@ -130,6 +130,22 @@ internal sealed class Schema
 		});
 	}
 
+	public Setting Device<T>(string key, string label, string hint, Func<T, string> get, Action<T, string> set) where T : Look
+	{
+		return Add(new Setting
+		{
+			Key = key,
+			Label = label,
+			Hint = hint,
+			Kind = SettingKind.Device,
+			Get = (Look l) => get((T)l),
+			Set = (Look l, object v) =>
+			{
+				set((T)l, (v as string)?.Trim() ?? "default");
+			}
+		});
+	}
+
 	public Setting Colour(string key, string label, string hint, int slot, bool alpha = false)
 	{
 		return Add(new Setting

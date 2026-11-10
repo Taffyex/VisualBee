@@ -5,5 +5,6 @@ internal enum SettingKind
 	Toggle,
 	Number,
 	Choice,
-	Colour
+	Colour,
+	Device
 }

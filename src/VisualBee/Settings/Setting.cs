@@ -69,6 +69,10 @@ internal sealed class Setting
 		{
 			return Math.Abs(Convert.ToDouble(a, CultureInfo.InvariantCulture) - Convert.ToDouble(b, CultureInfo.InvariantCulture)) < Math.Pow(10.0, -Decimals) * 0.5;
 		}
+		if (Kind == SettingKind.Device)
+		{
+			return string.Equals(a as string, b as string, StringComparison.OrdinalIgnoreCase);
+		}
 		return object.Equals(a, b);
 	}
 
@@ -86,6 +90,8 @@ internal sealed class Setting
 			return ((double)value).ToString("0.######", CultureInfo.InvariantCulture);
 		case SettingKind.Choice:
 			return Tokens[Math.Max(0, Math.Min(Tokens.Length - 1, (int)value))];
+		case SettingKind.Device:
+			return (value as string)?.Trim() ?? "default";
 		default:
 			return ColourMath.ToHex((int)value, Alpha);
 		}
@@ -128,6 +134,8 @@ internal sealed class Setting
 			}
 			return null;
 		}
+		case SettingKind.Device:
+			return string.IsNullOrEmpty(text) ? "default" : text;
 		default:
 		{
 			if (!ColourMath.TryParseHex(text, out var argb))

@@ -217,7 +217,11 @@ internal sealed partial class SettingsWindow : Form
 	private void ShowAudio()
 	{
 		string text = (_audioStatus != null) ? _audioStatus() : "";
-		if (_audio.Text != text) _audio.Text = text;
+		if (_audio.Text != text)
+		{
+			_audio.Text = text;
+			_tips.SetToolTip(_audio, text);
+		}
 	}
 
 	private void StoreChanged(object sender, EventArgs e)
@@ -281,6 +285,7 @@ internal sealed partial class SettingsWindow : Form
 			SettingKind.Toggle => (bool)value ? "on" : "off",
 			SettingKind.Number => s.Display((double)value),
 			SettingKind.Choice => s.Choices[(int)value],
+			SettingKind.Device => WasapiLoopback.GetDeviceDisplayName(value as string),
 			_ => ColourMath.ToHex((int)value, s.Alpha)
 		};
 	}

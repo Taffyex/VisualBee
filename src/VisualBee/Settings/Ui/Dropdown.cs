@@ -6,11 +6,13 @@ namespace MusicBeePlugin;
 
 internal sealed class Dropdown : Widget
 {
-	private readonly string[] _items;
+	private string[] _items;
 
 	private int _selected;
 
 	private readonly ContextMenuStrip _menu = new ContextMenuStrip();
+
+	public Action BeforeOpen;
 
 	public int Selected
 	{
@@ -20,7 +22,7 @@ internal sealed class Dropdown : Widget
 		}
 		set
 		{
-			_selected = Math.Max(0, Math.Min(_items.Length - 1, value));
+			_selected = (_items == null || _items.Length == 0) ? 0 : Math.Max(0, Math.Min(_items.Length - 1, value));
 			Invalidate();
 		}
 	}
@@ -29,17 +31,23 @@ internal sealed class Dropdown : Widget
 
 	public Dropdown(string[] items)
 	{
-		_items = items;
 		Height = Ui.S(26);
 		Cursor = Cursors.Hand;
 		_menu.Renderer = new DarkMenuRenderer();
 		_menu.ShowImageMargin = false;
 		_menu.ShowCheckMargin = true;
 		_menu.Font = Ui.Body;
-		for (int i = 0; i < items.Length; i++)
+		SetItems(items);
+	}
+
+	public void SetItems(string[] items)
+	{
+		_items = items ?? new string[0];
+		_menu.Items.Clear();
+		for (int i = 0; i < _items.Length; i++)
 		{
 			int index = i;
-			ToolStripMenuItem toolStripMenuItem = new ToolStripMenuItem(items[i])
+			ToolStripMenuItem toolStripMenuItem = new ToolStripMenuItem(_items[i])
 			{
 				ForeColor = Ui.Text
 			};
@@ -48,20 +56,26 @@ internal sealed class Dropdown : Widget
 				if (index != _selected)
 				{
 					Selected = index;
-					if (Changed != null)
-					{
-						Changed(this, EventArgs.Empty);
-					}
+					Changed?.Invoke(this, EventArgs.Empty);
 				}
 			};
 			_menu.Items.Add(toolStripMenuItem);
 		}
+		if (_items.Length == 0)
+		{
+			_selected = 0;
+		}
+		else if (_selected >= _items.Length)
+		{
+			_selected = _items.Length - 1;
+		}
+		Invalidate();
 	}
 
 	public int Ideal()
 	{
 		int num = 0;
-		string[] items = _items;
+		string[] items = _items ?? new string[0];
 		foreach (string text in items)
 		{
 			num = Math.Max(num, TextRenderer.MeasureText(text, Ui.Body).Width);
@@ -88,13 +102,15 @@ internal sealed class Dropdown : Widget
 		}
 		Ui.Fill(g, r, radius, c);
 		Ui.Stroke(graphics, rectangleF, Ui.Sf(5f), Ui.Border);
-		Ui.DrawText(r: new Rectangle(Ui.S(9), 0, Width - Ui.S(34), Height), g: graphics, text: _items[_selected], font: Ui.Body, colour: Enabled ? Ui.Text : Ui.Faint, flags: TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter);
+		string text = (_items != null && _selected >= 0 && _selected < _items.Length) ? _items[_selected] : "";
+		Ui.DrawText(r: new Rectangle(Ui.S(9), 0, Width - Ui.S(34), Height), g: graphics, text: text, font: Ui.Body, colour: Enabled ? Ui.Text : Ui.Faint, flags: TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter);
 		Ui.Glyph(graphics, "\ue70d", Ui.Icons, Enabled ? Ui.Dim : Ui.Faint, new Rectangle(Width - Ui.S(28), 0, Ui.S(22), Height));
 	}
 
 	protected override void OnClick(EventArgs e)
 	{
 		base.OnClick(e);
+		BeforeOpen?.Invoke();
 		for (int i = 0; i < _menu.Items.Count; i++)
 		{
 			((ToolStripMenuItem)_menu.Items[i]).Checked = i == _selected;

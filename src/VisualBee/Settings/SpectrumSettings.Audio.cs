@@ -118,6 +118,10 @@ internal static partial class SpectrumSettings
 		{
 			l.AudioSource = v;
 		}).Words("audio source direct bass wasapi loopback browser youtube asio capture fallback");
+		s.Device("audio.device", "Capture device", "Audio endpoint captured by WASAPI Loopback. 'Default Playback Device' captures all system audio; choose 'MusicBee & Browser2 Only' or a specific device (like VB-CABLE) to isolate specific audio streams.", (SpectrumLook l) => l.AudioDeviceId, (SpectrumLook l, string v) =>
+		{
+			l.AudioDeviceId = v;
+		}).Mine().When((Look l) => ((SpectrumLook)l).NeedsLoopback).Words("audio device wasapi endpoint vb cable virtual capture mic");
 		s.Choice("audio.hz", "Audio refresh rate", "Rate of FFT audio analysis. Sync matches the display refresh; 60–500 Hz sets an explicit cadence.", SpectrumLook.AnalysisHzNames, SpectrumLook.AnalysisHzTokens, (SpectrumLook l) => l.AnalysisHz, (SpectrumLook l, int v) =>
 		{
 			l.AnalysisHz = v;
