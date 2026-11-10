@@ -6,18 +6,13 @@ VisualBee is an ultra high-performance, hardware-accelerated **Direct3D 11 spect
 
 ## Installation
 
-> [!IMPORTANT]
-> **Downloading from GitHub:** Always download **[`VisualBee_v2.1.2.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.2/VisualBee_v2.1.2.zip)** or raw **`mb_VisualBee.dll`** directly from the official **[GitHub Releases](https://github.com/Taffyex/VisualBee/releases)** page (under the "Assets" dropdown).
-> **DO NOT** right-click `mb_VisualBee.dll` in the GitHub file repository view and click *"Save link as..."*! GitHub will save the GitHub HTML webpage instead of the actual compiled DLL, causing MusicBee to display the error:  
-> `Unable to install plugin: mb_VisualBee.dll, Common language runtime detected an invalid program`.
-
-### 🚀 Quick Install (Recommended)
+### Quick Install (Recommended)
 1. Download **[`VisualBee_v2.1.2.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.2/VisualBee_v2.1.2.zip)** (or raw **[`mb_VisualBee.dll`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.2/mb_VisualBee.dll)**) from the [latest release](https://github.com/Taffyex/VisualBee/releases).
 2. In MusicBee, press `Ctrl + O` (or go to **Edit** > **Preferences**).
-3. Select **Plugins** in the sidebar, click **Add Plugin**, and choose the downloaded file (`VisualBee_v2.1.1.zip` or `mb_VisualBee.dll`).
+3. Select **Plugins** in the sidebar, click **Add Plugin**, and choose the downloaded file (`VisualBee_v2.1.2.zip` or `mb_VisualBee.dll`).
 4. Click **Apply** and restart MusicBee.
 
-### 📁 Manual Drop-in
+### Manual Drop-in
 1. Close MusicBee.
 2. Copy `mb_VisualBee.dll` into your MusicBee plugins directory:
    - **Installer edition:** `C:\Program Files (x86)\MusicBee\Plugins\`
@@ -53,6 +48,23 @@ Configure presets, bar optics, bloom intensity, color palettes, and audio acoust
 - **Persistent Quick-Switch Ribbon**: Instant 1-click preset switching, active palette chips, and live FPS / sample-rate telemetry.
 - **Hardware Rack Architecture**: Responsive 2-column cards with warm amber indicator lights and per-section resets.
 - **Dual Tooltip Guidance**: Plain-English hover cards explaining exact acoustic physics and shader parameters.
+
+---
+
+## What's New in VisualBee v2.1.2
+
+### 1. Settings Window Polish & Search
+- **Invisible Search Results Fixed**: Corrected search card measurement and layout so matching setting rows render properly.
+- **Dynamic Section Card Visibility**: Conditional section cards (Album Art, Aurora, LED/VFD Segments, Radial) unhide immediately when dependencies switch without requiring page navigation.
+- **Responsive 2-Column Card Scaling**: Adjusted label widths and control sizing to prevent text clipping and overflow.
+
+### 2. Optics & Skin Transparency
+- **Transparent Background Mode**: Added `Transparent` background mode under `Optics & FX` -> `Background` that seamlessly adapts to the active MusicBee skin background color and gradients.
+- **Dynamic Skin Invalidation**: Automatically updates and repaints the background texture when the MusicBee skin changes at runtime.
+
+### 3. Presets & Docking Self-Healing
+- **Cover Art Chameleon Preset**: Restored adaptive cover palette colors, cover blur, and opacity settings.
+- **Dock Self-Healing Restored**: Re-enabled dock metric self-healing and scrollbar overhang suppression.
 
 ---
 

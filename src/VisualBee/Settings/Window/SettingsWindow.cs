@@ -59,7 +59,7 @@ internal sealed partial class SettingsWindow : Form
 			BackColor = Ui.Back
 		};
 
-		_title.Text = "🐝 VISUALBEE STUDIO";
+		_title.Text = "VISUALBEE STUDIO";
 		_title.Font = Ui.Bold;
 		_title.ForeColor = Ui.Accent;
 		_title.AutoSize = true;
