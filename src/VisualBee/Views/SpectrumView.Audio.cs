@@ -59,9 +59,10 @@ internal sealed partial class SpectrumView
 				needCentres = true;
 			}
 			_hasAudio = true;
+			_pcmCount = _window.Size;
 			if (needCentres || _centres.Length != _bands) Centres(look);
 			if (!fresh) return true;
-			ProcessPcm(_window.Size, _rate, look);
+			ProcessPcm(_window.Size, _rate, look, causal: false);
 			return true;
 		}
 		if (allowLoopbackFallback && Host?.Loopback != null && Host.Loopback.HasActiveAudio())
@@ -77,9 +78,10 @@ internal sealed partial class SpectrumView
 				needCentres = true;
 			}
 			_hasAudio = true;
+			_pcmCount = _window.Size;
 			if (needCentres || _centres.Length != _bands) Centres(look);
 			if (!fresh) return true;
-			ProcessPcm(_window.Size, _rate, look);
+			ProcessPcm(_window.Size, _rate, look, causal: false);
 			return true;
 		}
 		if (allowApiFallback)
@@ -97,7 +99,7 @@ internal sealed partial class SpectrumView
 		if (rate <= 0) rate = 48000;
 		int size = Math.Min(65536, (look.Engine == 0) ? GaussianAnalyzer.WindowSize(rate) : SpectrumAnalyzer.WindowSize(look.FftSize, rate));
 		EnsureBuffers(size, stereo);
-		if (!loopback.ReadWindow(size, look.DelayMs, _left, _right, stereo, look.Channels, ref _lastLoopbackHead, out int actualRate, out bool fresh))
+		if (!loopback.ReadWindow(size, look.DelayMs, _left, _right, stereo, look.Channels, ref _lastLoopbackHead, out int actualRate, out bool fresh, look.LoopbackAgc))
 		{
 			return false;
 		}
@@ -108,9 +110,10 @@ internal sealed partial class SpectrumView
 			needCentres = true;
 		}
 		_hasAudio = true;
+		_pcmCount = size;
 		if (needCentres || _centres.Length != _bands) Centres(look);
 		if (!fresh) return true;
-		ProcessPcm(size, actualRate, look);
+		ProcessPcm(size, actualRate, look, causal: true);
 		return true;
 	}
 
@@ -144,11 +147,11 @@ internal sealed partial class SpectrumView
 		if (stereo && (_right == null || _right.Length < size)) _right = new float[size];
 	}
 
-	private void ProcessPcm(int size, int rate, SpectrumLook look)
+	private void ProcessPcm(int size, int rate, SpectrumLook look, bool causal = false)
 	{
 		if (look.Engine != 0 && _channels == 2)
 		{
-			_modern[0].AnalyzeStereo(_left, _right, size, rate, look.Window, look.Value, _bands, look.MinHz, TopHz(look), look.Scale, _raw[0], _raw[1], _modern[1]);
+			_modern[0].AnalyzeStereo(_left, _right, size, rate, look.Window, look.Value, _bands, look.MinHz, TopHz(look), look.Scale, _raw[0], _raw[1], _modern[1], causal);
 		}
 		else
 		{
@@ -157,11 +160,11 @@ internal sealed partial class SpectrumView
 				float[] array = (i == 0) ? _left : _right;
 				if (look.Engine == 0)
 				{
-					_classic[i].Analyze(array, size, rate, _bands, _raw[i]);
+					_classic[i].Analyze(array, size, rate, _bands, _raw[i], causal);
 				}
 				else
 				{
-					_modern[i].Analyze(array, size, rate, look.Window, look.Value, _bands, look.MinHz, TopHz(look), look.Scale, _raw[i]);
+					_modern[i].Analyze(array, size, rate, look.Window, look.Value, _bands, look.MinHz, TopHz(look), look.Scale, _raw[i], causal);
 				}
 			}
 		}

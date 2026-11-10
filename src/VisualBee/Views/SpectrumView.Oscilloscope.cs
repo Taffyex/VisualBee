@@ -52,13 +52,15 @@ internal sealed partial class SpectrumView
 		}
 
 		float[] samples = _left;
-		if (samples == null || samples.Length == 0)
+		int pcm = (_pcmCount > 0 && _hasAudio) ? _pcmCount : 0;
+		if (samples == null || samples.Length == 0 || pcm <= 0)
 		{
 			if (_synth.Length < 1024)
 			{
 				_synth = new float[1024];
 			}
 			samples = _synth;
+			pcm = 1024;
 			float t = f.Time * 14f;
 			float bass = (_bands > 4 && _level[0] != null) ? (float)Norm(look, _level[0][1]) : 0.5f;
 			float mid = (_bands > 16 && _level[0] != null) ? (float)Norm(look, _level[0][8]) : 0.4f;
@@ -69,11 +71,21 @@ internal sealed partial class SpectrumView
 				samples[k] = (float)(Math.Sin(p) * (0.12 + 0.68 * bass) + Math.Sin(p * 2.3) * (0.08 + 0.42 * mid) + Math.Sin(p * 4.1) * (0.04 + 0.22 * treble));
 			}
 		}
-		int len = samples.Length;
-		int triggerIdx = 0;
+		int len = Math.Min(pcm, samples.Length);
+		int points = Math.Max(64, Math.Min(512, (int)width));
+		if (_curve.Length < points * 2)
+		{
+			_curve = new float[points * 2];
+		}
+
+		int windowSamples = Math.Max(64, Math.Min(len / 2, points * 2));
+		int targetStart = Math.Max(1, len - windowSamples - 16);
+		int searchSpan = Math.Min(targetStart, 1024);
+		int searchStart = targetStart - searchSpan + 1;
+
+		int triggerIdx = targetStart;
 		float triggerFrac = 0f;
-		int maxSearch = Math.Min(len / 4, 2048);
-		for (int i = 1; i < maxSearch; i++)
+		for (int i = targetStart; i >= searchStart; i--)
 		{
 			if (samples[i - 1] <= 0f && samples[i] > 0f)
 			{
@@ -84,14 +96,6 @@ internal sealed partial class SpectrumView
 			}
 		}
 		float trigger = triggerIdx + triggerFrac;
-
-		int points = Math.Max(64, Math.Min(512, (int)width));
-		if (_curve.Length < points * 2)
-		{
-			_curve = new float[points * 2];
-		}
-
-		int windowSamples = Math.Max(64, Math.Min(len - (int)trigger - 2, points * 2));
 		float step = (float)windowSamples / (points - 1);
 		float ampScale = height * 0.44f;
 		if (look.Flip)
@@ -103,7 +107,8 @@ internal sealed partial class SpectrumView
 		if (look.WaveNormalize)
 		{
 			float peak = 0.001f;
-			for (int k = 0; k < len; k++)
+			int normStart = Math.Max(0, len - windowSamples * 2);
+			for (int k = normStart; k < len; k++)
 			{
 				float a = Math.Abs(samples[k]);
 				if (a > peak) peak = a;

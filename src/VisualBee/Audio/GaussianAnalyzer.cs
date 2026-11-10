@@ -29,6 +29,8 @@ internal sealed partial class GaussianAnalyzer
 
 	private int _fftSize;
 
+	private bool _causal;
+
 	private int _dftRate;
 
 	private int _dftSize;
@@ -90,9 +92,9 @@ internal sealed partial class GaussianAnalyzer
 		return 1;
 	}
 
-	public void Analyze(float[] mono, int n, int sampleRate, int bands, double[] dbOut)
+	public void Analyze(float[] mono, int n, int sampleRate, int bands, double[] dbOut, bool causal = false)
 	{
-		EnsureFft(n);
+		EnsureFft(n, causal);
 		for (int i = 0; i < n; i++)
 		{
 			_re[i] = _window[i] * mono[i];

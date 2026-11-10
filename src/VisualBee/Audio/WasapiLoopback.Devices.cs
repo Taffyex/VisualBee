@@ -114,6 +114,9 @@ internal sealed partial class WasapiLoopback
 		[PreserveSig] int ActivateCompleted(IActivateAudioInterfaceAsyncOperation activateOperation);
 	}
 
+	[Guid("94EA2B94-E9CC-49E0-C0FF-EE64CA8F5B90"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+	private interface IAgileObject { }
+
 	[Guid("72A2E436-4F24-4714-AB16-94BE9A0B7339"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
 	private interface IActivateAudioInterfaceAsyncOperation
 	{
@@ -134,7 +137,7 @@ internal sealed partial class WasapiLoopback
 		public int ProcessLoopbackMode;
 	}
 
-	private sealed class ProcessLoopbackHandler : IActivateAudioInterfaceCompletionHandler
+	private sealed class ProcessLoopbackHandler : IActivateAudioInterfaceCompletionHandler, IAgileObject
 	{
 		public readonly ManualResetEvent Done = new ManualResetEvent(false);
 		public int Result = -1;
@@ -254,46 +257,22 @@ internal sealed partial class WasapiLoopback
 					if (dev.GetId(out string devId) != 0 || string.IsNullOrEmpty(devId)) continue;
 					string name = GetDeviceFriendlyName(dev);
 					string displayName = isCapture ? (name + " [Input]") : name;
-					lock (_nameCacheLock)
-					{
-						_displayNameCache[devId] = displayName;
-					}
+					lock (_nameCacheLock) { _displayNameCache[devId] = displayName; }
 					list.Add(new DeviceInfo(devId, displayName, isCapture));
 				}
-				finally
-				{
-					if (dev != null)
-					{
-						try { Marshal.ReleaseComObject(dev); } catch { }
-					}
-				}
+				finally { if (dev != null) try { Marshal.ReleaseComObject(dev); } catch { } }
 			}
 		}
-		finally
-		{
-			if (col != null)
-			{
-				try { Marshal.ReleaseComObject(col); } catch { }
-			}
-		}
+		finally { if (col != null) try { Marshal.ReleaseComObject(col); } catch { } }
 	}
 
 	public static string GetDeviceDisplayName(string id)
 	{
-		if (string.IsNullOrEmpty(id) || string.Equals(id, "default", StringComparison.OrdinalIgnoreCase))
-		{
-			return "Default Playback Device";
-		}
-		if (string.Equals(id, "process", StringComparison.OrdinalIgnoreCase))
-		{
-			return "MusicBee & Browser2 Only";
-		}
+		if (string.IsNullOrEmpty(id) || string.Equals(id, "default", StringComparison.OrdinalIgnoreCase)) return "Default Playback Device";
+		if (string.Equals(id, "process", StringComparison.OrdinalIgnoreCase)) return "MusicBee & Browser2 Only";
 		lock (_nameCacheLock)
 		{
-			if (_displayNameCache.TryGetValue(id, out var name))
-			{
-				return name;
-			}
+			if (_displayNameCache.TryGetValue(id, out var name)) return name;
 		}
 		string friendly = QueryDeviceFriendlyName(id);
 		if (!string.IsNullOrEmpty(friendly))
@@ -311,16 +290,13 @@ internal sealed partial class WasapiLoopback
 		try
 		{
 			enumerator = (IMMDeviceEnumerator)new MMDeviceEnumeratorComObject();
-			if (enumerator.GetDevice(id, out dev) == 0 && dev != null)
-			{
-				return GetDeviceFriendlyName(dev);
-			}
+			if (enumerator.GetDevice(id, out dev) == 0 && dev != null) return GetDeviceFriendlyName(dev);
 		}
 		catch { }
 		finally
 		{
-			if (dev != null) { try { Marshal.ReleaseComObject(dev); } catch { } }
-			if (enumerator != null) { try { Marshal.ReleaseComObject(enumerator); } catch { } }
+			if (dev != null) try { Marshal.ReleaseComObject(dev); } catch { }
+			if (enumerator != null) try { Marshal.ReleaseComObject(enumerator); } catch { }
 		}
 		return null;
 	}
@@ -342,14 +318,36 @@ internal sealed partial class WasapiLoopback
 			}
 		}
 		catch { }
-		finally
+		finally { if (store != null) try { Marshal.ReleaseComObject(store); } catch { } }
+		return "Audio Device";
+	}
+
+	public static IntPtr GetDefaultMixFormat()
+	{
+		IMMDeviceEnumerator enumerator = null;
+		IMMDevice endpoint = null;
+		IAudioClient client = null;
+		try
 		{
-			if (store != null)
+			enumerator = (IMMDeviceEnumerator)new MMDeviceEnumeratorComObject();
+			if (enumerator.GetDefaultAudioEndpoint(0, 1, out endpoint) == 0 && endpoint != null)
 			{
-				try { Marshal.ReleaseComObject(store); } catch { }
+				var iid = new Guid("1CB9AD4C-DBFA-4c32-B178-C2F568A703B2");
+				if (endpoint.Activate(ref iid, 23, IntPtr.Zero, out var obj) == 0 && obj is IAudioClient ac)
+				{
+					client = ac;
+					if (client.GetMixFormat(out IntPtr pFmt) == 0 && pFmt != IntPtr.Zero) return pFmt;
+				}
 			}
 		}
-		return "Audio Device";
+		catch { }
+		finally
+		{
+			if (client != null) { try { Marshal.ReleaseComObject(client); } catch { } }
+			if (endpoint != null) { try { Marshal.ReleaseComObject(endpoint); } catch { } }
+			if (enumerator != null) { try { Marshal.ReleaseComObject(enumerator); } catch { } }
+		}
+		return IntPtr.Zero;
 	}
 
 	private static bool TryActivateProcessLoopback(out IAudioClient client)
@@ -358,6 +356,7 @@ internal sealed partial class WasapiLoopback
 		if (!IsProcessLoopbackSupported()) return false;
 
 		IntPtr pParams = IntPtr.Zero;
+		IntPtr pPropVar = IntPtr.Zero;
 		IActivateAudioInterfaceAsyncOperation op = null;
 		ProcessLoopbackHandler handler = new ProcessLoopbackHandler();
 		try
@@ -371,11 +370,18 @@ internal sealed partial class WasapiLoopback
 					ProcessLoopbackMode = 0
 				}
 			};
-			pParams = Marshal.AllocCoTaskMem(Marshal.SizeOf(typeof(AUDIOCLIENT_ACTIVATION_PARAMS)));
+			int paramSize = Marshal.SizeOf(typeof(AUDIOCLIENT_ACTIVATION_PARAMS));
+			pParams = Marshal.AllocCoTaskMem(paramSize);
 			Marshal.StructureToPtr(pars, pParams, false);
 
+			pPropVar = Marshal.AllocCoTaskMem(16);
+			for (int b = 0; b < 16; b++) Marshal.WriteByte(pPropVar, b, 0);
+			Marshal.WriteInt16(pPropVar, 0, 65); // VT_BLOB
+			Marshal.WriteInt32(pPropVar, 8, paramSize); // blob.cbSize
+			Marshal.WriteIntPtr(pPropVar, 12, pParams); // blob.pBlobData
+
 			Guid iid = new Guid("1CB9AD4C-DBFA-4c32-B178-C2F568A703B2");
-			int hr = ActivateAudioInterfaceAsync(@"VAD\Process_Loopback", ref iid, pParams, handler, out op);
+			int hr = ActivateAudioInterfaceAsync(@"VAD\Process_Loopback", ref iid, pPropVar, handler, out op);
 			if (hr != 0) return false;
 
 			if (handler.Done.WaitOne(1000) && handler.Result == 0 && handler.ActivatedInterface is IAudioClient ac)
@@ -391,11 +397,9 @@ internal sealed partial class WasapiLoopback
 		}
 		finally
 		{
+			if (pPropVar != IntPtr.Zero) Marshal.FreeCoTaskMem(pPropVar);
 			if (pParams != IntPtr.Zero) Marshal.FreeCoTaskMem(pParams);
-			if (op != null)
-			{
-				try { Marshal.ReleaseComObject(op); } catch { }
-			}
+			if (op != null) { try { Marshal.ReleaseComObject(op); } catch { } }
 			handler.Done.Dispose();
 		}
 	}

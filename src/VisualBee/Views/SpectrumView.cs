@@ -118,6 +118,8 @@ internal sealed partial class SpectrumView : GpuView
 
 	private float[] _right;
 
+	private int _pcmCount;
+
 	private int _engine = -1;
 
 	private int _analysedBands;
@@ -248,6 +250,7 @@ internal sealed partial class SpectrumView : GpuView
 			_hasAudio = false;
 			_window = default;
 			_lastLoopbackHead = -1;
+			_pcmCount = 0;
 			_plugin.StopAudio();
 			for (int i = 0; i < _channels; i++)
 			{
@@ -278,6 +281,7 @@ internal sealed partial class SpectrumView : GpuView
 		_flow = new float[bands * 2];
 		_window = default;
 		_lastLoopbackHead = -1;
+		_pcmCount = 0;
 		_geo = null;
 	}
 
@@ -336,7 +340,7 @@ internal sealed partial class SpectrumView : GpuView
 				{
 					Host.Store.Set(s, dev.Id);
 					Setting sSrc = Host.Store.Schema.Find("audio.source");
-					if (sSrc != null && !string.Equals(dev.Id, "default", StringComparison.OrdinalIgnoreCase) && !string.Equals(dev.Id, "process", StringComparison.OrdinalIgnoreCase))
+					if (sSrc != null && !string.Equals(dev.Id, "default", StringComparison.OrdinalIgnoreCase))
 					{
 						Host.Store.Set(sSrc, SpectrumLook.AudioSourceWasapiLoopback);
 					}
@@ -349,7 +353,7 @@ internal sealed partial class SpectrumView : GpuView
 			};
 			root.MenuItems.Add(item);
 		}
-		root.Enabled = look != null && look.NeedsLoopback;
+		root.Enabled = look != null;
 		return root;
 	}
 }

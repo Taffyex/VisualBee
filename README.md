@@ -1,4 +1,4 @@
-# VisualBee v2.1.3
+# VisualBee v2.2.31
 
 VisualBee is an ultra high-performance, hardware-accelerated **Direct3D 11 spectrum analyzer and phase-locked analog oscilloscope** for [MusicBee](https://getmusicbee.com/). Engineered with zero managed wrappers and pure native DirectX 11 P/Invoke, it delivers buttery-smooth 120Hz/144Hz visuals, physical optical glass refraction, authentic VFD/Nixie vacuum tube incandescence, and studio CRT waveform monitoring at <1% CPU and <3% GPU load.
 
@@ -7,9 +7,9 @@ VisualBee is an ultra high-performance, hardware-accelerated **Direct3D 11 spect
 ## Installation
 
 ### Quick Install (Recommended)
-1. Download **[`VisualBee_v2.1.3.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.3/VisualBee_v2.1.3.zip)** (or raw **[`mb_VisualBee.dll`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.3/mb_VisualBee.dll)**) from the [latest release](https://github.com/Taffyex/VisualBee/releases).
+1. Download **[`VisualBee_v2.2.31.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.2.31/VisualBee_v2.2.31.zip)** (or raw **[`mb_VisualBee.dll`](https://github.com/Taffyex/VisualBee/releases/download/v2.2.31/mb_VisualBee.dll)**) from the [latest release](https://github.com/Taffyex/VisualBee/releases).
 2. In MusicBee, press `Ctrl + O` (or go to **Edit** > **Preferences**).
-3. Select **Plugins** in the sidebar, click **Add Plugin**, and choose the downloaded file (`VisualBee_v2.1.3.zip` or `mb_VisualBee.dll`).
+3. Select **Plugins** in the sidebar, click **Add Plugin**, and choose the downloaded file (`VisualBee_v2.2.31.zip` or `mb_VisualBee.dll`).
 4. Click **Apply** and restart MusicBee.
 
 ### Manual Drop-in
@@ -48,6 +48,21 @@ Configure presets, bar optics, bloom intensity, color palettes, and audio acoust
 - **Persistent Quick-Switch Ribbon**: Instant 1-click preset switching, active palette chips, and live FPS / sample-rate telemetry.
 - **Hardware Rack Architecture**: Responsive 2-column cards with warm amber indicator lights and per-section resets.
 - **Dual Tooltip Guidance**: Plain-English hover cards explaining exact acoustic physics and shader parameters.
+
+---
+
+## What's New in VisualBee v2.2.31
+
+### 1. Low-Latency Causal Windowing & AGC Level Matching
+- **Zero-Latency Transients**: Standard symmetric analysis windows place their peak in the past ($N/2$), introducing 85–340 ms visual lag. Causal windowing weights live samples near the playhead ($0.82(N-1)$), synchronizing visual bars instantly with sound transients.
+- **Loopback Level Matching (AGC)**: WASAPI loopback captures post-fader system audio, typically 15–25 dB below pre-fader BASS levels. Intelligent slow-release AGC ensures loopback audio produces punchy, full-height bars and clean beat detection.
+- **Sub-Packet 144Hz–240Hz Interpolation**: Eliminates 25ms timer sleeps by predicting sub-packet playhead progression with high-precision timestamps for stutter-free 144Hz/240Hz rendering.
+
+### 2. Audio Engine Robustness & Process Loopback Fix
+- **Zero-Injection Dropout Elimination**: Replaced destructive 128-zero frame injections during stream gaps with smooth exponential idle decay, eliminating audio clicks and visual flutter.
+- **Windows 10/11 Process Loopback COM Activation**: Wrapped activation parameters inside `PROPVARIANT` (`VT_BLOB`) and implemented `IAgileObject` on `ProcessLoopbackHandler`, enabling per-process isolation (`MusicBee process (isolated)`) without crashes.
+- **Multichannel Downmixing**: Added ITU-R BS.775 matrices for stereo, quad, 5.1, and 7.1 surround downmixing across float, 32-bit int, 24-bit int, and 16-bit PCM.
+- **Phase-Locked Oscilloscope Real-Time Tracking**: Oscilloscope triggering now samples the live playhead directly, removing 340ms waveform delay.
 
 ---
 

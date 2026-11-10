@@ -45,6 +45,40 @@ internal static class Gdi
 		public uint LowerRight;
 	}
 
+	[StructLayout(LayoutKind.Sequential)]
+	public struct MARGINS(int l, int r, int t, int b)
+	{
+		public int cxLeftWidth = l;
+		public int cxRightWidth = r;
+		public int cyTopHeight = t;
+		public int cyBottomHeight = b;
+	}
+
+	public const int GWL_EXSTYLE = -20;
+	public const int WS_EX_TOOLWINDOW = 0x00000080;
+	public const int WS_EX_LAYERED = 0x00080000;
+	public const int WS_EX_TRANSPARENT = 0x00000020;
+	public const int WS_EX_NOACTIVATE = 0x08000000;
+	public const int WS_EX_TOPMOST = 0x00000008;
+
+	public const int WM_MOUSEACTIVATE = 0x0021;
+	public const int MA_NOACTIVATE = 3;
+	public const int WM_NCHITTEST = 0x0084;
+	public const int WM_NCLBUTTONDOWN = 0x00A1;
+	public const int HTCAPTION = 2;
+	public const int HTLEFT = 10;
+	public const int HTRIGHT = 11;
+	public const int HTTOP = 12;
+	public const int HTTOPLEFT = 13;
+	public const int HTTOPRIGHT = 14;
+	public const int HTBOTTOM = 15;
+	public const int HTBOTTOMLEFT = 16;
+	public const int HTBOTTOMRIGHT = 17;
+	public const int WM_HOTKEY = 0x0312;
+
+	public const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+	public const int DWMWCP_ROUND = 2;
+
 	public const int SRCCOPY = 13369376;
 
 	public const int ETO_OPAQUE = 2;
@@ -131,6 +165,30 @@ internal static class Gdi
 
 	[DllImport("user32.dll")]
 	public static extern bool GetClientRect(IntPtr hwnd, out RECT rect);
+
+	[DllImport("dwmapi.dll")]
+	public static extern int DwmExtendFrameIntoClientArea(IntPtr hwnd, ref MARGINS margins);
+
+	[DllImport("dwmapi.dll")]
+	public static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int val, int size);
+
+	[DllImport("user32.dll", EntryPoint = "GetWindowLong")]
+	public static extern int GetWindowLong(IntPtr hwnd, int index);
+
+	[DllImport("user32.dll", EntryPoint = "SetWindowLong")]
+	public static extern int SetWindowLong(IntPtr hwnd, int index, int val);
+
+	[DllImport("user32.dll")]
+	public static extern bool RegisterHotKey(IntPtr hwnd, int id, uint fsModifiers, uint vk);
+
+	[DllImport("user32.dll")]
+	public static extern bool UnregisterHotKey(IntPtr hwnd, int id);
+
+	[DllImport("user32.dll")]
+	public static extern bool ReleaseCapture();
+
+	[DllImport("user32.dll")]
+	public static extern IntPtr SendMessage(IntPtr hwnd, int msg, IntPtr wparam, IntPtr lparam);
 
 	[DllImport("gdi32.dll")]
 	public static extern bool GdiFlush();

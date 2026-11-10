@@ -103,28 +103,32 @@ internal sealed partial class GaussianAnalyzer
 		}
 	}
 
-	private void EnsureFft(int n)
+	private void EnsureFft(int n, bool causal = false)
 	{
-		if (_fftSize == n)
+		if (_fftSize == n && _causal == causal)
 		{
 			return;
 		}
 		_fftSize = n;
+		_causal = causal;
 		_re = new float[n];
 		_im = new float[n];
 		_mag = new float[n / 2];
 		_window = new float[n];
 		double num = 0.0;
-		double num2 = (double)(n - 1) * 0.5;
-		double num3 = (double)(n - 1) * 0.15;
+		double peakPos = causal ? ((double)(n - 1) * 0.80) : ((double)(n - 1) * 0.5);
+		double sigmaL = causal ? ((double)(n - 1) * 0.25) : ((double)(n - 1) * 0.15);
+		double sigmaR = causal ? ((double)(n - 1) * 0.08) : ((double)(n - 1) * 0.15);
 		for (int i = 0; i < n; i++)
 		{
-			double num4 = ((double)i - num2) / num3;
+			double diff = (double)i - peakPos;
+			double sigma = (diff <= 0.0) ? sigmaL : sigmaR;
+			double num4 = diff / sigma;
 			double num5 = Math.Exp(num4 * num4 * -0.5);
 			num += num5;
 			_window[i] = (float)num5;
 		}
-		_windowNorm = ((num > 0.0) ? ((float)(1.0 / num + 1.0 / num)) : 0f);
+		_windowNorm = ((num > 0.0) ? ((float)(2.0 / num)) : 0f);
 		int num6 = n / 2;
 		_cos = new float[num6];
 		_sin = new float[num6];

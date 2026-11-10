@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.2.31] - 2026-11-10
+
+### Low-Latency WASAPI Loopback, Level Matching (AGC) & Process Loopback Overhaul
+
+#### Surgical Audio Engine & DSP Upgrades
+- **Zero-Injection Dropout Elimination**: Removed destructive 128-zero frame injections during stream gaps and replaced with continuous exponential idle decay (`AdvanceIdleDecay`), removing audio pops and visual stutter.
+- **Sub-Packet 144Hz–240Hz Playhead Interpolation**: Replaced static 25ms timer sleeps with high-resolution playhead interpolation, delivering buttery smooth 144Hz/240Hz visual updates without buffer underruns.
+- **Automatic Gain Level Matching (AGC)**: Post-fader system audio is often attenuated by 15–25 dB compared to pre-fader BASS signals. Added an intelligent slow-release AGC level matcher (`LoopbackAgc = true`) so WASAPI loopback streams fill the frequency bars with identical punch and dynamic range as direct playback.
+- **Asymmetric Causal Windowing**: Fixed the 85–340 ms visual lag inherent in standard symmetric Hann/Blackman-Harris windows. Causal window mode shifts the peak weight to $0.82(N-1)$ directly at the live playhead, aligning visual transients instantly with acoustic playback.
+- **Multichannel Downmixing**: Implemented ITU-R BS.775 downmix matrices for stereo, quadraphonic, 5.1 surround, and 7.1 surround for 32-bit float, 32-bit int, 24-bit int, and 16-bit PCM.
+- **Windows 10/11 Process Loopback Activation Fix**: Fixed COM marshaling for `AUDIOCLIENT_ACTIVATION_PARAMS` by wrapping it inside `PROPVARIANT` (`VT_BLOB`) and implementing `IAgileObject` on `ProcessLoopbackHandler`, enabling per-process isolation (`MusicBee process (isolated)`) without crashes.
+- **Real-Time Oscilloscope Playhead Tracking**: Oscilloscope triggering now inspects the newest sample window near the live playhead instead of the oldest sample in the buffer, eliminating 340ms waveform latency.
+- **UI Device Selection Auto-Switching**: Selecting any non-default endpoint or process isolation in the context menu or Settings window immediately activates WASAPI loopback capture.
+
 ## [2.1.3] - 2026-11-10
 
 ### Audio Device Selection & Low-Latency Event-Driven WASAPI Loopback

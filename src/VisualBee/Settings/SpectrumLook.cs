@@ -56,9 +56,36 @@ internal sealed class SpectrumLook : Look
 	public const int AudioSourceWasapiLoopback = 3;
 	public const int AudioSourcePlayerOnly = 4;
 
+	public const int HudControlsHover = 0;
+	public const int HudControlsAlways = 1;
+	public const int HudControlsTitleOnly = 2;
+	public const int HudControlsHidden = 3;
+
+	public const int HudSyncManual = 0;
+	public const int HudSyncReplaceMini = 1;
+	public const int HudSyncMagnetic = 2;
+	public const int HudSyncMinimizeTray = 3;
+
 	public int AudioSource = AudioSourceAuto;
 	public bool NeedsLoopback => AudioSource == AudioSourceWasapiLoopback || AudioSource == AudioSourceAuto;
 	public string AudioDeviceId = "default";
+	public bool LoopbackAgc = true;
+
+	public double HudBackdropOpacity = 70.0;
+	public double HudOpacityActive = 100.0;
+	public double HudOpacityIdle = 55.0;
+	public int HudControlsMode = HudControlsHover;
+	public bool HudShowArt = true;
+	public bool HudShowLove = true;
+	public bool HudShowBadge = true;
+	public bool HudTopMost = true;
+	public bool HudClickThrough;
+	public bool HudGlobalHotkeys = true;
+	public int HudSyncMode = HudSyncReplaceMini;
+	public double HudWidth = 380.0;
+	public double HudHeight = 84.0;
+	public double HudX = -1.0;
+	public double HudY = -1.0;
 
 	public int Engine = 1;
 	public int Bands = 96;
@@ -161,6 +188,12 @@ internal sealed class SpectrumLook : Look
 		"loopback",
 		"player"
 	};
+
+	public static readonly string[] HudControlsNames = new string[4] { "Reveal on hover", "Always visible", "Track title only", "Visualizer only" };
+	public static readonly string[] HudControlsTokens = new string[4] { "hover", "always", "title", "hidden" };
+
+	public static readonly string[] HudSyncNames = new string[4] { "Manual (hotkey or menu only)", "Replace native Mini-Player (Ctrl+Shift+F9)", "Magnetic snap to native Mini-Player", "Auto-show when MusicBee is minimized" };
+	public static readonly string[] HudSyncTokens = new string[4] { "manual", "replace", "magnetic", "minimize" };
 
 	public static readonly string[] EngineNames = new string[2] { "Gaussian (Smooth)", "Modern FFT" };
 	public static readonly string[] EngineTokens = new string[2] { "gaussian", "modern" };

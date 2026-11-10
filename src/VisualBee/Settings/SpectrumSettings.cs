@@ -18,8 +18,9 @@ internal static partial class SpectrumSettings
 		AddLabels(schema);
 		AddColours(schema);
 		AddAnalysis(schema);
+		AddHud(schema);
 		CommonLook.AddAdvanced(schema);
-		return new LookStore("VisualBee Studio", "spectrum", schema, new SpectrumLook(), Presets(), Themes.All(), ApplyTheme)
+		return new LookStore("VisualBee Studio 2.2 Beta", "spectrum", schema, new SpectrumLook(), Presets(), Themes.All(), ApplyTheme)
 		{
 			SwatchOf = (Look l) => new int[5]
 			{

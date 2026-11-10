@@ -39,8 +39,8 @@ namespace MusicBeePlugin
             _about.TargetApplication = "VisualBee";
             _about.Type = PluginType.PanelView;
             _about.VersionMajor = 2;
-            _about.VersionMinor = 1;
-            _about.Revision = 3;
+            _about.VersionMinor = 2;
+            _about.Revision = 0;
             _about.MinInterfaceVersion = 41;
             _about.MinApiRevision = 53;
             _about.ReceiveNotifications = ReceiveNotificationFlags.PlayerEvents;

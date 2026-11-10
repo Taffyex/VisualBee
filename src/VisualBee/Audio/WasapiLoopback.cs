@@ -58,6 +58,11 @@ internal sealed partial class WasapiLoopback : IDisposable
 	private long _head;
 	private long _lastReadHead = -1;
 	private long _lastSoundTime;
+	private float _lastL;
+	private float _lastR;
+	private volatile float _envPeak = 0.5f;
+	private long _lastWriteTick;
+	private long _lastPacketTick;
 	private volatile int _sampleRate = 48000;
 	private volatile bool _running;
 	private bool _disposed;
@@ -109,81 +114,6 @@ internal sealed partial class WasapiLoopback : IDisposable
 		{
 			_thread.Join(250);
 			_thread = null;
-		}
-	}
-
-	public bool HasActiveAudio(double timeoutSeconds = 0.6)
-	{
-		long last = Interlocked.Read(ref _lastSoundTime);
-		if (last == 0) return false;
-		double elapsed = (double)(Stopwatch.GetTimestamp() - last) / Stopwatch.Frequency;
-		return elapsed < timeoutSeconds;
-	}
-
-	public bool ReadWindow(int count, float[] dstL, float[] dstR, bool stereo, int channelMode, out int sampleRate, out bool fresh)
-	{
-		return ReadWindow(count, 0, dstL, dstR, stereo, channelMode, ref _lastReadHead, out sampleRate, out fresh);
-	}
-
-	public bool ReadWindow(int count, int delayMs, float[] dstL, float[] dstR, bool stereo, int channelMode, ref long lastReadHead, out int sampleRate, out bool fresh)
-	{
-		sampleRate = _sampleRate;
-		if (count <= 0 || dstL == null || (stereo && dstR == null))
-		{
-			fresh = false;
-			return false;
-		}
-		int rate = (sampleRate > 0) ? sampleRate : 48000;
-		int delaySamples = Math.Max(0, Math.Min(RingSize - count - 16, (int)((long)delayMs * (long)rate / 1000)));
-
-		lock (_sync)
-		{
-			long head = _head;
-			fresh = head != lastReadHead;
-			lastReadHead = head;
-			long delayedHead = head - delaySamples;
-			long start = delayedHead - count;
-
-			if (stereo)
-			{
-				CopyRingRange(_ringL, start, count, dstL);
-				CopyRingRange(_ringR, start, count, dstR);
-			}
-			else
-			{
-				switch (channelMode)
-				{
-					case 1: CopyRingRange(_ringL, start, count, dstL); break;
-					case 2: CopyRingRange(_ringR, start, count, dstL); break;
-					case 4:
-						for (int k = 0; k < count; k++)
-						{
-							int idx = (int)((start + k) & RingMask);
-							dstL[k] = (_ringL[idx] - _ringR[idx]) * 0.5f;
-						}
-						break;
-					default:
-						for (int k = 0; k < count; k++)
-						{
-							int idx = (int)((start + k) & RingMask);
-							dstL[k] = (_ringL[idx] + _ringR[idx]) * 0.5f;
-						}
-						break;
-				}
-			}
-		}
-		return true;
-	}
-
-	private static void CopyRingRange(float[] ring, long start, int count, float[] dst)
-	{
-		int ringStart = (int)(start & RingMask);
-		int firstChunk = Math.Min(count, RingSize - ringStart);
-		Array.Copy(ring, ringStart, dst, 0, firstChunk);
-		int remaining = count - firstChunk;
-		if (remaining > 0)
-		{
-			Array.Copy(ring, 0, dst, firstChunk, remaining);
 		}
 	}
 
@@ -273,6 +203,10 @@ internal sealed partial class WasapiLoopback : IDisposable
 				{
 					if (client.GetMixFormat(out pFormat) != 0 || pFormat == IntPtr.Zero)
 					{
+						pFormat = GetDefaultMixFormat();
+					}
+					if (pFormat == IntPtr.Zero)
+					{
 						_status = "GetMixFormat failed";
 						if (_stopEvent.WaitOne(1000)) break;
 						continue;
@@ -302,6 +236,16 @@ internal sealed partial class WasapiLoopback : IDisposable
 						if (endpoint.Activate(ref iidClient, 23, IntPtr.Zero, out var freshObj) == 0 && freshObj is IAudioClient freshClient)
 						{
 							client = freshClient;
+							hr = client.Initialize(0, streamFlags, 500000, 0, pFormat, IntPtr.Zero);
+						}
+					}
+					else if (string.Equals(targetId, "process", StringComparison.OrdinalIgnoreCase))
+					{
+						try { Marshal.ReleaseComObject(client); } catch { }
+						client = null;
+						if (TryActivateProcessLoopback(out var procClient) && procClient != null)
+						{
+							client = procClient;
 							hr = client.Initialize(0, streamFlags, 500000, 0, pFormat, IntPtr.Zero);
 						}
 					}
@@ -342,7 +286,7 @@ internal sealed partial class WasapiLoopback : IDisposable
 						break;
 					}
 
-					int waitIdx = WaitHandle.WaitAny(waitHandles, 25);
+					int waitIdx = WaitHandle.WaitAny(waitHandles, isEventDriven ? 15 : 4);
 					if (waitIdx == 0) break;
 					if (waitIdx == 1)
 					{
@@ -354,7 +298,11 @@ internal sealed partial class WasapiLoopback : IDisposable
 
 					if (packetLength == 0)
 					{
-						FadeOutIdleFrames(128);
+						long nowTick = Stopwatch.GetTimestamp();
+						if ((double)(nowTick - _lastPacketTick) / Stopwatch.Frequency > 0.040)
+						{
+							AdvanceIdleDecay(64);
+						}
 					}
 
 					while (packetLength > 0 && !_stopEvent.WaitOne(0))

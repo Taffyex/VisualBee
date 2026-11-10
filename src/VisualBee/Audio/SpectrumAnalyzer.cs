@@ -61,6 +61,8 @@ internal sealed partial class SpectrumAnalyzer
 
 	private int _window = -1;
 
+	private bool _causal;
+
 	private float[] _w;
 
 	private float _norm;
@@ -110,9 +112,9 @@ internal sealed partial class SpectrumAnalyzer
 		return num2;
 	}
 
-	public void AnalyzeStereo(float[] left, float[] right, int n, int rate, int window, int value, int bands, double minHz, double maxHz, int scale, double[] dbLeft, double[] dbRight, SpectrumAnalyzer aux)
+	public void AnalyzeStereo(float[] left, float[] right, int n, int rate, int window, int value, int bands, double minHz, double maxHz, int scale, double[] dbLeft, double[] dbRight, SpectrumAnalyzer aux, bool causal = false)
 	{
-		Prepare(n, window);
+		Prepare(n, window, causal);
 		for (int i = 0; i < n; i++)
 		{
 			float w = _w[i];
@@ -144,9 +146,9 @@ internal sealed partial class SpectrumAnalyzer
 	}
 
 
-	public void Analyze(float[] samples, int n, int rate, int window, int value, int bands, double minHz, double maxHz, int scale, double[] dbOut)
+	public void Analyze(float[] samples, int n, int rate, int window, int value, int bands, double minHz, double maxHz, int scale, double[] dbOut, bool causal = false)
 	{
-		Prepare(n, window);
+		Prepare(n, window, causal);
 		Array.Clear(_im, 0, n);
 		for (int i = 0; i < n; i++)
 		{
@@ -257,9 +259,9 @@ internal sealed partial class SpectrumAnalyzer
 		}
 	}
 
-	private void Prepare(int n, int window)
+	private void Prepare(int n, int window, bool causal = false)
 	{
-		if (n == _n && window == _window)
+		if (n == _n && window == _window && causal == _causal)
 		{
 			return;
 		}
@@ -303,26 +305,44 @@ internal sealed partial class SpectrumAnalyzer
 			_swapB = list2.ToArray();
 		}
 		_window = window;
+		_causal = causal;
 		_w = new float[n];
 		double num5 = 0.0;
+		double peakPos = causal ? ((double)(n - 1) * 0.82) : ((double)(n - 1) * 0.5);
 		for (int m = 0; m < n; m++)
 		{
-			double num6 = (double)m / (double)(n - 1);
 			double num7;
-			switch (window)
+			if (causal)
 			{
-			case 1:
-				num7 = 287.0 / 800.0 - 0.48829 * Math.Cos(Math.PI * 2.0 * num6) + 0.14128 * Math.Cos(Math.PI * 4.0 * num6) - 0.01168 * Math.Cos(Math.PI * 6.0 * num6);
-				break;
-			case 2:
-			{
-				double num8 = ((double)m - (double)(n - 1) * 0.5) / ((double)(n - 1) * 0.15);
-				num7 = Math.Exp(-0.5 * num8 * num8);
-				break;
+				if ((double)m <= peakPos)
+				{
+					double t = (double)m / peakPos;
+					num7 = 0.5 - 0.5 * Math.Cos(Math.PI * t);
+				}
+				else
+				{
+					double t = ((double)m - peakPos) / ((double)(n - 1) - peakPos);
+					num7 = 0.5 + 0.5 * Math.Cos(Math.PI * t);
+				}
 			}
-			default:
-				num7 = 0.5 - 0.5 * Math.Cos(Math.PI * 2.0 * num6);
-				break;
+			else
+			{
+				double num6 = (double)m / (double)(n - 1);
+				switch (window)
+				{
+				case 1:
+					num7 = 287.0 / 800.0 - 0.48829 * Math.Cos(Math.PI * 2.0 * num6) + 0.14128 * Math.Cos(Math.PI * 4.0 * num6) - 0.01168 * Math.Cos(Math.PI * 6.0 * num6);
+					break;
+				case 2:
+				{
+					double num8 = ((double)m - peakPos) / ((double)(n - 1) * 0.15);
+					num7 = Math.Exp(-0.5 * num8 * num8);
+					break;
+				}
+				default:
+					num7 = 0.5 - 0.5 * Math.Cos(Math.PI * 2.0 * num6);
+					break;
+				}
 			}
 			_w[m] = (float)num7;
 			num5 += num7;

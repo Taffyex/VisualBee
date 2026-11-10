@@ -118,14 +118,18 @@ internal static partial class SpectrumSettings
 		{
 			l.AudioSource = v;
 		}).Words("audio source direct bass wasapi loopback browser youtube asio capture fallback");
-		s.Device("audio.device", "Capture device", "Audio endpoint captured by WASAPI Loopback. 'Default Playback Device' captures all system audio; choose 'MusicBee & Browser2 Only' or a specific device (like VB-CABLE or a microphone) to isolate specific audio streams.", (SpectrumLook l) => l.AudioDeviceId, (SpectrumLook l, string v) =>
+		s.Device("audio.device", "Capture device", "Audio endpoint captured by WASAPI Loopback. 'Default Playback Device' captures all system audio; choose 'MusicBee process (isolated)' or a specific device (like VB-CABLE or a microphone) to isolate specific audio streams.", (SpectrumLook l) => l.AudioDeviceId, (SpectrumLook l, string v) =>
 		{
 			l.AudioDeviceId = v;
-			if (!string.IsNullOrEmpty(v) && !string.Equals(v, "default", StringComparison.OrdinalIgnoreCase) && !string.Equals(v, "process", StringComparison.OrdinalIgnoreCase))
+			if (!string.IsNullOrEmpty(v) && !string.Equals(v, "default", StringComparison.OrdinalIgnoreCase))
 			{
 				l.AudioSource = SpectrumLook.AudioSourceWasapiLoopback;
 			}
 		}).Mine().Words("audio device wasapi endpoint vb cable virtual capture mic");
+		s.Toggle("audio.loopbackAgc", "Loopback level matching (AGC)", "Matches WASAPI loopback post-fader gain to direct playback levels so quiet system streams remain lively and punchy.", (SpectrumLook l) => l.LoopbackAgc, (SpectrumLook l, bool v) =>
+		{
+			l.LoopbackAgc = v;
+		}).Words("audio loopback agc gain normalise volume");
 		s.Choice("audio.hz", "Audio refresh rate", "Rate of FFT audio analysis. Sync matches the display refresh; 60–500 Hz sets an explicit cadence.", SpectrumLook.AnalysisHzNames, SpectrumLook.AnalysisHzTokens, (SpectrumLook l) => l.AnalysisHz, (SpectrumLook l, int v) =>
 		{
 			l.AnalysisHz = v;
