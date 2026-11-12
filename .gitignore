@@ -2,10 +2,12 @@
 **/bin/
 **/obj/
 .vs/
+.vscode/
 *.user
 *.suo
 *.userosscache
 *.sln.docstates
+/src/VisualBee/VisualBee.csproj.user
 
 ## OS / Temp
 Thumbs.db

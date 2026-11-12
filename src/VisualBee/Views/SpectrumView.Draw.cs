@@ -32,7 +32,45 @@ internal sealed partial class SpectrumView
 				DrawBars(canvas, spectrumLook, geo, ref f);
 			}
 			DrawParticles(canvas, spectrumLook, ref f);
+			DrawFullScreenArtwork(canvas, ref f);
 		}
+	}
+
+	//(fix) TO-DO.
+	// hmm...the mapping here ive done is working but the visual of the artwork is a bit off.
+	// i think the artwork is being painted in the back of the gradient background and the 
+	// blurr effects are being applied on the artwork too...
+	private void DrawFullScreenArtwork(Canvas canvas, ref Frame f)
+	{
+		if (!FullScreen)
+		{
+			return;
+		}
+		GpuTexture texture = Cover(ref f);
+		if (texture == null)
+		{
+			return;
+		}
+		float side = Math.Min(f.Width * 0.20f, f.Height * 0.31f);
+		float halfSide = side / 2f;
+		float centreY = f.Height * 0.30f;
+		float u = 0f;
+		float v = 0f;
+		float u2 = 1f;
+		float v2 = 1f;
+		if (texture.Width > texture.Height)
+		{
+			u = (1f - (float)texture.Height / texture.Width) / 2f;
+			u2 = 1f - u;
+		}
+		else if (texture.Height > texture.Width)
+		{
+			v = (1f - (float)texture.Width / texture.Height) / 2f;
+			v2 = 1f - v;
+		}
+		canvas.Quad(texture, TexQuad.Make(f.Width / 2f - halfSide, centreY - halfSide,
+			f.Width / 2f + halfSide, centreY + halfSide, u, v, u2, v2,
+			new Vec4(1f, 1f, 1f, 1f), mask: false));
 	}
 
 	private void DrawRadial(Canvas c, SpectrumLook look, Geometry g, ref Frame f)
