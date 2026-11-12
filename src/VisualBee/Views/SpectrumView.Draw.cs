@@ -36,6 +36,10 @@ internal sealed partial class SpectrumView
 		}
 	}
 
+	//(fix) TO-DO.
+	// hmm...the mapping here ive done is working but the visual of the artwork is a bit off.
+	// i think the artwork is being painted in the back of the gradient background and the 
+	// blurr effects are being applied on the artwork too...
 	private void DrawFullScreenArtwork(Canvas canvas, ref Frame f)
 	{
 		if (!FullScreen)
