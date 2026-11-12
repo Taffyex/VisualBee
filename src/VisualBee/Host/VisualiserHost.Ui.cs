@@ -50,6 +50,7 @@ internal sealed partial class VisualiserHost
 		};
 		_fullScreenForm = form;
 		_fullScreenView = view;
+		ArtMaybeWanted();
 		SyncLoopbackState();
 		IWin32Window owner = from?.FindForm();
 		if (owner != null) form.Show(owner); else form.Show();
