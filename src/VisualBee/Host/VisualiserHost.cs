@@ -162,7 +162,7 @@ internal sealed partial class VisualiserHost
 
 	private void ArtMaybeWanted()
 	{
-		if (!Store.Current.WantsArt || _artWanted)
+		if ((!Store.Current.WantsArt && _fullScreenView == null) || _artWanted)
 		{
 			return;
 		}
@@ -196,6 +196,8 @@ internal sealed partial class VisualiserHost
 			if (request == Volatile.Read(ref _artRequest))
 			{
 				_art = art;
+				_view?.Redraw();
+				_fullScreenView?.Redraw();
 			}
 		});
 	}
