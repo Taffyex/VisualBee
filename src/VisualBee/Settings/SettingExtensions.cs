@@ -22,6 +22,12 @@ internal static class SettingExtensions
 		return s;
 	}
 
+	public static Setting SectionToggle(this Setting s)
+	{
+		s.SectionMaster = true;
+		return s;
+	}
+
 	public static Setting Words(this Setting s, string keywords)
 	{
 		s.Keywords = keywords;

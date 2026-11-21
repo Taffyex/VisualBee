@@ -14,10 +14,7 @@ internal sealed class Segmented : Widget
 
 	public int Selected
 	{
-		get
-		{
-			return _selected;
-		}
+		get => _selected;
 		set
 		{
 			if (value != _selected)
@@ -33,84 +30,76 @@ internal sealed class Segmented : Widget
 	public Segmented(string[] items)
 	{
 		_items = items;
-		Height = Ui.S(26);
+		Height = Ui.S(28);
 		Cursor = Cursors.Hand;
 	}
 
 	public int Ideal()
 	{
 		int num = 0;
-		string[] items = _items;
-		foreach (string text in items)
+		foreach (string text in _items)
 		{
-			num += TextRenderer.MeasureText(text, Ui.Bold).Width + Ui.S(18);
+			num += TextRenderer.MeasureText(text, Ui.Bold, Size.Empty, TextFormatFlags.NoPrefix).Width + Ui.S(20);
 		}
-		return num + Ui.S(4);
+		return num + Ui.S(6);
 	}
 
 	private Rectangle Cell(int i)
 	{
-		int num = Width - Ui.S(4);
-		int num2 = 0;
-		int num3 = 0;
+		int innerW = Width - Ui.S(6);
+		int total = 0;
+		int offset = 0;
 		for (int j = 0; j < _items.Length; j++)
 		{
-			int num4 = TextRenderer.MeasureText(_items[j], Ui.Bold).Width + Ui.S(18);
-			if (j < i)
-			{
-				num3 += num4;
-			}
-			num2 += num4;
+			int itemW = TextRenderer.MeasureText(_items[j], Ui.Bold, Size.Empty, TextFormatFlags.NoPrefix).Width + Ui.S(20);
+			if (j < i) offset += itemW;
+			total += itemW;
 		}
-		int num5 = TextRenderer.MeasureText(_items[i], Ui.Bold).Width + Ui.S(18);
-		int num6 = Ui.S(2) + num * num3 / num2;
-		int num7 = Ui.S(2) + num * (num3 + num5) / num2;
-		return new Rectangle(num6, Ui.S(2), num7 - num6, Height - Ui.S(4));
+		int curW = TextRenderer.MeasureText(_items[i], Ui.Bold, Size.Empty, TextFormatFlags.NoPrefix).Width + Ui.S(20);
+		int x1 = Ui.S(3) + innerW * offset / Math.Max(1, total);
+		int x2 = Ui.S(3) + innerW * (offset + curW) / Math.Max(1, total);
+		return new Rectangle(x1, Ui.S(3), Math.Max(1, x2 - x1), Height - Ui.S(6));
 	}
 
 	protected override void OnPaint(PaintEventArgs e)
 	{
-		Graphics graphics = e.Graphics;
-		Ui.Smooth(graphics);
-		Ui.Fill(graphics, new RectangleF(0.5f, 0.5f, (float)Width - 1f, (float)Height - 1f), Ui.Sf(6f), Ui.Raised);
+		Graphics g = e.Graphics;
+		Ui.Smooth(g);
+		RectangleF outer = new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f);
+		Ui.Fill(g, outer, Ui.Sf(6f), Ui.Raised);
+		Ui.Stroke(g, outer, Ui.Sf(6f), Ui.Border);
+
 		for (int i = 0; i < _items.Length; i++)
 		{
-			Rectangle rectangle = Cell(i);
+			Rectangle cell = Cell(i);
 			if (i == _selected)
 			{
-				Ui.Fill(graphics, rectangle, Ui.Sf(5f), Enabled ? Ui.Accent : Ui.AccentDeep);
+				Ui.Fill(g, cell, Ui.Sf(4f), Enabled ? Ui.Accent : Ui.AccentDeep);
 			}
 			else if (i == _hot && Enabled)
 			{
-				Ui.Fill(graphics, rectangle, Ui.Sf(5f), Ui.RaisedHover);
+				Ui.Fill(g, cell, Ui.Sf(4f), Ui.RaisedHover);
 			}
-			Color colour;
-			if (i == _selected)
-			{
-				colour = Color.White;
-			}
-			else
-			{
-				colour = (Enabled ? Ui.Text : Ui.Faint);
-			}
-			Ui.DrawText(graphics, _items[i], (i == _selected) ? Ui.Bold : Ui.Body, colour, rectangle, TextFormatFlags.EndEllipsis | TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+
+			Color colour = (i == _selected)
+				? (Enabled ? Ui.AccentText : Ui.Dim)
+				: (Enabled ? Ui.Text : Ui.Faint);
+
+			Ui.DrawText(g, _items[i], (i == _selected) ? Ui.Bold : Ui.Body, colour, cell, TextFormatFlags.EndEllipsis | TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
 		}
 	}
 
 	protected override void OnMouseMove(MouseEventArgs e)
 	{
 		base.OnMouseMove(e);
-		int num = -1;
+		int hit = -1;
 		for (int i = 0; i < _items.Length; i++)
 		{
-			if (Cell(i).Contains(e.Location))
-			{
-				num = i;
-			}
+			if (Cell(i).Contains(e.Location)) hit = i;
 		}
-		if (num != _hot)
+		if (hit != _hot)
 		{
-			_hot = num;
+			_hot = hit;
 			Invalidate();
 		}
 	}
@@ -130,10 +119,7 @@ internal sealed class Segmented : Widget
 			if (Cell(i).Contains(e.Location) && i != _selected)
 			{
 				Selected = i;
-				if (Changed != null)
-				{
-					Changed(this, EventArgs.Empty);
-				}
+				Changed?.Invoke(this, EventArgs.Empty);
 			}
 		}
 	}

@@ -10,7 +10,7 @@ internal static partial class SpectrumSettings
 		s.Toggle("peaks", "Show peaks", "A marker above each bar that stays at the highest recent level, then falls.", (SpectrumLook l) => l.Peaks, (SpectrumLook l, bool v) =>
 		{
 			l.Peaks = v;
-		}).When(Bars).Words("caps hold");
+		}).SectionToggle().When(Bars).Words("caps hold");
 		s.Choice("peaks.style", "Style", "A thin line, a solid block, a dot, or a line with a soft glow around it.", SpectrumLook.PeakStyleNames, SpectrumLook.PeakStyleTokens, (SpectrumLook l) => l.PeakStyle, (SpectrumLook l, int v) =>
 		{
 			l.PeakStyle = v;
@@ -51,7 +51,7 @@ internal static partial class SpectrumSettings
 		s.Toggle("particles", "Particles", "Sparks of light that fly off the bars and glow in the bloom pass.", (SpectrumLook l) => l.Particles, (SpectrumLook l, bool v) =>
 		{
 			l.Particles = v;
-		}).Words("sparks embers fireworks");
+		}).SectionToggle().Words("sparks embers fireworks");
 		s.Choice("particles.emit", "Released", "When particles appear: on rising peaks, on beats, or streaming continuously off loud bars.", SpectrumLook.EmitNames, SpectrumLook.EmitTokens, (SpectrumLook l) => l.Emit, (SpectrumLook l, int v) =>
 		{
 			l.Emit = v;
@@ -114,27 +114,35 @@ internal static partial class SpectrumSettings
 	private static void AddAnalysis(Schema s)
 	{
 		s.Page("Audio").Section("Audio Engine");
-		s.Choice("audio.source", "Audio capture hook", "Capture method. Auto uses direct BASS when MusicBee plays and falls back to WASAPI Loopback for Browser2 (YouTube Music) or system audio.", SpectrumLook.AudioSourceNames, SpectrumLook.AudioSourceTokens, (SpectrumLook l) => l.AudioSource, (SpectrumLook l, int v) =>
+		s.Choice("audio.source", "Audio capture hook", "How VisualBee captures audio. Automatic uses MusicBee direct playback and falls back to system audio when silent. The Engine Telemetry card (bottom-left) shows which source is active.", SpectrumLook.AudioSourceNames, SpectrumLook.AudioSourceTokens, (SpectrumLook l) => l.AudioSource, (SpectrumLook l, int v) =>
 		{
 			l.AudioSource = v;
-		}).Words("audio source direct bass wasapi loopback browser youtube asio capture fallback");
-		s.Device("audio.device", "Capture device", "Audio endpoint captured by WASAPI Loopback. 'Default Playback Device' captures all system audio; choose 'MusicBee process (isolated)' or a specific device (like VB-CABLE or a microphone) to isolate specific audio streams.", (SpectrumLook l) => l.AudioDeviceId, (SpectrumLook l, string v) =>
+		}).Mine().Words("audio source direct bass wasapi loopback browser youtube asio capture fallback");
+		s.Device("audio.device", "Capture device", "Audio endpoint captured by System audio (WASAPI Loopback). 'Default Playback Device' captures all system audio; choose 'MusicBee process (isolated)' or a specific device to isolate streams.", (SpectrumLook l) => l.AudioDeviceId, (SpectrumLook l, string v) =>
 		{
 			l.AudioDeviceId = v;
 			if (!string.IsNullOrEmpty(v) && !string.Equals(v, "default", StringComparison.OrdinalIgnoreCase))
 			{
 				l.AudioSource = SpectrumLook.AudioSourceWasapiLoopback;
 			}
-		}).Mine().Words("audio device wasapi endpoint vb cable virtual capture mic");
-		s.Toggle("audio.loopbackAgc", "Loopback level matching (AGC)", "Matches WASAPI loopback post-fader gain to direct playback levels so quiet system streams remain lively and punchy.", (SpectrumLook l) => l.LoopbackAgc, (SpectrumLook l, bool v) =>
+		}).When((Look l) => ((SpectrumLook)l).NeedsLoopback).Mine().Words("audio device wasapi endpoint vb cable virtual capture mic");
+		s.Choice("audio.autoLevel", "Auto level", "Automatically balances quiet and loud tracks by adjusting gain before ballistics, without compressing bar shape.", SpectrumLook.AutoLevelNames, SpectrumLook.AutoLevelTokens, (SpectrumLook l) => l.AutoLevel, (SpectrumLook l, int v) =>
 		{
-			l.LoopbackAgc = v;
-		}).Words("audio loopback agc gain normalise volume");
+			l.AutoLevel = v;
+		}).Mine().Words("auto level loudness replaygain agc normalize volume");
+		s.Number("audio.autoLevelSpeed", "Auto-level speed", "How fast adaptive auto-level adjusts to quiet passages (higher is smoother).", 1.0, 15.0, 0.5, 1, "s", (SpectrumLook l) => l.AutoLevelSpeed, (SpectrumLook l, double v) =>
+		{
+			l.AutoLevelSpeed = v;
+		}).When((Look l) => ((SpectrumLook)l).AutoLevel != SpectrumLook.AutoLevelOff).Mine().Words("auto level speed release time");
+		s.Number("audio.autoLevelMaxBoost", "Auto-level max boost", "Maximum upward gain boost auto-level may apply to quiet tracks.", 3.0, 30.0, 1.0, 0, "dB", (SpectrumLook l) => l.AutoLevelMaxBoost, (SpectrumLook l, double v) =>
+		{
+			l.AutoLevelMaxBoost = v;
+		}).When((Look l) => ((SpectrumLook)l).AutoLevel != SpectrumLook.AutoLevelOff).Mine().Words("auto level boost gain limit");
 		s.Choice("audio.hz", "Audio refresh rate", "Rate of FFT audio analysis. Sync matches the display refresh; 60–500 Hz sets an explicit cadence.", SpectrumLook.AnalysisHzNames, SpectrumLook.AnalysisHzTokens, (SpectrumLook l) => l.AnalysisHz, (SpectrumLook l, int v) =>
 		{
 			l.AnalysisHz = v;
 		}).Words("audio hz refresh rate analysis");
-		s.Number("audio.sensitivity", "Input sensitivity", "Global gain multiplier for audio reactivity; boost for quiet tracks.", 20.0, 300.0, 5.0, 0, "%", (SpectrumLook l) => l.Sensitivity, (SpectrumLook l, double v) =>
+		s.Number("audio.sensitivity", "Input sensitivity", "Global dB gain boost applied before the floor threshold so quiet signals lift clearly.", 20.0, 300.0, 5.0, 0, "%", (SpectrumLook l) => l.Sensitivity, (SpectrumLook l, double v) =>
 		{
 			l.Sensitivity = v;
 		}).Words("sensitivity gain volume");
@@ -160,10 +168,10 @@ internal static partial class SpectrumSettings
 			l.Scale = v;
 		}).When((Look l) => ((SpectrumLook)l).Engine == 1);
 		s.Section("Resolution");
-		s.Choice("fft", "Window length", "Number of audio samples per analysis window.", SpectrumAnalyzer.FftSizeNames, SpectrumAnalyzer.FftSizeTokens, (SpectrumLook l) => l.FftSize, (SpectrumLook l, int v) =>
+		s.Choice("fft", "Speed vs detail (window)", "Shorter windows (2048–4096) react faster to transients; longer windows (16384–32768) separate low bass notes more finely.", SpectrumAnalyzer.FftSizeNames, SpectrumAnalyzer.FftSizeTokens, (SpectrumLook l) => l.FftSize, (SpectrumLook l, int v) =>
 		{
 			l.FftSize = v;
-		}).When((Look l) => ((SpectrumLook)l).Engine == 1).Words("fft size latency");
+		}).When((Look l) => ((SpectrumLook)l).Engine == 1).Words("fft size latency snappy speed detail window");
 		s.Choice("window", "Window shape", "Sample window taper: Hann, Blackman-Harris, or Gaussian.", SpectrumAnalyzer.WindowNames, SpectrumAnalyzer.WindowTokens, (SpectrumLook l) => l.Window, (SpectrumLook l, int v) =>
 		{
 			l.Window = v;

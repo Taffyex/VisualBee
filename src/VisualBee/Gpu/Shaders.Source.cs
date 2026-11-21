@@ -133,21 +133,25 @@ float4 RectPS(RectOut i) : SV_Target
         float bevel = (0.78 + 0.32 * sin(uBevel * 3.14159)) * (0.72 + 0.28 * sqrt(max(0.0, 1.0 - nx * nx)));
         if (flags & 512)
         {
-            float mesh = 1.0 - 0.12 * smoothstep(0.3, 0.85, sin(i.P.x * 1.5) * sin(i.P.y * 1.5));
+            float mesh = 1.0 - 0.14 * smoothstep(0.3, 0.85, sin(i.P.x * 1.5) * sin(i.P.y * 1.5));
             bevel *= mesh;
         }
         c.rgb *= bevel;
+    }
+    if ((flags & 256) && !(flags & 32))
+    {
         float power = r.Seg.w;
-        if ((flags & 256) && power > 0.55)
+        if (power > 0.72)
         {
-            float overdrive = smoothstep(0.55, 0.88, power);
-            float coreX = 1.0 - smoothstep(0.0, 0.72, abs(nx));
-            c.rgb = lerp(c.rgb, float3(1.35, 1.40, 1.45), overdrive * coreX * 0.92);
+            float overdrive = smoothstep(0.72, 1.45, power) * max(1.0, power * 0.75);
+            float coreX = 1.0 - smoothstep(0.0, 0.75, abs(nx));
+            float3 hot = lerp(c.rgb * 2.0, c.rgb * 1.4 + float3(0.55, 0.55, 0.65), saturate(overdrive * 0.45));
+            c.rgb = lerp(c.rgb, hot * (1.0 + 0.45 * overdrive), saturate(overdrive * coreX * 0.85));
         }
     }
     if (flags & 128)
     {
-        float3 floorTint = float3(0.78, 0.88, 1.05);
+        float3 floorTint = float3(0.92, 0.96, 1.02);
         c.rgb = c.rgb * floorTint * 0.85;
     }
     if (flags & 32)
@@ -155,7 +159,7 @@ float4 RectPS(RectOut i) : SV_Target
         float wall = saturate((r.Seg.x > 1.0) ? (r.Seg.x * 0.01) : ((r.Seg.x > 0.0001) ? r.Seg.x : 0.18));
         float bodyTint = saturate((r.Seg.y > 1.0) ? (r.Seg.y * 0.01) : ((r.Seg.y > 0.0001) ? r.Seg.y : 0.22));
         float specFactor = (r.Seg.z > 1.5) ? (r.Seg.z * 0.01) : ((r.Seg.z > 0.0001) ? r.Seg.z : 1.0);
-        float activePower = saturate(r.Seg.w);
+        float activePower = max(0.0, r.Seg.w);
 
         float domeTop = max(0.0, halfSize.y - halfSize.x);
         float ny = (rel.y < -domeTop && halfSize.x > 0.5) ? (rel.y + domeTop) / halfSize.x : 0.0;
@@ -163,44 +167,53 @@ float4 RectPS(RectOut i) : SV_Target
         float nz = sqrt(max(0.0, 1.0 - min(1.0, rad * rad)));
         float3 N = float3(nx, ny, nz);
 
-        float refr = r.Shape.z > 0.0 ? r.Shape.z : 0.65;
+        float refr = max(0.0, r.Shape.z);
         float2 uv = i.Pos.xy * InvViewSize;
-        float2 dUv = -N.xy * (1.0 - nz) * halfSize.x * InvViewSize * (refr * 0.85);
+        float2 dUv = -N.xy * (1.0 - nz) * halfSize.x * InvViewSize * (refr * 1.1);
 
         float3 refrDelta = float3(0.0, 0.0, 0.0);
         if (dot(dUv, dUv) > 1e-7)
         {
-            float3 bgR = Image.Sample(LinearClamp, uv + dUv * 0.85).rgb;
+            float3 bgR = Image.Sample(LinearClamp, uv + dUv * 0.80).rgb;
             float3 bgG = Image.Sample(LinearClamp, uv + dUv * 1.00).rgb;
-            float3 bgB = Image.Sample(LinearClamp, uv + dUv * 1.18).rgb;
-            refrDelta = max(float3(0.0, 0.0, 0.0), (float3(bgR.r, bgG.g, bgB.b) - bgG) * (0.5 + 0.5 * refr));
+            float3 bgB = Image.Sample(LinearClamp, uv + dUv * 1.24).rgb;
+            refrDelta = max(float3(0.0, 0.0, 0.0), (float3(bgR.r, bgG.g, bgB.b) - bgG) * (0.65 + 0.65 * refr));
         }
 
-        float innerR = saturate(1.0 - wall);
-        float wallEdge = smoothstep(0.0, 0.04, abs(rad - innerR));
+        float innerR = saturate(1.0 - wall * 1.35);
+        float wallEdge = smoothstep(0.0, 0.06, abs(rad - innerR));
         float wallFresnel = smoothstep(innerR, 1.0, rad);
 
         float onz = 1.0 - nz;
         float onz2 = onz * onz;
         float fresnel = 0.04 + 0.96 * (onz2 * onz2);
-        float specAmp = specFactor * (0.15 + 0.35 * activePower);
-        float spec1 = exp(-55.0 * (nx + 0.55) * (nx + 0.55)) * nz;
-        float spec2 = 0.40 * exp(-85.0 * (nx - 0.62) * (nx - 0.62)) * nz;
-        float domeSpec = (ny < -0.15) ? exp(-40.0 * (rad - 0.88) * (rad - 0.88)) * abs(ny) : 0.0;
+        float specAmp = specFactor * (0.20 + 0.45 * saturate(activePower));
+        float spec1 = exp(-50.0 * (nx + 0.52) * (nx + 0.52)) * nz;
+        float spec2 = 0.45 * exp(-80.0 * (nx - 0.60) * (nx - 0.60)) * nz;
+        float domeSpec = (ny < -0.15) ? exp(-36.0 * (rad - 0.86) * (rad - 0.86)) * abs(ny) : 0.0;
         float specular = (spec1 + spec2 + domeSpec) * specAmp;
 
-        float wallCaustic = activePower * (wallFresnel * sqrt(wallFresnel)) * 0.45;
-        float domeCaustic = activePower * smoothstep(0.5, 1.0, rad) * (ny < -0.15 ? 0.35 : 0.0);
+        float powerSat = saturate(activePower);
+        float wallCaustic = activePower * (wallFresnel * sqrt(wallFresnel)) * 0.55;
+        float domeCaustic = activePower * smoothstep(0.45, 1.0, rad) * (ny < -0.10 ? 0.45 : 0.0);
 
-        float3 glassTint = lerp(r.C1.rgb, r.C2.rgb, 0.5);
-        float3 glassCol = refrDelta + glassTint * (0.04 + bodyTint * (0.12 + 0.45 * wallFresnel));
-        glassCol *= lerp(0.75, 1.0, wallEdge);
-        glassCol += glassTint * (wallCaustic + domeCaustic + activePower * 0.45);
+        float3 baseCol = c.rgb;
+        float opacityScale = saturate(c.a);
+        float3 prismEdge = float3(max(0.0, -nx), 0.35 * (1.0 - abs(nx)), max(0.0, nx)) * (1.0 - nz) * refr * (0.30 + 0.65 * powerSat);
+        float3 glassCol = refrDelta + prismEdge + baseCol * (0.06 + bodyTint * (0.20 + 0.55 * wallFresnel) + powerSat * (0.28 + 0.35 * nz));
+        glassCol *= lerp(0.55, 1.0, wallEdge);
+        glassCol += baseCol * (wallCaustic + domeCaustic);
         glassCol += float3(specular, specular, specular);
-        glassCol += glassTint * (fresnel * (0.08 + 0.25 * activePower));
-        glassCol = clamp(glassCol, 0.0, 1.5);
+        glassCol += baseCol * (fresnel * (0.12 + 0.28 * powerSat));
+        if ((flags & 256) && activePower > 0.72)
+        {
+            float hdrPow = smoothstep(0.72, 1.35, activePower) * max(1.0, activePower * 0.7);
+            float coreX = 1.0 - smoothstep(0.0, 0.60, abs(nx));
+            glassCol += lerp(baseCol * 1.4, float3(1.2, 1.35, 1.55), 0.40) * (hdrPow * coreX * 0.55);
+        }
+        glassCol = clamp(glassCol, 0.0, 3.0);
 
-        float glassAlpha = saturate(0.06 + 0.20 * bodyTint + 0.42 * wallFresnel + fresnel * 0.18 + activePower * 0.30 + specular * 0.35);
+        float glassAlpha = saturate(0.10 + 0.34 * bodyTint + 0.48 * wallFresnel + fresnel * 0.20 + powerSat * 0.52 + specular * 0.35) * opacityScale;
         c = float4(glassCol, glassAlpha);
     }
     return Premultiply(c, cover);

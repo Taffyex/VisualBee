@@ -12,10 +12,7 @@ internal sealed class ColourWell : Widget
 
 	public int Argb
 	{
-		get
-		{
-			return _argb;
-		}
+		get => _argb;
 		set
 		{
 			if (value != _argb)
@@ -28,30 +25,31 @@ internal sealed class ColourWell : Widget
 
 	public ColourWell()
 	{
-		Height = Ui.S(26);
+		Height = Ui.S(28);
 		Cursor = Cursors.Hand;
 	}
 
 	protected override void OnPaint(PaintEventArgs e)
 	{
-		Graphics graphics = e.Graphics;
-		Ui.Smooth(graphics);
-		RectangleF r = new RectangleF(0.5f, 0.5f, (float)Width - 1f, (float)Height - 1f);
-		Ui.Fill(graphics, r, Ui.Sf(5f), (Hot && Enabled) ? Ui.RaisedHover : Ui.Raised);
-		Ui.Stroke(graphics, r, Ui.Sf(5f), (Hot && Enabled) ? Ui.Faint : Ui.Border);
-		Rectangle rectangle = new Rectangle(Ui.S(4), Ui.S(4), Ui.S(30), Height - Ui.S(8));
-		Region clip = graphics.Clip;
-		using (GraphicsPath clip2 = Ui.Round(rectangle, Ui.Sf(3f)))
+		Graphics g = e.Graphics;
+		Ui.Smooth(g);
+		RectangleF r = new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f);
+		Ui.Fill(g, r, Ui.Sf(5f), (Hot && Enabled) ? Ui.RaisedHover : Ui.Raised);
+		Ui.Stroke(g, r, Ui.Sf(5f), (Hot && Enabled) ? Ui.AccentBorder : Ui.Border);
+
+		Rectangle swatch = new Rectangle(Ui.S(4), Ui.S(4), Ui.S(32), Height - Ui.S(8));
+		Region clip = g.Clip;
+		using (GraphicsPath round = Ui.Round(swatch, Ui.Sf(3f)))
 		{
-			graphics.SetClip(clip2);
-			Ui.Checker(graphics, rectangle);
+			g.SetClip(round);
+			Ui.Checker(g, swatch);
 			using (SolidBrush brush = new SolidBrush(Color.FromArgb(Enabled ? _argb : ((_argb & 0xFFFFFF) | 0x60000000))))
 			{
-				graphics.FillRectangle(brush, rectangle);
+				g.FillRectangle(brush, swatch);
 			}
-			graphics.Clip = clip;
+			g.Clip = clip;
 		}
-		Ui.Stroke(graphics, rectangle, Ui.Sf(3f), Color.FromArgb(60, 255, 255, 255));
-		Ui.DrawText(r: new Rectangle(rectangle.Right + Ui.S(8), 0, Width - rectangle.Right - Ui.S(10), Height), g: graphics, text: ColourMath.ToHex(_argb, Alpha), font: Ui.Body, colour: Enabled ? Ui.Text : Ui.Faint, flags: TextFormatFlags.VerticalCenter);
+		Ui.Stroke(g, swatch, Ui.Sf(3f), Color.FromArgb(70, 255, 255, 255));
+		Ui.DrawText(g, ColourMath.ToHex(_argb, Alpha), Ui.Mono, Enabled ? Ui.Text : Ui.Faint, new Rectangle(swatch.Right + Ui.S(8), 0, Width - swatch.Right - Ui.S(10), Height), TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
 	}
 }

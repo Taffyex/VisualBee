@@ -80,6 +80,12 @@ internal abstract class Look
 
 	public double BeatFlash;
 
+	public double HdrDrive = 65.0;
+
+	public double Anamorphic;
+
+	public double BassZoom;
+
 	public bool HueCycle;
 
 	public double HueSpeed;

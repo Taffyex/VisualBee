@@ -4,6 +4,9 @@ namespace MusicBeePlugin;
 
 internal sealed partial class SpectrumView
 {
+	private readonly LevelNormalizer _normalizer = new LevelNormalizer();
+	private double _levelOffsetDb;
+
 	private double TopHz(SpectrumLook look)
 	{
 		return Math.Max(look.MinHz * 1.5, Math.Min(look.MaxHz, (double)_rate * 0.5));
@@ -29,6 +32,10 @@ internal sealed partial class SpectrumView
 	private bool Animate(SpectrumLook look, float dt, ref Frame f)
 	{
 		bool flag = false;
+		_levelOffsetDb = _hasAudio
+			? _normalizer.Update(_raw, _channels, _bands, dt, look, _usingLoopback, Host?.TrackGainDb ?? float.NaN, Host?.AlbumGainDb ?? float.NaN, Host?.TrackSerial ?? 0)
+			: 0.0;
+		double sensDb = (Math.Abs(look.Sensitivity - 100.0) > 0.01) ? (40.0 * Math.Log10(Math.Max(0.1, look.Sensitivity / 100.0))) : 0.0;
 		double num = ((look.AttackMs > 0.0) ? (1.0 - Math.Exp((double)(0f - dt) * 1000.0 / look.AttackMs)) : 1.0);
 		double num2 = ((look.ReleaseMs > 0.0) ? (1.0 - Math.Exp((double)(0f - dt) * 1000.0 / look.ReleaseMs)) : 1.0);
 		double num3 = look.PeakHoldMs / 1000.0;
@@ -48,9 +55,10 @@ internal sealed partial class SpectrumView
 			for (int j = 0; j < _bands; j++)
 			{
 				double num7 = array[j];
-				if (flag2 && num7 > -143.49)
+				if (num7 > -143.49)
 				{
-					num7 += look.Tilt * _tiltOctaves[j];
+					num7 += _levelOffsetDb + sensDb;
+					if (flag2) num7 += look.Tilt * _tiltOctaves[j];
 				}
 				double num8 = array2[j];
 				double num9 = num8 + (num7 - num8) * ((num7 > num8) ? num : num2);
@@ -130,7 +138,6 @@ internal sealed partial class SpectrumView
 	private static double Norm(SpectrumLook look, double db)
 	{
 		double num = (db - look.FloorDb) / Math.Max(1.0, look.CeilingDb - look.FloorDb);
-		num *= (look.Sensitivity / 100.0);
 		if (num <= 0.0) return 0.0;
 		if (num >= 1.0) return 1.0;
 		return num;

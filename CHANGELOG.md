@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.2.0] - 2026-11-21
+
+### True 16-bit FP16 HDR, Auto-Level Normalization (#5), Album-Art Refresh Fix & Preset Sharing
+
+#### True FP16 HDR Pipeline & Visual FX
+- **RGBA16F HDR Render Targets & Bloom**: Upgraded frame targets, persistence trails, and the bloom downsample/upsample pyramid to `FormatRgba16Float` with shoulder-preserving HDR tone mapping (`HdrToneMap`), replacing SDR highlight crushing.
+- **New Shader & Geometry FX**: Added **HDR overdrive** (`fx.hdrDrive`), **Anamorphic lens streaks** (`fx.anamorphic`), **Bass shockwave & zoom** (`fx.bassZoom`), and **Hollow wireframe outline** (`bars.outline`).
+- **Re-Wired & Calibrated Controls**: Fixed Cauchy RGB prism dispersion in Glass style, Level vs Single colouring modes, Bar opacity & corner radius, Bar gap, Glow threshold & tint, Horizon laser intensity, and Wave glow/gain/scale + CRT/Neon oscilloscope baseline fill.
+- **12 Diversified Factory Presets**: Expanded distinct styles across Plasma Core Reactor, Blue Meter Reference, Mastering Console, Liquid Neon Ribbon, Outrun Horizon, Obsidian Capsules, Tektronix P31 Scope, and more.
+- **Pruned Redundant Clutter**: Removed unused Drop Shadow (`fx.shadow*`) and redundant `audio.loopbackAgc` toggles from the UI.
+
+#### Auto Level & Audio Engine Upgrades (Fixes #5)
+- **Auto Level Loudness Normalization (`LevelNormalizer`)**: Added pre-ballistics dB gain normalization supporting **Default**, **Adaptive** (85th-percentile slow follower that freezes during silence gaps), **ReplayGain (track)**, **ReplayGain (album)**, and **Off**, with configurable speed and max boost.
+- **Snappy 4096 FFT Default**: Changed default FFT window to `Snappy · 4096` (~93 ms) for immediate transient snap matching MusicBee API while preserving full stereo/oscilloscope support.
+- **Streamlined Capture Hook Naming**: Renamed sources to *Automatic*, *MusicBee only*, *MusicBee spectrum API*, and *System audio*, migrated legacy `bass` tokens to `player`, and made audio capture preferences `.Mine()` so presets don't overwrite hardware routing.
+
+#### Album-Art Refresh Fix, Search Spacebar Fix & Preset Sharing
+- **Album-Art Refresh Fix**: Subscribed to `NotificationType.NowPlayingArtworkReady`, added a 1.5 s retry timer on empty initial cover art, and tracked `Host.Art?.Id` to invalidate cached backgrounds automatically on track change.
+- **Spacebar & Input Box Hotkey Fix**: Neutralized `WM_KEYDOWN` in `StudioTextBox` ahead of MusicBee's global `IMessageFilter` via a thread-scoped `WH_GETMESSAGE` hook so Spacebar and single-key hotkeys work reliably in search and preset prompts.
+- **Preset Sharing (`VB2:...`) & UI Improvements**: Added compressed `VB2:...` clipboard share codes (automatically excluding personal hardware keys), `.ini` export/import, drag-and-drop `.ini` import, top-bar `Share` menu, interactive `ACTIVE LOOK` sidebar card, matching presets/palettes in search results, clickable `Open page ›` search card headers, and footer action notices.
+
 ## [2.1.31] - 2026-11-10
 
 ### Low-Latency WASAPI Loopback, Level Matching (AGC) & Process Loopback Overhaul

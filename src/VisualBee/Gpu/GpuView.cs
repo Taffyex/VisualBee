@@ -86,21 +86,14 @@ internal abstract partial class GpuView : Control
 	private PlayState _cachedPlayState = PlayState.Playing;
 
 	private int _lastSkinTop;
-
 	private int _lastSkinBottom;
-
+	private int _bgArtId = -1;
 	private string _fpsText = "";
-
 	private volatile string _gpuStatus = "starting";
-
 	private double _hudUntil;
-
 	private string _hud = "";
-
 	private volatile Action<Bitmap> _capture;
-
 	private volatile Action<Bitmap[]> _captureLayers;
-
 	internal volatile Action<double> Presented;
 
 	public string GpuStatus => _gpuStatus;
@@ -222,6 +215,13 @@ internal abstract partial class GpuView : Control
 			{
 				_lastSkinTop = skinTop;
 				_lastSkinBottom = skinBottom;
+				if (_post != null) _post.BackgroundValid = false;
+				_dirty = true;
+			}
+			int artId = Host.Art?.Id ?? 0;
+			if (current.WantsArt && artId != _bgArtId)
+			{
+				_bgArtId = artId;
 				if (_post != null) _post.BackgroundValid = false;
 				_dirty = true;
 			}

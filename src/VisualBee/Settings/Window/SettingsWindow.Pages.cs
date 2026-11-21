@@ -1,21 +1,44 @@
-using System.Linq;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace MusicBeePlugin;
 
 internal sealed partial class SettingsWindow : Form
 {
+	private void OnSearchChanged()
+	{
+		string query = _search.Box.Text.Trim();
+		if (query == _renderedQuery && (query.Length > 0 || _page == _renderedPage))
+		{
+			ShowStatus();
+			return;
+		}
+		ShowPage(_page);
+	}
+
+	public void JumpToPage(string page)
+	{
+		if (string.IsNullOrEmpty(page)) page = PresetsPage;
+		_page = page;
+		if (!string.IsNullOrEmpty(_search.Box.Text))
+		{
+			_search.Box.Text = "";
+		}
+		ShowPage(page);
+	}
+
 	private void ShowPage(string page)
 	{
-		if (page == null)
-		{
-			page = "Presets";
-		}
+		if (string.IsNullOrEmpty(page)) page = PresetsPage;
 		_page = page;
-		string text = _search.Box.Text.Trim();
+		_pages.Selected = _pages.Pages.IndexOf(_page);
+
+		string query = _search.Box.Text.Trim();
+		_renderedPage = _page;
+		_renderedQuery = query;
 		_content.SuspendLayout();
 		foreach (Control item in _content.Controls.Cast<Control>().ToList())
 		{
@@ -25,18 +48,25 @@ internal sealed partial class SettingsWindow : Form
 		_rows.Clear();
 		_cards.Clear();
 		_content.AutoScrollPosition = Point.Empty;
-		if (text.Length > 0)
+
+		if (query.Length > 0)
 		{
-			BuildSearch(text);
+			_pageTitle.Text = "Search Results";
+			BuildSearch(query);
 		}
-		else if (page == "Presets")
+		else if (_page == PresetsPage)
 		{
+			_pageTitle.Text = "Signature Presets";
+			_pageSubtitle.Text = PageSubtitle(PresetsPage);
 			BuildPresets();
 		}
 		else
 		{
-			BuildPage(page);
+			_pageTitle.Text = _page;
+			_pageSubtitle.Text = PageSubtitle(_page);
+			BuildPage(_page);
 		}
+
 		_content.ResumeLayout();
 		LayoutContent();
 		Hint(null);
@@ -47,17 +77,21 @@ internal sealed partial class SettingsWindow : Form
 	{
 		string currentSec = null;
 		RackSectionCard currentCard = null;
+		List<Setting> pageSettings = _store.Schema.All.Where(s => s.Page == page).ToList();
 
-		foreach (Setting s in _store.Schema.All)
+		for (int i = 0; i < pageSettings.Count; i++)
 		{
-			if (s.Page != page) continue;
-
+			Setting s = pageSettings[i];
 			if (s.Section != currentSec)
 			{
 				currentSec = s.Section;
-				currentCard = new RackSectionCard(this, currentSec, (Setting x) => x.Page == page && x.Section == s.Section);
+				string secName = currentSec;
+				Setting master = (s.SectionMaster && s.Kind == SettingKind.Toggle) ? s : null;
+				currentCard = new RackSectionCard(this, secName, (Setting x) => x.Page == page && x.Section == secName, master);
+				currentCard.RefreshState(_store.Current);
 				_cards.Add(currentCard);
 				_content.Controls.Add(currentCard);
+				if (master != null) continue;
 			}
 
 			SettingRow row = new SettingRow(this, s, _tips);
@@ -69,24 +103,57 @@ internal sealed partial class SettingsWindow : Form
 
 	private void BuildSearch(string query)
 	{
-		string[] words = query.ToLowerInvariant().Split(new char[1] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-		List<Setting> list = _store.Schema.All.Where((Setting s) =>
+		string[] words = query.ToLowerInvariant().Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+		List<Preset> presetMatches = _store.BuiltIn.Concat(_store.UserPresets()).Where(p =>
 		{
-			string text3 = (s.Label + " " + s.Hint + " " + s.Section + " " + s.Page + " " + s.Keywords).ToLowerInvariant();
-			return words.All((string w) => text3.Contains(w));
+			string hay = (p.Name + " " + p.Description).ToLowerInvariant();
+			return words.All(w => hay.Contains(w));
+		}).ToList();
+		List<Theme> themeMatches = _store.Themes.Where(t =>
+		{
+			string hay = t.Name.ToLowerInvariant();
+			return words.All(w => hay.Contains(w));
+		}).ToList();
+		List<Setting> matches = _store.Schema.All.Where(s =>
+		{
+			string hay = (s.Label + " " + s.Hint + " " + s.Section + " " + s.Page + " " + s.Keywords).ToLowerInvariant();
+			return words.All(w => hay.Contains(w));
 		}).ToList();
 
-		AddTitle((list.Count == 0) ? ("Nothing matches “" + query + "”") : (list.Count + " settings match “" + query + "”"));
+		_pageSubtitle.Text = SearchSummary(query, presetMatches.Count + themeMatches.Count, matches.Count);
+
+		if (presetMatches.Count == 0 && themeMatches.Count == 0 && matches.Count == 0)
+		{
+			_content.Controls.Add(new EmptyStateCard(Ui.GlyphSearch, "Try searching for terms like \"bloom\", \"bars\", \"wasapi\", \"hdr\", or a preset name."));
+			return;
+		}
+
+		if (presetMatches.Count > 0 || themeMatches.Count > 0)
+		{
+			_content.Controls.Add(new SectionHeaderBar("Matching Presets & Palettes", "Click any preset or colour palette to apply it immediately."));
+			FlowPanel matchFlow = new FlowPanel();
+			foreach (Preset p in presetMatches)
+			{
+				matchFlow.Controls.Add(new PresetCard(this, p));
+			}
+			foreach (Theme t in themeMatches)
+			{
+				matchFlow.Controls.Add(new ThemeChip(this, t));
+			}
+			_content.Controls.Add(matchFlow);
+		}
+
 		string currentSec = null;
 		RackSectionCard currentCard = null;
 
-		foreach (Setting item in list)
+		foreach (Setting item in matches)
 		{
-			string text2 = item.Page + "  ›  " + item.Section;
-			if (text2 != currentSec)
+			string groupTitle = item.Page + "  ›  " + item.Section;
+			if (groupTitle != currentSec)
 			{
-				currentSec = text2;
-				currentCard = new RackSectionCard(this, currentSec, null);
+				currentSec = groupTitle;
+				string targetPage = item.Page;
+				currentCard = new RackSectionCard(this, currentSec, null, null, () => JumpToPage(targetPage));
 				_cards.Add(currentCard);
 				_content.Controls.Add(currentCard);
 			}
@@ -95,111 +162,74 @@ internal sealed partial class SettingsWindow : Form
 			_rows.Add(row);
 			currentCard?.AddRow(row);
 		}
+		foreach (RackSectionCard card in _cards)
+		{
+			card.RefreshState(_store.Current);
+		}
 	}
 
-	private void AddTitle(string text)
+	private static string SearchSummary(string query, int lookCount, int settingCount)
 	{
-		Label value = new Label
+		if (lookCount == 0 && settingCount == 0)
 		{
-			Text = text,
-			Font = Ui.Heading,
-			ForeColor = Ui.Text,
-			AutoSize = false,
-			Height = Ui.S(44),
-			TextAlign = ContentAlignment.BottomLeft,
-			Padding = new Padding(Ui.S(14), 0, 0, Ui.S(6))
-		};
-		_content.Controls.Add(value);
+			return "Nothing matches “" + query + "”";
+		}
+		List<string> parts = new List<string>();
+		if (lookCount > 0) parts.Add(lookCount + ((lookCount == 1) ? " look" : " looks"));
+		if (settingCount > 0) parts.Add(settingCount + ((settingCount == 1) ? " setting" : " settings"));
+		return string.Join(" and ", parts) + " matching “" + query + "”";
 	}
 
 	private void LayoutContent()
 	{
 		int contentWidth = _content.ContentWidth;
 		int scrollY = _content.AutoScrollPosition.Y;
-		int curY = scrollY;
+		int padX = Ui.S(22);
+		int curY = scrollY + Ui.S(16);
+		bool isPresets = _page == PresetsPage && _search.Box.Text.Trim().Length == 0;
+		int maxColW = isPresets ? Ui.S(980) : Ui.S(760);
+		int colW = Math.Max(Ui.S(220), Math.Min(maxColW, contentWidth - padX * 2));
+		int left = Math.Max(padX, (contentWidth - colW) / 2);
+
 		_content.SuspendLayout();
-
-		if (_page == "Presets" || _search.Box.Text.Length > 0)
+		_content.AutoScrollMinSize = Size.Empty;
+		foreach (Control control in _content.Controls)
 		{
-			foreach (Control control in _content.Controls)
+			if (control is RackSectionCard card)
 			{
-				if (control is SettingRow r && !r.IsRowVisible) continue;
-				if (control is RackSectionCard card)
+				if (!card.IsCardVisible)
 				{
-					if (!card.IsCardVisible)
-					{
-						card.Visible = false;
-						continue;
-					}
-					card.Visible = true;
-					card.FitWidth(contentWidth - Ui.S(28));
+					card.Visible = false;
+					card.SetBounds(0, 0, colW, card.Height);
+					continue;
 				}
-				else if (control is FlowPanel fp)
-				{
-					fp.FitWidth(contentWidth - Ui.S(28));
-				}
-				int left = Ui.S(14);
-				control.SetBounds(left, curY, contentWidth - Ui.S(28), control.Height);
-				curY += control.Height + ((control is FlowPanel || control is RackSectionCard) ? Ui.S(10) : Ui.S(4));
+				card.Visible = true;
+				card.FitWidth(colW);
+				card.SetBounds(left, curY, colW, card.Height);
+				curY += card.Height + Ui.S(12);
 			}
-		}
-		else
-		{
-			int colGap = Ui.S(14);
-			int padX = Ui.S(14);
-			int numCols = (contentWidth >= Ui.S(740)) ? 2 : 1;
-
-			if (numCols == 2)
+			else if (control is FlowPanel fp)
 			{
-				int colW = (contentWidth - padX * 2 - colGap) / 2;
-				int yLeft = curY + Ui.S(8);
-				int yRight = curY + Ui.S(8);
-
-				foreach (RackSectionCard card in _cards)
-				{
-					if (!card.IsCardVisible)
-					{
-						card.Visible = false;
-						continue;
-					}
-					card.Visible = true;
-					card.FitWidth(colW);
-
-					if (yLeft <= yRight)
-					{
-						card.SetBounds(padX, yLeft, colW, card.Height);
-						yLeft += card.Height + Ui.S(12);
-					}
-					else
-					{
-						card.SetBounds(padX + colW + colGap, yRight, colW, card.Height);
-						yRight += card.Height + Ui.S(12);
-					}
-				}
-				curY = Math.Max(yLeft, yRight);
+				fp.FitWidth(colW);
+				fp.SetBounds(left, curY, colW, fp.Height);
+				curY += fp.Height + Ui.S(14);
+			}
+			else if (control is SectionHeaderBar bar)
+			{
+				bar.SetBounds(left, curY, colW, bar.Height);
+				curY += bar.Height + Ui.S(6);
 			}
 			else
 			{
-				int colW = contentWidth - padX * 2;
-				int y = curY + Ui.S(8);
-				foreach (RackSectionCard card in _cards)
-				{
-					if (!card.IsCardVisible)
-					{
-						card.Visible = false;
-						continue;
-					}
-					card.Visible = true;
-					card.FitWidth(colW);
-					card.SetBounds(padX, y, colW, card.Height);
-					y += card.Height + Ui.S(12);
-				}
-				curY = y;
+				control.SetBounds(left, curY, colW, control.Height);
+				curY += control.Height + Ui.S(10);
 			}
 		}
 
-		_content.AutoScrollMinSize = new Size(0, curY - scrollY + Ui.S(16));
-		_content.ResumeLayout();
+		_content.ResumeLayout(true);
+		_content.AutoScrollMinSize = new Size(0, Math.Max(0, curY - scrollY + Ui.S(16)));
+		_content.HorizontalScroll.Maximum = 0;
+		_content.HorizontalScroll.Visible = false;
 	}
 
 	public void ResetSetting(Setting s)
@@ -220,7 +250,7 @@ internal sealed partial class SettingsWindow : Form
 
 	private void ResetAll()
 	{
-		if (MessageBox.Show(this, "Put every setting back to its default? Your sync delay and frame rate stay as they are.", _store.Title, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
+		if (MessageBox.Show(this, "Put every setting back to its default? Your audio device, sync delay, and frame rate stay as they are.", _store.Title, MessageBoxButtons.OKCancel, MessageBoxIcon.Question) == DialogResult.OK)
 		{
 			_store.Reset((Setting s) => !s.Personal);
 		}
@@ -238,10 +268,7 @@ internal sealed partial class SettingsWindow : Form
 			}
 		}
 		ColourPicker colourPicker = new ColourPicker((int)s.Get(current), s.Alpha, list);
-		colourPicker.Picked += (int v) =>
-		{
-			_store.Set(s, v);
-		};
+		colourPicker.Picked += (int v) => _store.Set(s, v);
 		colourPicker.ShowNear(well);
 	}
 }

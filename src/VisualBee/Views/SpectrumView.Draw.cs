@@ -5,8 +5,8 @@ namespace MusicBeePlugin;
 internal sealed partial class SpectrumView
 {
 	private float[] _radialRing = new float[194];
-
 	private float[] _smoothRefl = new float[0];
+	private float _waveBandMax = 0.5f;
 
 	protected override void DrawContent(ref Frame f)
 	{
@@ -80,9 +80,20 @@ internal sealed partial class SpectrumView
 					vec = Gradient(look, f.Colours, 0f);
 					vec2 = Gradient(look, f.Colours, 1f);
 					break;
+				case 3:
+					vec = (vec2 = Gradient(look, f.Colours, num5));
+					break;
+				case 4:
+					vec = (vec2 = f.Colours[10]);
+					break;
 				default:
 					vec = (vec2 = TipColour(look, f.Colours, g, j, num4, num5));
 					break;
+				}
+				if (look.HdrIncandescence && num5 > 0.45f)
+				{
+					float hdr = 1f + (float)(look.HdrDrive / 100.0) * 0.55f * (num5 - 0.45f);
+					vec2 = new Vec4(vec2.X * hdr, vec2.Y * hdr, vec2.Z * hdr, vec2.W);
 				}
 				LineShape l = LineShape.Make(g.CentreX + num7 * inner, g.CentreY + num8 * inner, g.CentreX + num7 * num9, g.CentreY + num8 * num9, barThickness, vec.Faded(num), vec2.Faded(num), cap);
 				if (look.BarStyle == SpectrumLook.StyleLed || look.BarStyle == SpectrumLook.StyleNixie)
@@ -117,6 +128,14 @@ internal sealed partial class SpectrumView
 
 	private void DrawWave(Canvas c, SpectrumLook look, Geometry g, ref Frame f)
 	{
+		if (look.ScopeGraticule)
+		{
+			Vec4 grat = f.Colours[15].Faded(0.16f);
+			float cy = g.Top + (g.Bottom - g.Top) * 0.5f;
+			float cx = g.Left + (g.Right - g.Left) * 0.5f;
+			c.Line(LineShape.Make(g.Left, cy, g.Right, cy, 1f, grat, grat, LineCap.Butt));
+			c.Line(LineShape.Make(cx, g.Top, cx, g.Bottom, 1f, grat, grat, LineCap.Butt));
+		}
 		int shown = g.Shown;
 		if (shown < 2)
 		{
@@ -129,6 +148,8 @@ internal sealed partial class SpectrumView
 		int count = Smoothed(look, g, _level[0], shown);
 		float num = (look.Flip ? (g.Base + g.Span) : (g.Base - g.Span));
 		float num2 = (float)(look.BarOpacity / 100.0);
+		float hdrScale = look.HdrIncandescence ? (1f + (float)(look.HdrDrive / 100.0) * 0.45f) : 1f;
+		Vec4 waveCol = new Vec4(f.Colours[15].X * hdrScale, f.Colours[15].Y * hdrScale, f.Colours[15].Z * hdrScale, f.Colours[15].W * num2);
 		if (look.CurveFill > 0.0)
 		{
 			Stroke fill = new Stroke
@@ -152,10 +173,28 @@ internal sealed partial class SpectrumView
 			}
 			c.Area(_smooth, count, fill);
 		}
-		c.Blend = BlendMode.Max;
-		Stroke stroke = Stroke.Solid((float)(look.CurveWidth * (double)f.Scale), f.Colours[15].Faded(num2));
-		c.Polyline(_smooth, count, stroke);
-		c.Blend = BlendMode.Over;
+		float lw = (float)(look.CurveWidth * (double)f.Scale);
+		if (look.ScopeStyle == 1)
+		{
+			c.Blend = BlendMode.Add;
+			for (int s = 0; s < count - 1; s++)
+			{
+				float x0 = _smooth[s * 2], y0 = _smooth[s * 2 + 1], x1 = _smooth[(s + 1) * 2], y1 = _smooth[(s + 1) * 2 + 1];
+				float dx = x1 - x0, dy = y1 - y0;
+				float intensity = 1f / (float)Math.Sqrt(1.0 + 0.30 * (dy * dy) / (dx * dx + 1e-4f));
+				Vec4 segCol = waveCol.Faded(intensity);
+				c.Line(LineShape.Make(x0, y0, x1, y1, lw, segCol, segCol, LineCap.Round).Beam());
+			}
+			c.Blend = BlendMode.Over;
+		}
+		else
+		{
+			c.Blend = BlendMode.Add;
+			c.Polyline(_smooth, count, Stroke.Solid(lw * 2.8f, waveCol.Faded(0.22f)));
+			c.Blend = BlendMode.Max;
+			c.Polyline(_smooth, count, Stroke.Solid(lw, waveCol));
+			c.Blend = BlendMode.Over;
+		}
 
 		if (look.WaveFloorReflection && g.Reflection > 0f)
 		{
@@ -184,10 +223,23 @@ internal sealed partial class SpectrumView
 	private int Smoothed(SpectrumLook look, Geometry g, double[] levels, int n)
 	{
 		float num = (look.Flip ? 1f : (-1f));
+		float gain = (float)(look.WaveGain / 100.0);
+		if (look.WaveNormalize)
+		{
+			float peak = 0.01f;
+			for (int i = 0; i < n; i++)
+			{
+				float lv = (float)Norm(look, levels[i]);
+				if (lv > peak) peak = lv;
+			}
+			_waveBandMax = Math.Max(0.10f, _waveBandMax * 0.94f + peak * 0.06f);
+			gain *= Math.Min(3.5f, 0.85f / _waveBandMax);
+		}
 		for (int i = 0; i < n; i++)
 		{
 			_curve[2 * i] = (g.X0[i] + g.X1[i]) / 2f;
-			_curve[2 * i + 1] = g.Base + num * (float)Norm(look, levels[i]) * g.Span;
+			float v = Math.Max(0f, Math.Min(1f, (float)Norm(look, levels[i]) * gain));
+			_curve[2 * i + 1] = g.Base + num * v * g.Span;
 		}
 		int num2 = (n - 1) * 4 + 1;
 		if (_smooth.Length < num2 * 2)

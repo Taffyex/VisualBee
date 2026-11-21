@@ -137,12 +137,18 @@ internal sealed partial class SpectrumView
 		{
 			curveCol = f.Colours[11];
 		}
+		if (look.HdrIncandescence)
+		{
+			float hdrScale = 1f + (float)(look.HdrDrive / 100.0) * 0.45f;
+			curveCol = new Vec4(curveCol.X * hdrScale, curveCol.Y * hdrScale, curveCol.Z * hdrScale, curveCol.W);
+		}
 
 		if (look.CurveFill > 0.0)
 		{
 			float fillAlpha = (float)(look.CurveFill / 100.0) * 0.35f;
 			Vec4 fillCol = new Vec4(curveCol.X, curveCol.Y, curveCol.Z, curveCol.W * fillAlpha);
 			Stroke fillStroke = Stroke.Solid(0f, fillCol);
+			fillStroke.Baseline = centerY;
 			c.Area(_curve, points, fillStroke);
 		}
 

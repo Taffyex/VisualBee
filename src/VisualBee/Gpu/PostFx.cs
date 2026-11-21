@@ -61,8 +61,8 @@ internal sealed class PostFx : IDisposable
 		{
 			if (_trail == null)
 			{
-				_trail = gpu.CreateTexture(_w, _h, 87, renderTarget: true, IntPtr.Zero, 0);
-				_trailNext = gpu.CreateTexture(_w, _h, 87, renderTarget: true, IntPtr.Zero, 0);
+				_trail = gpu.CreateTexture(_w, _h, D3D.FormatRgba16Float, renderTarget: true, IntPtr.Zero, 0);
+				_trailNext = gpu.CreateTexture(_w, _h, D3D.FormatRgba16Float, renderTarget: true, IntPtr.Zero, 0);
 				_trailFresh = true;
 			}
 			if (_trail != null && _trailNext != null)
@@ -91,9 +91,9 @@ internal sealed class PostFx : IDisposable
 		}
 		GpuTexture gpuTexture2 = null;
 		int levels = BloomLevels(fx.BloomRadius);
-		if (fx.Bloom && fx.BloomStrength > 0f)
+		if (fx.Bloom && (fx.BloomStrength > 0f || fx.Anamorphic > 0f))
 		{
-			gpuTexture2 = _bloom.Run(gpu, canvas, gpuTexture, levels, bloom: true, fx.BloomThreshold, time);
+			gpuTexture2 = _bloom.Run(gpu, canvas, gpuTexture, levels, bloom: true, fx.BloomThreshold, time, D3D.FormatRgba16Float);
 		}
 		LastBloom = gpuTexture2;
 		GpuTexture gpuTexture3 = null;
@@ -109,7 +109,7 @@ internal sealed class PostFx : IDisposable
 			P2 = new Vec4(fx.ShadowColour.X, fx.ShadowColour.Y, fx.ShadowColour.Z, fx.Scanlines),
 			P3 = new Vec4(fx.Aberration, fx.Grain * 0.08f, fx.VignetteStart, num),
 			P4 = fx.Flash,
-			P5 = new Vec4(0f, 0f, 0f, masterAlpha)
+			P5 = new Vec4(fx.HdrDrive, fx.Anamorphic, fx.BassZoom, masterAlpha)
 		};
 		canvas.Begin(output, width, height, time);
 		canvas.Pass(canvas.CompositePs, pass2, BlendMode.Replace, Background, gpuTexture, gpuTexture2, gpuTexture3);

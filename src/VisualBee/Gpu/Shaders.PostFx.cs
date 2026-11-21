@@ -199,52 +199,69 @@ float Ign(float2 p)
     return frac(52.9829189 * frac(dot(p, float2(0.06711056, 0.00583715))));
 }
 
-float3 AcesFilmic(float3 x)
+float3 HdrToneMap(float3 x, float hdrDrive)
 {
-    float a = 2.51;
-    float b = 0.03;
-    float c = 2.43;
-    float d = 0.59;
-    float e = 0.14;
-    return saturate((x * (a * x + b)) / (x * (c * x + d) + e));
+    x = max(x, 0.0);
+    float peak = max(x.r, max(x.g, x.b));
+    if (peak <= 0.88)
+        return x;
+    float boost = 1.0 + hdrDrive * 0.45;
+    float3 y = x * lerp(1.0, boost, saturate((peak - 0.88) * 2.0));
+    float newPeak = max(y.r, max(y.g, y.b));
+    float excess = max(0.0, newPeak - 1.0);
+    float3 whiteHot = lerp(y, float3(newPeak, newPeak, newPeak), saturate(excess / (excess + 2.8)));
+    float k = max(0.0, newPeak - 0.88);
+    float mappedPeak = 0.88 + 0.12 * (k / (k + 0.12));
+    return whiteHot * (mappedPeak / max(newPeak, 1e-4));
 }
 
 float4 CompositePS(FullOut i) : SV_Target
 {
     int3 px = int3(i.Pos.xy, 0);
-    float2 uv = i.Uv;
+    float bassZoom = P[5].z;
+    float2 uv = (bassZoom > 0.001) ? (0.5 + (i.Uv - 0.5) / (1.0 + bassZoom * 0.065)) : i.Uv;
     uint flags = (uint)P[3].w;
-    float4 bg = Src0.Load(px);
+    float4 bg = (bassZoom > 0.001) ? Src0.Sample(LinearClamp, uv) : Src0.Load(px);
     if (flags & 2)
     {
         float shadow = Src3.Sample(LinearClamp, uv - P[0].zw * InvViewSize).a * P[0].y;
         bg.rgb = lerp(bg.rgb, P[2].rgb, saturate(shadow));
         bg.a = max(bg.a, saturate(shadow));
     }
+    float ab = P[3].x + bassZoom * 4.5;
     float4 fg;
-    if (P[3].x > 0.0)
+    if (ab > 0.0)
     {
-        float2 shift = (uv - 0.5) * 2.0 * P[3].x * InvViewSize;
+        float2 shift = (uv - 0.5) * 2.0 * ab * InvViewSize;
         float4 r = Src1.Sample(LinearClamp, uv + shift);
-        float4 g = Src1.Load(px);
+        float4 g = (bassZoom > 0.001) ? Src1.Sample(LinearClamp, uv) : Src1.Load(px);
         float4 b = Src1.Sample(LinearClamp, uv - shift);
         fg = float4(r.r, g.g, b.b, max(g.a, max(r.a, b.a)));
     }
     else
-        fg = Src1.Load(px);
+        fg = (bassZoom > 0.001) ? Src1.Sample(LinearClamp, uv) : Src1.Load(px);
     float3 bloom = (flags & 1) ? (Src2.Sample(LinearClamp, uv).rgb * P[0].x * P[1].rgb) : float3(0.0, 0.0, 0.0);
+    if ((flags & 1) && P[5].y > 0.001)
+    {
+        float3 flare = Src2.Sample(LinearClamp, uv + float2(0.025, 0.0)).rgb + Src2.Sample(LinearClamp, uv - float2(0.025, 0.0)).rgb;
+        flare += (Src2.Sample(LinearClamp, uv + float2(0.060, 0.0)).rgb + Src2.Sample(LinearClamp, uv - float2(0.060, 0.0)).rgb) * 0.70;
+        flare += (Src2.Sample(LinearClamp, uv + float2(0.110, 0.0)).rgb + Src2.Sample(LinearClamp, uv - float2(0.110, 0.0)).rgb) * 0.42;
+        flare += (Src2.Sample(LinearClamp, uv + float2(0.175, 0.0)).rgb + Src2.Sample(LinearClamp, uv - float2(0.175, 0.0)).rgb) * 0.22;
+        float3 flareTint = lerp(P[1].rgb, float3(0.70, 0.90, 1.15), 0.35);
+        bloom += flare * (P[5].y * 0.28) * flareTint;
+    }
     float3 col = bg.rgb * (1.0 - saturate(fg.a)) + fg.rgb + bloom;
     col += P[4].rgb * P[4].a;
     if (P[1].w > 0.0)
     {
-        float r = length(uv - 0.5) * 1.41421356;
+        float r = length(i.Uv - 0.5) * 1.41421356;
         col *= 1.0 - P[1].w * smoothstep(P[3].z, 1.05, r);
     }
     if (P[2].w > 0.0)
         col *= 1.0 - P[2].w * fmod(floor(i.Pos.y), 2.0);
     if (P[3].y > 0.0)
         col += (Ign(i.Pos.xy + frac(Time * 7.31) * 413.0) - 0.5) * P[3].y;
-    col = AcesFilmic(col);
+    col = HdrToneMap(col, P[5].x);
     if (flags & 4)
         col += (Ign(i.Pos.xy) - 0.5) * (0.98 / 255.0);
 

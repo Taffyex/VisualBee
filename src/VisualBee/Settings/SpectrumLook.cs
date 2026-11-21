@@ -52,9 +52,15 @@ internal sealed class SpectrumLook : Look
 
 	public const int AudioSourceAuto = 0;
 	public const int AudioSourceAlwaysApi = 1;
-	public const int AudioSourceBassOnly = 2;
-	public const int AudioSourceWasapiLoopback = 3;
-	public const int AudioSourcePlayerOnly = 4;
+	public const int AudioSourceWasapiLoopback = 2;
+	public const int AudioSourcePlayerOnly = 3;
+	public const int AudioSourceBassOnly = 3;
+
+	public const int AutoLevelDefault = 0;
+	public const int AutoLevelAdaptive = 1;
+	public const int AutoLevelReplayGainTrack = 2;
+	public const int AutoLevelReplayGainAlbum = 3;
+	public const int AutoLevelOff = 4;
 
 	public const int HudControlsHover = 0;
 	public const int HudControlsAlways = 1;
@@ -70,6 +76,9 @@ internal sealed class SpectrumLook : Look
 	public bool NeedsLoopback => AudioSource == AudioSourceWasapiLoopback || AudioSource == AudioSourceAuto;
 	public string AudioDeviceId = "default";
 	public bool LoopbackAgc = true;
+	public int AutoLevel = AutoLevelDefault;
+	public double AutoLevelSpeed = 6.0;
+	public double AutoLevelMaxBoost = 18.0;
 
 	public double HudBackdropOpacity = 70.0;
 	public double HudOpacityActive = 100.0;
@@ -93,7 +102,7 @@ internal sealed class SpectrumLook : Look
 	public double MinHz = 30.0;
 	public double MaxHz = 18000.0;
 	public int Scale;
-	public int FftSize = 2;
+	public int FftSize = 1;
 	public int Window;
 	public int Value;
 	public int Channels;
@@ -140,7 +149,7 @@ internal sealed class SpectrumLook : Look
 	public double LedSize = 4.0;
 	public double LedGap = 2.0;
 	public double LedGhost = 10.0;
-	public double OutlineWidth = 1.5;
+	public double OutlineWidth = 0.0;
 	public int Colouring;
 	public bool UseMiddle = true;
 	public double MiddleAt = 55.0;
@@ -171,22 +180,38 @@ internal sealed class SpectrumLook : Look
 	public bool FreqLabels;
 	public double LabelSize = 100.0;
 
-	public static readonly string[] AudioSourceNames = new string[5]
+	public static readonly string[] AudioSourceNames = new string[4]
 	{
-		"Auto (Direct BASS + API + Loopback Fallback)",
-		"Always MusicBee API (Universal Safe)",
-		"Direct BASS Stream Only",
-		"WASAPI Loopback (Browser & System Audio)",
-		"MusicBee Player Only (Auto BASS + API)"
+		"Automatic (MusicBee, or system audio when silent)",
+		"MusicBee spectrum API (compatibility)",
+		"System audio (browser, YouTube, other apps)",
+		"MusicBee only"
 	};
 
-	public static readonly string[] AudioSourceTokens = new string[5]
+	public static readonly string[] AudioSourceTokens = new string[4]
 	{
 		"auto",
 		"api",
-		"bass",
 		"loopback",
 		"player"
+	};
+
+	public static readonly string[] AutoLevelNames = new string[5]
+	{
+		"Default (Adaptive on system audio, off on MusicBee)",
+		"Adaptive loudness (balances quiet & loud tracks)",
+		"ReplayGain · Track tag (fallback to Adaptive)",
+		"ReplayGain · Album tag (fallback to Adaptive)",
+		"Off (manual gain only)"
+	};
+
+	public static readonly string[] AutoLevelTokens = new string[5]
+	{
+		"default",
+		"adaptive",
+		"replaygain-track",
+		"replaygain-album",
+		"off"
 	};
 
 	public static readonly string[] HudControlsNames = new string[4] { "Reveal on hover", "Always visible", "Track title only", "Visualizer only" };

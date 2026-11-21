@@ -8,45 +8,65 @@ namespace MusicBeePlugin;
 
 internal static class Ui
 {
-	public static readonly Color Back = Color.FromArgb(9, 11, 16);
+	public static readonly Color Back = Color.FromArgb(11, 14, 20);
 
-	public static readonly Color Side = Color.FromArgb(13, 16, 24);
+	public static readonly Color Side = Color.FromArgb(15, 19, 28);
 
-	public static readonly Color Card = Color.FromArgb(18, 22, 32);
+	public static readonly Color Card = Color.FromArgb(21, 26, 38);
 
-	public static readonly Color Hover = Color.FromArgb(26, 34, 48);
+	public static readonly Color RowHover = Color.FromArgb(28, 35, 51);
 
-	public static readonly Color Raised = Color.FromArgb(30, 39, 56);
+	public static readonly Color Hover = Color.FromArgb(31, 40, 58);
 
-	public static readonly Color RaisedHover = Color.FromArgb(38, 50, 72);
+	public static readonly Color Raised = Color.FromArgb(29, 37, 54);
 
-	public static readonly Color Pressed = Color.FromArgb(46, 60, 86);
+	public static readonly Color RaisedHover = Color.FromArgb(39, 50, 74);
 
-	public static readonly Color Border = Color.FromArgb(30, 37, 54);
+	public static readonly Color Pressed = Color.FromArgb(49, 63, 92);
 
-	public static readonly Color Text = Color.FromArgb(235, 240, 248);
+	public static readonly Color Border = Color.FromArgb(35, 44, 64);
 
-	public static readonly Color Dim = Color.FromArgb(150, 162, 182);
+	public static readonly Color Divider = Color.FromArgb(29, 36, 53);
 
-	public static readonly Color Faint = Color.FromArgb(92, 104, 124);
+	public static readonly Color Specular = Color.FromArgb(46, 58, 84);
 
-	public static readonly Color Accent = Color.FromArgb(0, 232, 214);
+	public static readonly Color Text = Color.FromArgb(238, 242, 248);
 
-	public static readonly Color Amber = Color.FromArgb(255, 176, 32);
+	public static readonly Color Dim = Color.FromArgb(152, 166, 190);
+
+	public static readonly Color Faint = Color.FromArgb(94, 108, 132);
+
+	public static readonly Color Accent = Color.FromArgb(0, 229, 208);
+
+	public static readonly Color AccentText = Color.FromArgb(7, 19, 24);
+
+	public static readonly Color AccentSoft = Color.FromArgb(26, 0, 229, 208);
+
+	public static readonly Color AccentBorder = Color.FromArgb(90, 0, 229, 208);
 
 	public static readonly Color AccentDeep = Color.FromArgb(14, 68, 78);
 
+	public static readonly Color Amber = Color.FromArgb(255, 176, 32);
+
+	public static readonly Color AmberSoft = Color.FromArgb(30, 255, 176, 32);
+
 	public static readonly Color Danger = Color.FromArgb(255, 122, 110);
 
-	public static readonly Font Body = new Font("Segoe UI", 9f);
+	public static readonly Font Body = new Font("Segoe UI", 9.25f);
 
-	public static readonly Font Bold = new Font("Segoe UI Semibold", 9f);
+	public static readonly Font Bold = new Font("Segoe UI Semibold", 9.25f);
 
-	public static readonly Font Small = new Font("Segoe UI", 8f);
+	public static readonly Font Small = new Font("Segoe UI", 8.25f);
 
-	public static readonly Font Heading = new Font("Segoe UI Semibold", 13f);
+	public static readonly Font SmallBold = new Font("Segoe UI Semibold", 8.25f);
+
+	public static readonly Font Heading = new Font("Segoe UI Semibold", 13.5f);
+
+	public static readonly Font SubHeading = new Font("Segoe UI Semibold", 10.5f);
 
 	public static readonly Font Section = new Font("Segoe UI Semibold", 8.25f);
+
+	public static readonly Font Mono = MonoFont(8.25f);
 
 	public static readonly Font Icons = IconFont(10f);
 
@@ -68,6 +88,12 @@ internal static class Ui
 
 	public const string GlyphImport = "\ue8b5";
 
+	public const string GlyphShare = "\ue72d";
+
+	public const string GlyphCopy = "\ue8c8";
+
+	public const string GlyphPaste = "\ue77f";
+
 	public const string GlyphDelete = "\ue74d";
 
 	public const string GlyphClose = "\ue711";
@@ -75,6 +101,16 @@ internal static class Ui
 	public const string GlyphPalette = "\ue790";
 
 	public const string GlyphSparkle = "\ue945";
+
+	public const string GlyphPresets = "\ue734";
+
+	public const string GlyphStudio = "\ue9e9";
+
+	public const string GlyphOptics = "\ue706";
+
+	public const string GlyphAudio = "\ue995";
+
+	public const string GlyphFilter = "\ue71c";
 
 	public static int S(int px)
 	{
@@ -98,6 +134,20 @@ internal static class Ui
 			}
 		}
 		return new Font("Segoe UI Symbol", size);
+	}
+
+	private static Font MonoFont(float size)
+	{
+		string[] array = new string[2] { "Cascadia Mono", "Consolas" };
+		foreach (string text in array)
+		{
+			using Font font = new Font(text, size);
+			if (font.Name == text)
+			{
+				return new Font(text, size);
+			}
+		}
+		return new Font("Segoe UI", size);
 	}
 
 	public static GraphicsPath Round(RectangleF r, float radius)

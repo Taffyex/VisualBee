@@ -36,7 +36,7 @@ internal static class CommonLook
 		s.Toggle("bg.cyberGrid", "3D Cyber-Grid horizon", "Perspective cyber ground grid that rolls forward and reacts to bass pulses.", (Look l) => l.CyberGrid, (Look l, bool v) =>
 		{
 			l.CyberGrid = v;
-		}).Words("cyberpunk grid horizon retro");
+		}).SectionToggle().Words("cyberpunk grid horizon retro");
 		s.Number("bg.cyberGridIntensity", "Grid luminance", "How bright the cyber grid lines glow.", 0.0, 100.0, 1.0, 0, "%", (Look l) => l.CyberGridIntensity, (Look l, double v) =>
 		{
 			l.CyberGridIntensity = v;
@@ -119,7 +119,7 @@ internal static class CommonLook
 		s.Toggle("fx.bloom", "Glow", "Bright parts bleed light into their surroundings, as on a screen photographed at night. Costs almost nothing: it runs on the graphics card.", (Look l) => l.Bloom, (Look l, bool v) =>
 		{
 			l.Bloom = v;
-		}).Words("bloom");
+		}).SectionToggle().Words("bloom");
 		s.Number("fx.bloomStrength", "Glow strength", "How much light the glow adds.", 0.0, 200.0, 1.0, 0, "%", (Look l) => l.BloomStrength, (Look l, double v) =>
 		{
 			l.BloomStrength = v;
@@ -133,38 +133,24 @@ internal static class CommonLook
 			l.BloomRadius = v;
 		}).When((Look l) => l.Bloom).Words("bloom");
 		s.Colour("fx.glowTint", "Glow tint", "Colours the glow; white keeps each element's own colour.", 5).When((Look l) => l.Bloom);
+		s.Number("fx.hdrDrive", "HDR overdrive", "Pushes loud bars, peaks, and highlights into 16-bit floating-point white-hot incandescence with deep neon bloom.", 0.0, 200.0, 5.0, 0, "%", (Look l) => l.HdrDrive, (Look l, double v) =>
+		{
+			l.HdrDrive = v;
+		}).Words("hdr bright overdrive glow");
+		s.Number("fx.anamorphic", "Anamorphic lens streaks", "Cinema-style horizontal light flares streaking sideways off the hottest bar tips, peaks, and lasers.", 0.0, 100.0, 5.0, 0, "%", (Look l) => l.Anamorphic, (Look l, double v) =>
+		{
+			l.Anamorphic = v;
+		}).When((Look l) => l.Bloom).Words("anamorphic flare streak cinema lens");
 		s.Section("Afterglow");
 		s.Toggle("fx.trails", "Afterglow", "Moving shapes leave a fading trail, like the phosphor of an old screen. Makes fast, thin movement easier to follow at high refresh rates; on something that slides sideways (a scrolling oscilloscope) a long afterglow smears it into a band.", (Look l) => l.Trails, (Look l, bool v) =>
 		{
 			l.Trails = v;
-		}).Words("trails persistence motion blur phosphor");
+		}).SectionToggle().Words("trails persistence motion blur phosphor");
 		s.Number("fx.trailMs", "Afterglow length", "Time for a trail to fade to a tenth.", 20.0, 2000.0, 10.0, 0, "ms", (Look l) => l.TrailMs, (Look l, double v) =>
 		{
 			l.TrailMs = v;
 		}).When((Look l) => l.Trails).Log()
 			.Words("trails persistence");
-		s.Section("Shadow");
-		s.Toggle("fx.shadow", "Drop shadow", "A soft shadow under everything the visualisation draws, lifting it off the background.", (Look l) => l.Shadow, (Look l, bool v) =>
-		{
-			l.Shadow = v;
-		});
-		s.Number("fx.shadowOpacity", "Shadow opacity", "How dark the shadow is.", 0.0, 100.0, 1.0, 0, "%", (Look l) => l.ShadowOpacity, (Look l, double v) =>
-		{
-			l.ShadowOpacity = v;
-		}).When((Look l) => l.Shadow);
-		s.Number("fx.shadowBlur", "Shadow softness", "How far the shadow's edge is blurred.", 1.0, 64.0, 1.0, 0, "px", (Look l) => l.ShadowBlur, (Look l, double v) =>
-		{
-			l.ShadowBlur = v;
-		}).When((Look l) => l.Shadow).Log();
-		s.Number("fx.shadowDistance", "Shadow distance", "How far the shadow falls from what casts it.", 0.0, 40.0, 1.0, 0, "px", (Look l) => l.ShadowDistance, (Look l, double v) =>
-		{
-			l.ShadowDistance = v;
-		}).When((Look l) => l.Shadow);
-		s.Number("fx.shadowAngle", "Shadow direction", "Which way the shadow falls: 90° is straight down.", 0.0, 360.0, 5.0, 0, "°", (Look l) => l.ShadowAngle, (Look l, double v) =>
-		{
-			l.ShadowAngle = v;
-		}).When((Look l) => l.Shadow);
-		s.Colour("fx.shadowColour", "Shadow colour", "Usually black; a deep colour gives a coloured glow underneath instead.", 6).When((Look l) => l.Shadow);
 		s.Section("Lens and screen");
 		s.Number("fx.vignette", "Vignette", "Darkens the corners, drawing the eye to the middle, for a moodier, gloomier picture.", 0.0, 100.0, 1.0, 0, "%", (Look l) => l.Vignette, (Look l, double v) =>
 		{
@@ -186,6 +172,10 @@ internal static class CommonLook
 		{
 			l.BeatFlash = v;
 		}).Words("pulse bass kick");
+		s.Number("fx.bassZoom", "Bass shockwave & zoom", "Punches the frame outward with a subtle lens thump and prism kick on heavy bass hits.", 0.0, 100.0, 5.0, 0, "%", (Look l) => l.BassZoom, (Look l, double v) =>
+		{
+			l.BassZoom = v;
+		}).Words("bass zoom shockwave kick punch thump");
 	}
 
 	public static void AddAdvanced(Schema s)
@@ -236,7 +226,7 @@ internal static class CommonLook
 			BloomTint = bloomTint,
 			Trails = l.Trails,
 			TrailSeconds = (float)(l.TrailMs / 1000.0),
-			Shadow = l.Shadow,
+			Shadow = false,
 			ShadowOpacity = (float)(l.ShadowOpacity / 100.0),
 			ShadowBlur = (float)(l.ShadowBlur * (double)scale),
 			ShadowX = (float)(Math.Cos(num) * l.ShadowDistance * (double)scale),
@@ -248,7 +238,10 @@ internal static class CommonLook
 			Aberration = (float)(l.Aberration * (double)scale),
 			Grain = (float)(l.Grain / 100.0),
 			Dither = l.Dither,
-			Flash = new Vec4(bloomTint.X, bloomTint.Y, bloomTint.Z, (float)(l.BeatFlash / 100.0 * 0.22 * (double)beat))
+			Flash = new Vec4(bloomTint.X, bloomTint.Y, bloomTint.Z, (float)(l.BeatFlash / 100.0 * 0.22 * (double)beat)),
+			HdrDrive = (float)(l.HdrDrive / 100.0),
+			Anamorphic = (float)(l.Anamorphic / 100.0),
+			BassZoom = (float)(l.BassZoom / 100.0) * beat
 		};
 	}
 }

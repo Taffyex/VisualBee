@@ -18,9 +18,8 @@ internal static partial class SpectrumSettings
 		AddLabels(schema);
 		AddColours(schema);
 		AddAnalysis(schema);
-		AddHud(schema);
 		CommonLook.AddAdvanced(schema);
-		return new LookStore("VisualBee Studio 2.2 Beta", "spectrum", schema, new SpectrumLook(), Presets(), Themes.All(), ApplyTheme)
+		return new LookStore("VisualBee Studio", "spectrum", schema, new SpectrumLook(), Presets(), Themes.All(), ApplyTheme)
 		{
 			SwatchOf = (Look l) => new int[5]
 			{
@@ -128,10 +127,14 @@ internal static partial class SpectrumSettings
 		{
 			l.BarGap = v;
 		}).When(Bars).Words("spacing");
-		s.Number("bars.radius", "Corner rounding", "Rounds the bars' corners; large values make pill shapes.", 0.0, 24.0, 0.5, 1, "px", (SpectrumLook l) => l.Radius, (SpectrumLook l, double v) =>
+		s.Number("bars.radius", "Corner rounding", "Rounds bar tops and corners (0 px gives crisp rectangular monoliths).", 0.0, 24.0, 0.5, 1, "px", (SpectrumLook l) => l.Radius, (SpectrumLook l, double v) =>
 		{
 			l.Radius = v;
-		}).When(Bars).Words("round radius");
+		}).When((Look l) => Bars(l) && (((SpectrumLook)l).BarStyle == SpectrumLook.StyleSolid || ((SpectrumLook)l).BarStyle == SpectrumLook.StyleGlass)).Words("round radius");
+		s.Number("bars.outline", "Hollow wireframe outline", "0 draws solid filled bars; higher values carve bars into glowing hollow wireframe outlines.", 0.0, 6.0, 0.5, 1, "px", (SpectrumLook l) => l.OutlineWidth, (SpectrumLook l, double v) =>
+		{
+			l.OutlineWidth = v;
+		}).When((Look l) => Bars(l) && (((SpectrumLook)l).BarStyle == SpectrumLook.StyleSolid || ((SpectrumLook)l).BarStyle == SpectrumLook.StylePills)).Words("outline wireframe hollow border");
 		s.Number("bars.taper", "Treble taper", "Makes high-frequency bars progressively narrower for studio rack aesthetics.", 0.0, 80.0, 5.0, 0, "%", (SpectrumLook l) => l.TrebleTaper, (SpectrumLook l, double v) =>
 		{
 			l.TrebleTaper = v;
@@ -240,6 +243,6 @@ internal static partial class SpectrumSettings
 		s.Toggle("wave.graticule", "CRT graticule grid", "Hardware-style 10% step oscilloscope grid lines.", (SpectrumLook l) => l.ScopeGraticule, (SpectrumLook l, bool v) =>
 		{
 			l.ScopeGraticule = v;
-		}).When((Look l) => ((SpectrumLook)l).Layout == 8);
+		}).When((Look l) => ((SpectrumLook)l).Layout == 7 || ((SpectrumLook)l).Layout == 8);
 	}
 }

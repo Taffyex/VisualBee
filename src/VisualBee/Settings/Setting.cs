@@ -37,6 +37,8 @@ internal sealed class Setting
 
 	public bool Personal;
 
+	public bool SectionMaster;
+
 	public object Default;
 
 	public Func<Look, object> Get;
@@ -123,6 +125,7 @@ internal sealed class Setting
 		case SettingKind.Choice:
 		{
 			if (Key == "engine" && string.Equals(text, "foobar", StringComparison.OrdinalIgnoreCase)) return 0;
+			if (Key == "audio.source" && string.Equals(text, "bass", StringComparison.OrdinalIgnoreCase)) return SpectrumLook.AudioSourcePlayerOnly;
 			if (Key == "glass.fill" && string.Equals(text, "mixed", StringComparison.OrdinalIgnoreCase)) return 3;
 			if (Key == "glass.fill" && string.Equals(text, "solid", StringComparison.OrdinalIgnoreCase)) return 1;
 			for (int i = 0; i < Tokens.Length; i++)

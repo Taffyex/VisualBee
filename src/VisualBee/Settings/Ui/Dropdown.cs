@@ -16,10 +16,7 @@ internal sealed class Dropdown : Widget
 
 	public int Selected
 	{
-		get
-		{
-			return _selected;
-		}
+		get => _selected;
 		set
 		{
 			_selected = (_items == null || _items.Length == 0) ? 0 : Math.Max(0, Math.Min(_items.Length - 1, value));
@@ -31,7 +28,7 @@ internal sealed class Dropdown : Widget
 
 	public Dropdown(string[] items)
 	{
-		Height = Ui.S(26);
+		Height = Ui.S(28);
 		Cursor = Cursors.Hand;
 		_menu.Renderer = new DarkMenuRenderer();
 		_menu.ShowImageMargin = false;
@@ -47,11 +44,11 @@ internal sealed class Dropdown : Widget
 		for (int i = 0; i < _items.Length; i++)
 		{
 			int index = i;
-			ToolStripMenuItem toolStripMenuItem = new ToolStripMenuItem(_items[i])
+			ToolStripMenuItem item = new ToolStripMenuItem(_items[i])
 			{
 				ForeColor = Ui.Text
 			};
-			toolStripMenuItem.Click += (object s, EventArgs a) =>
+			item.Click += (object s, EventArgs a) =>
 			{
 				if (index != _selected)
 				{
@@ -59,16 +56,10 @@ internal sealed class Dropdown : Widget
 					Changed?.Invoke(this, EventArgs.Empty);
 				}
 			};
-			_menu.Items.Add(toolStripMenuItem);
+			_menu.Items.Add(item);
 		}
-		if (_items.Length == 0)
-		{
-			_selected = 0;
-		}
-		else if (_selected >= _items.Length)
-		{
-			_selected = _items.Length - 1;
-		}
+		if (_items.Length == 0) _selected = 0;
+		else if (_selected >= _items.Length) _selected = _items.Length - 1;
 		Invalidate();
 	}
 
@@ -78,33 +69,24 @@ internal sealed class Dropdown : Widget
 		string[] items = _items ?? new string[0];
 		foreach (string text in items)
 		{
-			num = Math.Max(num, TextRenderer.MeasureText(text, Ui.Body).Width);
+			num = Math.Max(num, TextRenderer.MeasureText(text, Ui.Body, Size.Empty, TextFormatFlags.NoPrefix).Width);
 		}
-		return num + Ui.S(42);
+		return num + Ui.S(46);
 	}
 
 	protected override void OnPaint(PaintEventArgs e)
 	{
-		Graphics graphics = e.Graphics;
-		Ui.Smooth(graphics);
-		RectangleF rectangleF = new RectangleF(0.5f, 0.5f, (float)Width - 1f, (float)Height - 1f);
-		Graphics g = graphics;
-		RectangleF r = rectangleF;
-		float radius = Ui.Sf(5f);
-		Color c;
-		if (Down)
-		{
-			c = Ui.Pressed;
-		}
-		else
-		{
-			c = ((Hot && Enabled) ? Ui.RaisedHover : Ui.Raised);
-		}
-		Ui.Fill(g, r, radius, c);
-		Ui.Stroke(graphics, rectangleF, Ui.Sf(5f), Ui.Border);
+		Graphics g = e.Graphics;
+		Ui.Smooth(g);
+		RectangleF rect = new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f);
+		Color fill = Down ? Ui.Pressed : ((Hot && Enabled) ? Ui.RaisedHover : Ui.Raised);
+		Color border = (Hot && Enabled) ? Ui.Specular : Ui.Border;
+		Ui.Fill(g, rect, Ui.Sf(5f), fill);
+		Ui.Stroke(g, rect, Ui.Sf(5f), border);
+
 		string text = (_items != null && _selected >= 0 && _selected < _items.Length) ? _items[_selected] : "";
-		Ui.DrawText(r: new Rectangle(Ui.S(9), 0, Width - Ui.S(34), Height), g: graphics, text: text, font: Ui.Body, colour: Enabled ? Ui.Text : Ui.Faint, flags: TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter);
-		Ui.Glyph(graphics, "\ue70d", Ui.Icons, Enabled ? Ui.Dim : Ui.Faint, new Rectangle(Width - Ui.S(28), 0, Ui.S(22), Height));
+		Ui.DrawText(g, text, Ui.Body, Enabled ? Ui.Text : Ui.Faint, new Rectangle(Ui.S(10), 0, Math.Max(1, Width - Ui.S(36)), Height), TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter);
+		Ui.Glyph(g, Ui.GlyphChevron, Ui.Icons, Enabled ? Ui.Dim : Ui.Faint, new Rectangle(Width - Ui.S(28), 0, Ui.S(22), Height));
 	}
 
 	protected override void OnClick(EventArgs e)
@@ -121,10 +103,7 @@ internal sealed class Dropdown : Widget
 
 	protected override void Dispose(bool disposing)
 	{
-		if (disposing)
-		{
-			_menu.Dispose();
-		}
+		if (disposing) _menu.Dispose();
 		base.Dispose(disposing);
 	}
 }

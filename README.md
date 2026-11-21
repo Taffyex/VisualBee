@@ -1,15 +1,15 @@
-# VisualBee v2.1.31
+# VisualBee v2.2.0
 
-VisualBee is an ultra high-performance, hardware-accelerated **Direct3D 11 spectrum analyzer and phase-locked analog oscilloscope** for [MusicBee](https://getmusicbee.com/). Engineered with zero managed wrappers and pure native DirectX 11 P/Invoke, it delivers buttery-smooth 120Hz/144Hz visuals, physical optical glass refraction, authentic VFD/Nixie vacuum tube incandescence, and studio CRT waveform monitoring at <1% CPU and <3% GPU load.
+VisualBee is an ultra high-performance, hardware-accelerated **Direct3D 11 spectrum analyzer and phase-locked analog oscilloscope** for [MusicBee](https://getmusicbee.com/). Engineered with zero managed wrappers and pure native DirectX 11 P/Invoke over a **True 16-bit FP16 HDR** pipeline, it delivers buttery-smooth 60Hz–360Hz visuals, physical optical glass refraction, authentic VFD/Nixie vacuum tube incandescence, and studio CRT waveform monitoring at <1% CPU and <3% GPU load.
 
 ---
 
 ## Installation
 
 ### Quick Install (Recommended)
-1. Download **[`VisualBee_v2.1.31.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.31/VisualBee_v2.1.31.zip)** (or raw **[`mb_VisualBee.dll`](https://github.com/Taffyex/VisualBee/releases/download/v2.1.31/mb_VisualBee.dll)**) from the [latest release](https://github.com/Taffyex/VisualBee/releases).
+1. Download **[`VisualBee_v2.2.0.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.2.0/VisualBee_v2.2.0.zip)** (or raw **[`mb_VisualBee.dll`](https://github.com/Taffyex/VisualBee/releases/download/v2.2.0/mb_VisualBee.dll)**) from the [latest release](https://github.com/Taffyex/VisualBee/releases).
 2. In MusicBee, press `Ctrl + O` (or go to **Edit** > **Preferences**).
-3. Select **Plugins** in the sidebar, click **Add Plugin**, and choose the downloaded file (`VisualBee_v2.1.31.zip` or `mb_VisualBee.dll`).
+3. Select **Plugins** in the sidebar, click **Add Plugin**, and choose the downloaded file (`VisualBee_v2.2.0.zip` or `mb_VisualBee.dll`).
 4. Click **Apply** and restart MusicBee.
 
 ### Manual Drop-in
@@ -44,10 +44,31 @@ Configure presets, bar optics, bloom intensity, color palettes, and audio acoust
 
 ![VisualBee Studio Settings](screenshots/settings_studio_dark.png)
 
-- **Top Studio Deck Navigation**: 5 horizontal tabs (`Presets`, `Studio`, `Optics & FX`, `Colours`, `Audio`).
-- **Persistent Quick-Switch Ribbon**: Instant 1-click preset switching, active palette chips, and live FPS / sample-rate telemetry.
-- **Hardware Rack Architecture**: Responsive 2-column cards with warm amber indicator lights and per-section resets.
-- **Dual Tooltip Guidance**: Plain-English hover cards explaining exact acoustic physics and shader parameters.
+- **Sidebar Studio Navigation**: 5 categories (`Presets`, `Studio`, `Optics & FX`, `Colours`, `Audio`) with modified-count badges and live **Engine Telemetry**.
+- **Interactive Active Look & Instant Share**: Click the Active Look card to jump to presets, or right-click to share (`VB2:` codes), save, or revert modifications.
+- **Unified Search & Active-Only Filter**: Filter out inactive controls or search settings, presets, and palettes simultaneously (`Ctrl+F`).
+- **One-Click Preset Sharing**: Copy/paste compact `VB2:...` share codes (stripping personal audio device IDs) or drag-and-drop `.ini` presets onto the window.
+
+---
+
+## What's New in VisualBee v2.2.0
+
+### 1. True 16-bit FP16 HDR Pipeline & Expanded FX
+- **16-bit Floating-Point HDR (`RGBA16F`)**: Upgraded render targets, persistence trails, and the bloom mip pyramid from 8-bit SDR to 16-bit FP16 HDR with shoulder-preserving tone mapping, **HDR overdrive**, and universal HDR white-hot cores across all bar styles.
+- **Anamorphic Lens Streaks**: Cinema-style horizontal flares streaming off the brightest bar tips, peaks, and lasers.
+- **Bass Shockwave & Zoom**: Subtle radial camera punch and prism kick driven by sub-bass hits.
+- **Hollow Wireframe Outline (`bars.outline`)**: Crisp glowing outline mode on bars with configurable bar gap, corner radius, and level-mapped colouring.
+- **Diversified Factory Looks**: Refreshed all 12 built-in presets (*Borosilicate VFD*, *Nixie Amber Tube*, *Quartz Prism*, *Plasma Core Reactor*, *Blue Meter Reference*, *Outrun Horizon*, *Obsidian Capsules*, *Dieter Studio LED*, *Tektronix P31 Scope*, *Liquid Neon Ribbon*, *Mastering Console*, and *Cover Art Chameleon*).
+
+### 2. Auto Level Loudness Normalization (#5) & Snappier Audio
+- **Auto Level Modes**: Keeps quiet tracks punchy and prevents hot masters from clipping the ceiling, with **Default** (adaptive on system audio, off on MusicBee), **Adaptive**, **ReplayGain (track)**, **ReplayGain (album)**, and **Off**, plus **Auto-level speed** and **Auto-level max boost** sliders.
+- **Snappy 4096 Default FFT**: Switched the default Modern FFT window to *Snappy · 4096* to match direct API transient snap while retaining full stereo and oscilloscope capability.
+- **Streamlined Audio Page**: Simplified capture modes (*Automatic*, *MusicBee only*, *MusicBee spectrum API*, *System audio*), removed redundant toggles, and routed pre-floor **Input sensitivity** dB scaling cleanly.
+
+### 3. Album-Art Fix, Search Spacebar Fix & Preset Sharing
+- **Album-Art Background Refresh Fix**: Handles `NowPlayingArtworkReady` (with a 1.5 s retry fallback) and invalidates background caches whenever track art changes — no palette click needed.
+- **Search Bar Spacebar Fix**: Intercepts `WM_KEYDOWN` ahead of MusicBee's host hotkey filter so Spacebar and single-key shortcuts work properly inside search and input fields.
+- **Preset Sharing (`VB2:...`) & UI Polish**: Copy/paste compact share codes or `.ini` files from the top bar `Share` menu, Presets toolbar, or card context menu; search now matches presets & palettes with clickable `Open page ›` section headers.
 
 ---
 

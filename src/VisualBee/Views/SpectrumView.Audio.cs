@@ -4,6 +4,8 @@ namespace MusicBeePlugin;
 
 internal sealed partial class SpectrumView
 {
+	private bool _usingLoopback;
+
 	private void Analyse(SpectrumLook look, bool stereo)
 	{
 		bool needCentres = false;
@@ -33,10 +35,6 @@ internal sealed partial class SpectrumView
 		{
 			AnalyseApi(look, needCentres);
 		}
-		else if (source == SpectrumLook.AudioSourceBassOnly)
-		{
-			AnalyseDirect(look, stereo, needCentres, allowApiFallback: false, allowLoopbackFallback: false);
-		}
 		else if (source == SpectrumLook.AudioSourcePlayerOnly)
 		{
 			AnalyseDirect(look, stereo, needCentres, allowApiFallback: true, allowLoopbackFallback: false);
@@ -59,6 +57,7 @@ internal sealed partial class SpectrumView
 				needCentres = true;
 			}
 			_hasAudio = true;
+			_usingLoopback = false;
 			_pcmCount = _window.Size;
 			if (needCentres || _centres.Length != _bands) Centres(look);
 			if (!fresh) return true;
@@ -78,6 +77,7 @@ internal sealed partial class SpectrumView
 				needCentres = true;
 			}
 			_hasAudio = true;
+			_usingLoopback = false;
 			_pcmCount = _window.Size;
 			if (needCentres || _centres.Length != _bands) Centres(look);
 			if (!fresh) return true;
@@ -99,7 +99,8 @@ internal sealed partial class SpectrumView
 		if (rate <= 0) rate = 48000;
 		int size = Math.Min(65536, (look.Engine == 0) ? GaussianAnalyzer.WindowSize(rate) : SpectrumAnalyzer.WindowSize(look.FftSize, rate));
 		EnsureBuffers(size, stereo);
-		if (!loopback.ReadWindow(size, look.DelayMs, _left, _right, stereo, look.Channels, ref _lastLoopbackHead, out int actualRate, out bool fresh, look.LoopbackAgc))
+		bool useAgc = look.LoopbackAgc && look.AutoLevel != SpectrumLook.AutoLevelOff;
+		if (!loopback.ReadWindow(size, look.DelayMs, _left, _right, stereo, look.Channels, ref _lastLoopbackHead, out int actualRate, out bool fresh, useAgc))
 		{
 			return false;
 		}
@@ -110,6 +111,7 @@ internal sealed partial class SpectrumView
 			needCentres = true;
 		}
 		_hasAudio = true;
+		_usingLoopback = true;
 		_pcmCount = size;
 		if (needCentres || _centres.Length != _bands) Centres(look);
 		if (!fresh) return true;
@@ -121,6 +123,7 @@ internal sealed partial class SpectrumView
 	{
 		if (!_plugin.ReadApiFft(out var magnitudes)) return false;
 		_hasAudio = true;
+		_usingLoopback = false;
 		if (_rate != 44100)
 		{
 			_rate = 44100;

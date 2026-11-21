@@ -30,14 +30,6 @@ internal sealed partial class VisualiserHost
 
 	private SettingsWindow _settings;
 
-	private volatile ArtImage _art;
-
-	private int _artRequest;
-
-	private bool _artWanted;
-
-	public ArtImage Art => _art;
-
 	public VisualiserHost(LookStore store, Func<VisualiserHost, bool, GpuView> makeView)
 	{
 		Store = store;
@@ -154,52 +146,6 @@ internal sealed partial class VisualiserHost
 		return num;
 	}
 
-	public void TrackChanged()
-	{
-		_artWanted = false;
-		ArtMaybeWanted();
-	}
-
-	private void ArtMaybeWanted()
-	{
-		if (!Store.Current.WantsArt || _artWanted)
-		{
-			return;
-		}
-		_artWanted = true;
-		int request = Interlocked.Increment(ref _artRequest);
-		string data = null;
-		try
-		{
-			if (_api.NowPlaying_GetArtwork != null)
-			{
-				data = _api.NowPlaying_GetArtwork();
-			}
-		}
-		catch (Exception)
-		{
-		}
-		ThreadPool.QueueUserWorkItem((object s) =>
-		{
-			byte[] data2 = null;
-			try
-			{
-				if (!string.IsNullOrEmpty(data))
-				{
-					data2 = Convert.FromBase64String(data);
-				}
-			}
-			catch (FormatException)
-			{
-			}
-			ArtImage art = ArtImage.Decode(data2);
-			if (request == Volatile.Read(ref _artRequest))
-			{
-				_art = art;
-			}
-		});
-	}
-
 	public void Attach(Control panel)
 	{
 		Remove();
@@ -266,6 +212,7 @@ internal sealed partial class VisualiserHost
 
 	public void Dispose()
 	{
+		DisposeArt();
 		Remove();
 		Loopback.Dispose();
 	}
@@ -294,7 +241,7 @@ internal sealed partial class VisualiserHost
 		string text;
 		if (Store?.Current is SpectrumLook look && (look.AudioSource == SpectrumLook.AudioSourceWasapiLoopback || (look.AudioSource == SpectrumLook.AudioSourceAuto && Loopback.HasActiveAudio())))
 		{
-			text = "WASAPI loopback, " + Loopback.Status;
+			text = "System audio · " + Loopback.Status;
 		}
 		else if (Tap.Polls != 0)
 		{
@@ -302,7 +249,7 @@ internal sealed partial class VisualiserHost
 			{
 				if (Tap.HistoryRate > 0)
 				{
-					text = "direct PCM, " + Tap.HistoryRate + " Hz, " + Tap.HistoryChannels + " ch, " + Tap.Timing();
+					text = "MusicBee (direct) · " + Tap.HistoryRate + " Hz · " + Tap.HistoryChannels + " ch · " + Tap.Timing();
 				}
 				else
 				{
@@ -311,7 +258,7 @@ internal sealed partial class VisualiserHost
 			}
 			else
 			{
-				text = ((Tap.Status.Length > 0) ? Tap.Status : "MusicBee FFT API fallback (universal)");
+				text = ((Tap.Status.Length > 0) ? Tap.Status : "MusicBee spectrum API");
 			}
 		}
 		else

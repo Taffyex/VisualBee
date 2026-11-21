@@ -10,6 +10,21 @@ internal sealed class FlatButton : Widget
 
 	public bool Primary;
 
+	private bool _active;
+
+	public bool Active
+	{
+		get => _active;
+		set
+		{
+			if (_active != value)
+			{
+				_active = value;
+				Invalidate();
+			}
+		}
+	}
+
 	public FlatButton(string text, string glyph = null)
 	{
 		Text = text;
@@ -21,7 +36,8 @@ internal sealed class FlatButton : Widget
 
 	public int Ideal()
 	{
-		return TextRenderer.MeasureText(Text, Ui.Body).Width + Ui.S((Glyph != null) ? 44 : 26);
+		Font f = Primary ? Ui.Bold : Ui.Body;
+		return TextRenderer.MeasureText(Text ?? "", f, Size.Empty, TextFormatFlags.NoPrefix).Width + Ui.S((Glyph != null) ? 48 : 30);
 	}
 
 	protected override void OnTextChanged(EventArgs e)
@@ -30,55 +46,64 @@ internal sealed class FlatButton : Widget
 		Invalidate();
 	}
 
+	protected override void OnEnabledChanged(EventArgs e)
+	{
+		base.OnEnabledChanged(e);
+		Cursor = Enabled ? Cursors.Hand : Cursors.Default;
+	}
+
 	protected override void OnPaint(PaintEventArgs e)
 	{
-		Graphics graphics = e.Graphics;
-		Ui.Smooth(graphics);
-		RectangleF r = new RectangleF(0.5f, 0.5f, (float)Width - 1f, (float)Height - 1f);
-		Color c;
-		if (Primary)
-		{
-			if (Down)
-			{
-				c = Ui.Mix(Ui.Accent, Color.Black, 0.2);
-			}
-			else
-			{
-				c = (Hot ? Ui.Mix(Ui.Accent, Color.White, 0.12) : Ui.Accent);
-			}
-		}
-		else if (Down)
-		{
-			c = Ui.Pressed;
-		}
-		else
-		{
-			c = (Hot ? Ui.RaisedHover : Ui.Raised);
-		}
+		Graphics g = e.Graphics;
+		Ui.Smooth(g);
+		RectangleF r = new RectangleF(0.5f, 0.5f, Width - 1f, Height - 1f);
+
+		Color fill;
+		Color border = Ui.Border;
+		Color textCol;
+		Color glyphCol;
+		Font font = Primary ? Ui.Bold : Ui.Body;
+
 		if (!Enabled)
 		{
-			c = Ui.Card;
+			fill = Ui.Card;
+			border = Ui.Divider;
+			textCol = Ui.Faint;
+			glyphCol = Ui.Faint;
 		}
-		Ui.Fill(graphics, r, Ui.Sf(6f), c);
-		if (!Primary)
+		else if (Primary)
 		{
-			Ui.Stroke(graphics, r, Ui.Sf(6f), Ui.Border);
+			fill = Down ? Ui.Mix(Ui.Accent, Color.Black, 0.18) : (Hot ? Ui.Mix(Ui.Accent, Color.White, 0.14) : Ui.Accent);
+			textCol = Ui.AccentText;
+			glyphCol = Ui.AccentText;
 		}
-		Color colour;
-		if (Enabled)
+		else if (_active)
 		{
-			colour = (Primary ? Color.White : Ui.Text);
+			fill = Down ? Ui.Pressed : (Hot ? Ui.Mix(Ui.Accent, Ui.Card, 0.80) : Ui.AccentSoft);
+			border = Ui.AccentBorder;
+			textCol = Ui.Text;
+			glyphCol = Ui.Accent;
 		}
 		else
 		{
-			colour = Ui.Faint;
+			fill = Down ? Ui.Pressed : (Hot ? Ui.RaisedHover : Ui.Raised);
+			border = Hot ? Ui.Specular : Ui.Border;
+			textCol = Ui.Text;
+			glyphCol = Ui.Dim;
 		}
-		int num = Ui.S(13);
+
+		Ui.Fill(g, r, Ui.Sf(6f), fill);
+		if (!Primary)
+		{
+			Ui.Stroke(g, r, Ui.Sf(6f), border);
+		}
+
+		int textLeft = Ui.S(14);
 		if (Glyph != null)
 		{
-			Ui.Glyph(graphics, Glyph, Ui.Icons, colour, new Rectangle(Ui.S(9), 0, Ui.S(20), Height));
-			num = Ui.S(32);
+			Ui.Glyph(g, Glyph, Ui.Icons, glyphCol, new Rectangle(Ui.S(10), 0, Ui.S(20), Height));
+			textLeft = Ui.S(34);
 		}
-		Ui.DrawText(graphics, Text, Ui.Body, colour, new Rectangle(num, 0, Width - num - Ui.S(8), Height), TextFormatFlags.VerticalCenter);
+		Ui.DrawText(g, Text, font, textCol, new Rectangle(textLeft, 0, Math.Max(1, Width - textLeft - Ui.S(12)), Height), TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
 	}
 }

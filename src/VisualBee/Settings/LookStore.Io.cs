@@ -160,26 +160,27 @@ internal sealed partial class LookStore
 
 	public static Preset ReadPreset(string file)
 	{
-		Dictionary<string, string> dictionary = ReadPairs(file);
-		if (dictionary == null)
+		if (string.IsNullOrEmpty(file) || !File.Exists(file))
 		{
 			return null;
 		}
-		if (!dictionary.TryGetValue("name", out var value) || value.Length == 0)
+		try
 		{
-			value = Path.GetFileNameWithoutExtension(file);
-		}
-		dictionary.TryGetValue("description", out var value2);
-		Preset preset = new Preset(value, value2);
-		foreach (KeyValuePair<string, string> item in dictionary)
-		{
-			if (item.Key != "name" && item.Key != "description")
+			Preset preset = ParsePresetLines(File.ReadAllLines(file), Path.GetFileNameWithoutExtension(file), null, requireKnownKey: false);
+			if (preset != null)
 			{
-				preset.Values[item.Key] = item.Value;
+				preset.File = file;
 			}
+			return preset;
 		}
-		preset.File = file;
-		return preset;
+		catch (IOException)
+		{
+			return null;
+		}
+		catch (UnauthorizedAccessException)
+		{
+			return null;
+		}
 	}
 
 	public string SavePreset(Preset p)
@@ -196,18 +197,7 @@ internal sealed partial class LookStore
 
 	public void WritePreset(Preset p, string file)
 	{
-		StringBuilder stringBuilder = new StringBuilder();
-		stringBuilder.AppendLine("# " + Title + " preset");
-		stringBuilder.AppendLine("name=" + p.Name);
-		if (p.Description.Length > 0)
-		{
-			stringBuilder.AppendLine("description=" + p.Description.Replace("\r", " ").Replace("\n", " "));
-		}
-		foreach (KeyValuePair<string, string> value in p.Values)
-		{
-			stringBuilder.AppendLine(value.Key + "=" + value.Value);
-		}
-		WriteText(file, stringBuilder.ToString());
+		WriteText(file, FormatPresetText(p));
 	}
 
 	public void DeletePreset(Preset p)

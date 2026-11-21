@@ -19,7 +19,7 @@ internal sealed partial class SpectrumAnalyzer
 
 	public static readonly int[] FftSizes = new int[5] { 2048, 4096, 8192, 16384, 32768 };
 
-	public static readonly string[] FftSizeNames = new string[5] { "2048 (46 ms)", "4096 (93 ms)", "8192 (186 ms)", "16384 (372 ms)", "32768 (743 ms)" };
+	public static readonly string[] FftSizeNames = new string[5] { "Fastest · 2048 (46 ms)", "Snappy · 4096 (93 ms) — like MusicBee API", "Balanced · 8192 (186 ms)", "Detailed · 16384 (372 ms)", "Ultra detail · 32768 (743 ms)" };
 
 	public static readonly string[] FftSizeTokens = new string[5] { "2048", "4096", "8192", "16384", "32768" };
 

@@ -168,6 +168,12 @@ internal struct RectShape
 		return Flags(RectFlags.Pill3D);
 	}
 
+	public RectShape Hdr(float power)
+	{
+		Seg.W = power;
+		return Flags(RectFlags.HdrCore);
+	}
+
 	public RectShape Outline(float width)
 	{
 		Shape.Z = width;
@@ -275,4 +281,10 @@ internal struct Effects
 	public bool Dither;
 
 	public Vec4 Flash;
+
+	public float HdrDrive;
+
+	public float Anamorphic;
+
+	public float BassZoom;
 }

@@ -15,11 +15,15 @@ internal sealed partial class SpectrumView
 
 	private static Vec4 TipColour(SpectrumLook look, Vec4[] colours, Geometry g, int slot, int band, float v)
 	{
-		if (look.Colouring == 4)
+		if (look.Colouring == SpectrumLook.ColourSingle)
 		{
-			return Vec4.Lerp(colours[10], colours[12], v);
+			return colours[10];
 		}
-		if (look.Colouring == 2)
+		if (look.Colouring == SpectrumLook.ColourLevel || look.Colouring == SpectrumLook.ColourPlot)
+		{
+			return Gradient(look, colours, v);
+		}
+		if (look.Colouring == SpectrumLook.ColourFrequency)
 		{
 			float amount = ((g.Shown > 1) ? ((float)band / (float)(g.Shown - 1)) : 0f);
 			if (look.UseMiddle)

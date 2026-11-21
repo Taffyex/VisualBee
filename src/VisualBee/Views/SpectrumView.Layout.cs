@@ -178,7 +178,8 @@ internal sealed partial class SpectrumView
 				g.Angle[j] = (float)(look.RadialTurn * Math.PI / 180.0 + ((j < shown) ? num5 : (0.0 - num5)));
 			}
 			float num6 = (float)(Math.PI * ((double)g.Inner + 0.25 * (double)g.Span) / (double)shown);
-			g.BarThickness = Math.Max(1f, Math.Min(num6 * (float)(look.BarWidth / 100.0), num6 - (float)(look.BarGap * (double)scale)));
+			float radialAvail = Math.Max(1f, num6 - (float)(look.BarGap * (double)scale));
+			g.BarThickness = Math.Max(1f, radialAvail * (float)(look.BarWidth / 100.0));
 			return;
 		}
 		float num7 = g.Right - g.Left;
@@ -194,7 +195,8 @@ internal sealed partial class SpectrumView
 			return;
 		}
 		float num10 = num7 / (float)num;
-		float num11 = Math.Max(Math.Min(num10, 1f), Math.Min(num10 * (float)(look.BarWidth / 100.0), num10 - num8));
+		float avail = Math.Max(1f, num10 - num8);
+		float num11 = Math.Max(Math.Min(num10, 1f), avail * (float)(look.BarWidth / 100.0));
 		for (int l = 0; l < num; l++)
 		{
 			float barW = num11;
