@@ -221,7 +221,6 @@ internal sealed partial class SpectrumView : GpuView
 			Allocate(num2, num);
 		}
 		bool isPlaying = state == PlayState.Playing;
-		bool isPaused = state == PlayState.Paused;
 		bool isLoopback = spectrumLook.AudioSource == SpectrumLook.AudioSourceWasapiLoopback;
 		bool isAuto = spectrumLook.AudioSource == SpectrumLook.AudioSourceAuto;
 		bool hasLoopbackAudio = Host?.Loopback?.HasActiveAudio() == true;
@@ -245,9 +244,10 @@ internal sealed partial class SpectrumView : GpuView
 				}
 			}
 		}
-		else if (!isPaused && _hasAudio)
+		else if (_hasAudio)
 		{
 			_hasAudio = false;
+			_analysisTimer = 0f;
 			_window = default;
 			_lastLoopbackHead = -1;
 			_pcmCount = 0;

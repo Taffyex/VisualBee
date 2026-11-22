@@ -6,26 +6,55 @@ namespace MusicBeePlugin;
 
 internal sealed partial class WasapiLoopback
 {
-	private void AdvanceIdleDecay(int count)
+	private void AdvanceIdleDecay()
 	{
+		long now = Stopwatch.GetTimestamp();
 		lock (_sync)
 		{
-			if (Math.Abs(_lastL) < 0.0001f && Math.Abs(_lastR) < 0.0001f) return;
+			if (_idleFramesWritten >= RingSize && Math.Abs(_lastL) < 0.0001f && Math.Abs(_lastR) < 0.0001f) return;
+			int rate = (_sampleRate > 0) ? _sampleRate : 48000;
+			int count = 64;
+			if (_lastWriteTick > 0 && now > _lastWriteTick)
+			{
+				double elapsedSec = (double)(now - _lastWriteTick) / Stopwatch.Frequency;
+				count = (int)Math.Max(1, Math.Min(4096, Math.Round(elapsedSec * rate)));
+			}
 			long head = _head;
 			float l = _lastL;
 			float r = _lastR;
-			for (int i = 0; i < count; i++)
+			if (Math.Abs(l) < 0.0001f && Math.Abs(r) < 0.0001f)
 			{
-				l *= 0.94f;
-				r *= 0.94f;
-				int idx = (int)((head + i) & RingMask);
-				_ringL[idx] = l;
-				_ringR[idx] = r;
+				l = 0f;
+				r = 0f;
+				int ringStart = (int)(head & RingMask);
+				int first = Math.Min(count, RingSize - ringStart);
+				Array.Clear(_ringL, ringStart, first);
+				Array.Clear(_ringR, ringStart, first);
+				int rem = count - first;
+				if (rem > 0)
+				{
+					Array.Clear(_ringL, 0, rem);
+					Array.Clear(_ringR, 0, rem);
+				}
 			}
-			_lastL = (Math.Abs(l) < 0.0001f) ? 0f : l;
-			_lastR = (Math.Abs(r) < 0.0001f) ? 0f : r;
+			else
+			{
+				for (int i = 0; i < count; i++)
+				{
+					l *= 0.94f;
+					r *= 0.94f;
+					int idx = (int)((head + i) & RingMask);
+					_ringL[idx] = l;
+					_ringR[idx] = r;
+				}
+				if (Math.Abs(l) < 0.0001f) l = 0f;
+				if (Math.Abs(r) < 0.0001f) r = 0f;
+			}
+			_lastL = l;
+			_lastR = r;
 			_head = head + count;
-			_lastWriteTick = Stopwatch.GetTimestamp();
+			_lastWriteTick = now;
+			_idleFramesWritten = Math.Min(RingSize, _idleFramesWritten + count);
 		}
 	}
 
@@ -50,11 +79,13 @@ internal sealed partial class WasapiLoopback
 					_ringL[idx] = l;
 					_ringR[idx] = r;
 				}
-				_lastL = l;
-				_lastR = r;
+				_lastL = (Math.Abs(l) < 0.0001f) ? 0f : l;
+				_lastR = (Math.Abs(r) < 0.0001f) ? 0f : r;
+				_idleFramesWritten = (_lastL == 0f && _lastR == 0f) ? Math.Min(RingSize, _idleFramesWritten + frames) : 0;
 			}
 			else if (bits == 32 && isFloat)
 			{
+				_idleFramesWritten = 0;
 				float* p = (float*)pData.ToPointer();
 				for (int i = 0; i < frames; i++)
 				{
@@ -87,6 +118,7 @@ internal sealed partial class WasapiLoopback
 			}
 			else if (bits == 32 && !isFloat)
 			{
+				_idleFramesWritten = 0;
 				int* p = (int*)pData.ToPointer();
 				for (int i = 0; i < frames; i++)
 				{
@@ -110,6 +142,7 @@ internal sealed partial class WasapiLoopback
 			}
 			else if (bits == 16)
 			{
+				_idleFramesWritten = 0;
 				short* p = (short*)pData.ToPointer();
 				for (int i = 0; i < frames; i++)
 				{
@@ -133,6 +166,7 @@ internal sealed partial class WasapiLoopback
 			}
 			else if (bits == 24)
 			{
+				_idleFramesWritten = 0;
 				byte* p = (byte*)pData.ToPointer();
 				int frameBytes = chans * 3;
 				for (int i = 0; i < frames; i++)

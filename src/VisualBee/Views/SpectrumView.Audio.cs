@@ -124,6 +124,7 @@ internal sealed partial class SpectrumView
 		if (!_plugin.ReadApiFft(out var magnitudes)) return false;
 		_hasAudio = true;
 		_usingLoopback = false;
+		_pcmCount = 0;
 		if (_rate != 44100)
 		{
 			_rate = 44100;

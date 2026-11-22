@@ -60,7 +60,7 @@ internal sealed partial class SpectrumView
 			Rate = _rate
 		};
 		EnsureFont(look, scale);
-		Gdi.SIZE sIZE = (_sizeDb.cy > 0) ? _sizeDb : TextSheet.Measure(_labelFont, "-60dB");
+		Gdi.SIZE sIZE = (_sizeDb.cy > 0) ? _sizeDb : TextSheet.Measure(_labelFont, "-100dB");
 		Gdi.SIZE sIZE2 = (_sizeFreq.cy > 0) ? _sizeFreq : TextSheet.Measure(_labelFont, "5.5K");
 		float num = (float)Math.Round(look.Margin * (double)scale);
 		float num2 = num;
@@ -77,15 +77,7 @@ internal sealed partial class SpectrumView
 			geometry.DbLeft = geometry.DbRight - (float)sIZE.cx;
 			num4 = geometry.DbLeft;
 		}
-		int num7 = ((look.Layout == 2 || look.Layout == 3 || look.Layout == 5) ? (geometry.Shown * 2) : geometry.Shown);
-		if (look.Engine == 0)
-		{
-			geometry.FreqRow = flag && look.FreqLabels && num5 - num3 > (float)sIZE2.cy && num4 - num2 > (float)(num7 * sIZE2.cx);
-		}
-		else
-		{
-			geometry.FreqRow = flag && look.FreqLabels && num5 - num3 > (float)(sIZE2.cy * 3);
-		}
+		geometry.FreqRow = flag && look.FreqLabels && num5 - num3 > (float)(sIZE2.cy * 3);
 		if (geometry.FreqRow)
 		{
 			geometry.FreqTop = num5 - (float)sIZE2.cy;

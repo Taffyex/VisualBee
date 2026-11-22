@@ -196,7 +196,7 @@ internal sealed partial class SettingsWindow : Form
 				rightEdge = _masterToggle.Left - Ui.S(12);
 			}
 
-			int resetW = Ui.S(64);
+			int resetW = Ui.S(70);
 			_resetRect = new Rectangle(rightEdge - resetW, (headerH - Ui.S(24)) / 2, resetW, Ui.S(24));
 
 			List<SettingRow> visible = new List<SettingRow>();

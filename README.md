@@ -1,4 +1,4 @@
-# VisualBee v2.2.0
+# VisualBee v2.2.0.5
 
 VisualBee is an ultra high-performance, hardware-accelerated **Direct3D 11 spectrum analyzer and phase-locked analog oscilloscope** for [MusicBee](https://getmusicbee.com/). Engineered with zero managed wrappers and pure native DirectX 11 P/Invoke over a **True 16-bit FP16 HDR** pipeline, it delivers buttery-smooth 60Hz–360Hz visuals, physical optical glass refraction, authentic VFD/Nixie vacuum tube incandescence, and studio CRT waveform monitoring at <1% CPU and <3% GPU load.
 
@@ -7,9 +7,9 @@ VisualBee is an ultra high-performance, hardware-accelerated **Direct3D 11 spect
 ## Installation
 
 ### Quick Install (Recommended)
-1. Download **[`VisualBee_v2.2.0.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.2.0/VisualBee_v2.2.0.zip)** (or raw **[`mb_VisualBee.dll`](https://github.com/Taffyex/VisualBee/releases/download/v2.2.0/mb_VisualBee.dll)**) from the [latest release](https://github.com/Taffyex/VisualBee/releases).
+1. Download **[`VisualBee_v2.2.0.5.zip`](https://github.com/Taffyex/VisualBee/releases/download/v2.2.0.5/VisualBee_v2.2.0.5.zip)** (or raw **[`mb_VisualBee.dll`](https://github.com/Taffyex/VisualBee/releases/download/v2.2.0.5/mb_VisualBee.dll)**) from the [latest release](https://github.com/Taffyex/VisualBee/releases).
 2. In MusicBee, press `Ctrl + O` (or go to **Edit** > **Preferences**).
-3. Select **Plugins** in the sidebar, click **Add Plugin**, and choose the downloaded file (`VisualBee_v2.2.0.zip` or `mb_VisualBee.dll`).
+3. Select **Plugins** in the sidebar, click **Add Plugin**, and choose the downloaded file (`VisualBee_v2.2.0.5.zip` or `mb_VisualBee.dll`).
 4. Click **Apply** and restart MusicBee.
 
 ### Manual Drop-in
@@ -48,6 +48,13 @@ Configure presets, bar optics, bloom intensity, color palettes, and audio acoust
 - **Interactive Active Look & Instant Share**: Click the Active Look card to jump to presets, or right-click to share (`VB2:` codes), save, or revert modifications.
 - **Unified Search & Active-Only Filter**: Filter out inactive controls or search settings, presets, and palettes simultaneously (`Ctrl+F`).
 - **One-Click Preset Sharing**: Copy/paste compact `VB2:...` share codes (stripping personal audio device IDs) or drag-and-drop `.ini` presets onto the window.
+
+---
+
+## What's New in VisualBee v2.2.0.5
+
+- **Pause Freeze Fixes**: Fixed bars/oscilloscope freezing after pausing across **MusicBee only**, **MusicBee spectrum API**, **Automatic**, and **Process Loopback** capture modes (`SpectrumView`, `GpuView`, and `WasapiLoopback` idle ring flushing).
+- **Label & UI Overlap Fixes**: Fixed frequency/dB label collisions in **Mirrored** / **Stereo** / **Gaussian** views, newline splitting in **Engine Telemetry**, Preferences Configure label wrapping, HUD pill sizing, and `SettingsWindow` narrow-width clamping.
 
 ---
 

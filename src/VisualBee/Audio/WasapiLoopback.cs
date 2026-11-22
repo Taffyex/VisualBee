@@ -63,6 +63,7 @@ internal sealed partial class WasapiLoopback : IDisposable
 	private volatile float _envPeak = 0.5f;
 	private long _lastWriteTick;
 	private long _lastPacketTick;
+	private int _idleFramesWritten;
 	private volatile int _sampleRate = 48000;
 	private volatile bool _running;
 	private bool _disposed;
@@ -270,6 +271,12 @@ internal sealed partial class WasapiLoopback : IDisposable
 					continue;
 				}
 				capture = (IAudioCaptureClient)captureObj;
+				lock (_sync)
+				{
+					_idleFramesWritten = 0;
+					_lastWriteTick = Stopwatch.GetTimestamp();
+				}
+				_lastPacketTick = _lastWriteTick;
 				client.Start();
 				_status = "Active [" + deviceDisplayName + "] (" + rate + " Hz, " + chans + "ch)";
 
@@ -301,7 +308,7 @@ internal sealed partial class WasapiLoopback : IDisposable
 						long nowTick = Stopwatch.GetTimestamp();
 						if ((double)(nowTick - _lastPacketTick) / Stopwatch.Frequency > 0.040)
 						{
-							AdvanceIdleDecay(64);
+							AdvanceIdleDecay();
 						}
 					}
 

@@ -192,7 +192,8 @@ internal sealed partial class SettingsWindow : Form
 	{
 		int pad = Ui.S(20);
 		int right = topBar.Width - pad;
-		int searchW = Math.Min(Ui.S(195), Math.Max(Ui.S(115), topBar.Width / 4));
+		int maxSearch = (topBar.Width < Ui.S(640)) ? Ui.S(145) : Ui.S(195);
+		int searchW = Math.Min(maxSearch, Math.Max(Ui.S(105), topBar.Width / 4));
 		_search.SetBounds(right - searchW, (topBar.Height - _search.Height) / 2, searchW, _search.Height);
 		right = _search.Left - Ui.S(6);
 
@@ -207,7 +208,7 @@ internal sealed partial class SettingsWindow : Form
 		_quickSave.Width = _quickSave.Ideal();
 		_quickSave.Location = new Point(right - _quickSave.Width, (topBar.Height - _quickSave.Height) / 2);
 
-		int titleW = Math.Max(Ui.S(90), _quickSave.Left - pad - Ui.S(10));
+		int titleW = Math.Max(0, _quickSave.Left - pad - Ui.S(10));
 		_pageTitle.SetBounds(pad, Ui.S(9), titleW, Ui.S(24));
 		_pageSubtitle.SetBounds(pad, Ui.S(34), titleW, Ui.S(18));
 	}
@@ -225,7 +226,7 @@ internal sealed partial class SettingsWindow : Form
 			right -= Ui.S(8);
 		}
 
-		int hintW = Math.Max(Ui.S(120), right - pad - Ui.S(8));
+		int hintW = Math.Max(0, right - pad - Ui.S(8));
 		_hintTitle.SetBounds(pad, Ui.S(8), hintW, Ui.S(18));
 		_hintText.SetBounds(pad, Ui.S(27), hintW, Ui.S(18));
 	}

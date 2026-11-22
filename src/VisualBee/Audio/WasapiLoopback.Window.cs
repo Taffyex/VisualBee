@@ -51,12 +51,12 @@ internal sealed partial class WasapiLoopback
 			long nowTick = Stopwatch.GetTimestamp();
 			long writeTick = _lastWriteTick;
 			long interpFrames = 0;
-			if (writeTick > 0 && nowTick > writeTick)
+			if (writeTick > 0 && nowTick > writeTick && delaySamples > 0)
 			{
 				double elapsedSec = (double)(nowTick - writeTick) / Stopwatch.Frequency;
 				if (elapsedSec > 0.0 && elapsedSec < 0.025)
 				{
-					interpFrames = (long)(elapsedSec * rate);
+					interpFrames = Math.Min(delaySamples, (long)(elapsedSec * rate));
 				}
 			}
 			long currentHead = head + interpFrames;

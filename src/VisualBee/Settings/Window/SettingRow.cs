@@ -306,14 +306,19 @@ internal sealed partial class SettingsWindow : Form
 			}
 		}
 
+		private int LabelWidth()
+		{
+			return Math.Min(Ui.S(240), Math.Max(Ui.S(130), (int)(Width * 0.32)));
+		}
+
 		protected override void OnLayout(LayoutEventArgs e)
 		{
 			base.OnLayout(e);
 			int labelX = Ui.S(18);
-			int labelW = Math.Min(Ui.S(240), Math.Max(Ui.S(155), (int)(Width * 0.34)));
+			int labelW = LabelWidth();
 			int controlX = labelX + labelW + Ui.S(14);
 			int rightEdge = Width - Ui.S(12) - Ui.S(26) - Ui.S(8);
-			int controlW = Math.Max(Ui.S(100), rightEdge - controlX);
+			int controlW = Math.Max(Ui.S(40), rightEdge - controlX);
 			int midY = Height / 2;
 
 			if (_toggle != null)
@@ -323,7 +328,7 @@ internal sealed partial class SettingsWindow : Form
 			if (_slider != null)
 			{
 				int numW = Ui.S(78);
-				int sliderW = Math.Max(Ui.S(70), Math.Min(controlW - numW - Ui.S(8), Ui.S(310)));
+				int sliderW = Math.Max(Ui.S(50), Math.Min(controlW - numW - Ui.S(8), Ui.S(310)));
 				_slider.SetBounds(controlX - Ui.S(6), midY - _slider.Height / 2, sliderW, _slider.Height);
 				_number.SetBounds(_slider.Right + Ui.S(8), midY - _number.Height / 2, numW, _number.Height);
 			}
@@ -333,7 +338,7 @@ internal sealed partial class SettingsWindow : Form
 			}
 			if (_dropdown != null)
 			{
-				_dropdown.SetBounds(controlX, midY - _dropdown.Height / 2, Math.Min(controlW, Math.Max(Ui.S(210), _dropdown.Ideal())), _dropdown.Height);
+				_dropdown.SetBounds(controlX, midY - _dropdown.Height / 2, Math.Min(controlW, Math.Max(Ui.S(180), _dropdown.Ideal())), _dropdown.Height);
 			}
 			if (_well != null)
 			{
@@ -364,7 +369,7 @@ internal sealed partial class SettingsWindow : Form
 				g.FillEllipse(b, Ui.Sf(8f), (Height - Ui.Sf(4f)) / 2f, Ui.Sf(4f), Ui.Sf(4f));
 			}
 
-			int labelW = Math.Min(Ui.S(240), Math.Max(Ui.S(155), (int)(Width * 0.34)));
+			int labelW = LabelWidth();
 			Ui.DrawText(g, _s.Label, Ui.Body, _dim ? Ui.Faint : Ui.Text, new Rectangle(Ui.S(18), 0, labelW, Height), TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter);
 		}
 	}

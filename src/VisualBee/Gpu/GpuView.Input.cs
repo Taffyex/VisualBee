@@ -93,14 +93,28 @@ internal abstract partial class GpuView
 			}
 			_overlay.Clear();
 			int num = (int)(8f * f.Scale);
-			_overlay.Add(text, new Gdi.RECT(num, num, Math.Min(f.Width - num, num + (int)(320f * f.Scale)), num + (int)(48f * f.Scale)), 2048u);
+			int maxW = Math.Max(40, f.Width - num * 2);
+			int measuredW = 0;
+			int measuredH = 0;
+			string[] lines = text.Split('\n');
+			for (int i = 0; i < lines.Length; i++)
+			{
+				Gdi.SIZE sz = TextSheet.Measure(_overlayFont, lines[i]);
+				if (sz.cx > measuredW) measuredW = sz.cx;
+				measuredH += Math.Max(1, sz.cy);
+			}
+			int boxW = Math.Min(maxW, measuredW + (int)(4f * f.Scale));
+			int boxH = Math.Min(Math.Max(20, f.Height - num * 2), measuredH + (int)(4f * f.Scale));
+			_overlay.Add(text, new Gdi.RECT(num, num, num + boxW, num + boxH), 2048u);
 			_overlay.Build(_gpu, _overlayFont);
 			_overlayText = text;
+			_overlayPillW = boxW + 8f * f.Scale;
+			_overlayPillH = boxH + 6f * f.Scale;
 		}
 		Canvas canvas = f.Canvas;
 		canvas.Begin(_gpu.BackBufferView, f.Width, f.Height, f.Time);
 		canvas.Blend = BlendMode.Over;
-		canvas.Rect(RectShape.Solid(4f * f.Scale, 4f * f.Scale, Math.Min((float)f.Width - 4f * f.Scale, 220f * f.Scale), (float)((text.IndexOf('\n') >= 0) ? 50 : 30) * f.Scale, new Vec4(0f, 0f, 0f, 0.55f)).Rounded(5f * f.Scale));
+		canvas.Rect(RectShape.Solid(4f * f.Scale, 4f * f.Scale, Math.Min((float)f.Width - 4f * f.Scale, 4f * f.Scale + _overlayPillW), Math.Min((float)f.Height - 4f * f.Scale, 4f * f.Scale + _overlayPillH), new Vec4(0f, 0f, 0f, 0.55f)).Rounded(5f * f.Scale));
 		_overlay.Draw(canvas, new Vec4(1f, 1f, 1f, 0.92f));
 	}
 

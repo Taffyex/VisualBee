@@ -18,7 +18,7 @@ internal sealed partial class SpectrumView
 			_labelFont = VuFont.CreateLabel(num, bold: false);
 			_labelFontSize = num;
 			_labelsBuilt = false;
-			_sizeDb = TextSheet.Measure(_labelFont, "-60dB");
+			_sizeDb = TextSheet.Measure(_labelFont, "-100dB");
 			_sizeFreq = TextSheet.Measure(_labelFont, "5.5K");
 		}
 	}
@@ -27,7 +27,7 @@ internal sealed partial class SpectrumView
 	{
 		_labelsBuilt = true;
 		_labels.Clear();
-		Gdi.SIZE sIZE = (_sizeDb.cy > 0) ? _sizeDb : TextSheet.Measure(_labelFont, "-60dB");
+		Gdi.SIZE sIZE = (_sizeDb.cy > 0) ? _sizeDb : TextSheet.Measure(_labelFont, "-100dB");
 		if (g.DbColumn && g.Span > 0f)
 		{
 			double num = (double)g.Span / Math.Max(1.0, look.CeilingDb - look.FloorDb);
@@ -41,6 +41,7 @@ internal sealed partial class SpectrumView
 					_ => 60, 
 				};
 			}
+			System.Collections.Generic.List<(int Top, int Bottom)> placedDb = new System.Collections.Generic.List<(int, int)>();
 			int num3 = (int)Math.Floor(look.CeilingDb / 10.0) * 10;
 			while ((double)num3 >= look.FloorDb)
 			{
@@ -52,8 +53,23 @@ internal sealed partial class SpectrumView
 					{
 						float val = ((i == 0) ? y : y2);
 						float num5 = Math.Max(g.Top + (float)sIZE.cy / 2f, Math.Min(g.Bottom - (float)sIZE.cy / 2f, val));
-						Gdi.RECT rect = new Gdi.RECT((int)g.DbLeft, (int)Math.Round(num5 - (float)sIZE.cy / 2f), (int)Math.Round(g.DbRight), (int)Math.Round(num5 + (float)sIZE.cy / 2f + 1f));
-						_labels.Add(num3.ToString(CultureInfo.InvariantCulture) + "dB", rect, 2085u);
+						int top = (int)Math.Round(num5 - (float)sIZE.cy / 2f);
+						int bottom = (int)Math.Round(num5 + (float)sIZE.cy / 2f + 1f);
+						bool overlaps = false;
+						for (int p = 0; p < placedDb.Count; p++)
+						{
+							if (top < placedDb[p].Bottom + 1 && bottom > placedDb[p].Top - 1)
+							{
+								overlaps = true;
+								break;
+							}
+						}
+						if (!overlaps)
+						{
+							placedDb.Add((top, bottom));
+							Gdi.RECT rect = new Gdi.RECT((int)g.DbLeft, top, (int)Math.Round(g.DbRight), bottom);
+							_labels.Add(num3.ToString(CultureInfo.InvariantCulture) + "dB", rect, 2085u);
+						}
 					}
 				}
 				num3 -= 10;
@@ -66,9 +82,13 @@ internal sealed partial class SpectrumView
 			int num7 = num6 + sIZE2.cy;
 			if (look.Engine == 0)
 			{
+				System.Collections.Generic.List<(float Left, float Right)> placed = new System.Collections.Generic.List<(float, float)>();
 				for (int j = 0; j < g.Slots; j++)
 				{
-					_labels.Add(BandLabel(g.Band[j], _bands), new Gdi.RECT((int)g.X0[j], num6, (int)Math.Max(g.X0[j] + 1f, g.X1[j]), num7), 2085u);
+					string text = BandLabel(g.Band[j], _bands);
+					Gdi.SIZE sz = TextSheet.Measure(_labelFont, text);
+					float center = (g.X0[j] + g.X1[j]) * 0.5f;
+					TryPlaceFreqLabel(text, center, sz, g, num6, num7, 4f, placed);
 				}
 			}
 			else
@@ -84,7 +104,7 @@ internal sealed partial class SpectrumView
 		double num = TopHz(look);
 		bool flag = g.Slots == g.Shown * 2;
 		float num2 = (g.Right - g.Left) / (float)((!flag) ? 1 : 2);
-		float num3 = float.NegativeInfinity;
+		System.Collections.Generic.List<(float Left, float Right)> placed = new System.Collections.Generic.List<(float, float)>();
 		double[] labelFrequencies = LabelFrequencies;
 		for (int i = 0; i < labelFrequencies.Length; i++)
 		{
@@ -113,17 +133,30 @@ internal sealed partial class SpectrumView
 			{
 				array = new float[1] { g.Left + num5 * num2 };
 			}
-			if (!(array[0] - (float)sIZE.cx / 2f < num3 + 6f))
+			for (int k = 0; k < array.Length; k++)
 			{
-				float[] array2 = array;
-				foreach (float num6 in array2)
-				{
-					float num7 = Math.Max(g.Left, Math.Min(g.Right - (float)sIZE.cx, num6 - (float)sIZE.cx / 2f));
-					_labels.Add(text, new Gdi.RECT((int)num7, top, (int)num7 + sIZE.cx + 1, bottom), 2085u);
-				}
-				num3 = array[0] + (float)sIZE.cx / 2f;
+				TryPlaceFreqLabel(text, array[k], sIZE, g, top, bottom, 6f, placed);
 			}
 		}
+	}
+
+	private void TryPlaceFreqLabel(string text, float centerX, Gdi.SIZE size, Geometry g, int top, int bottom, float pad, System.Collections.Generic.List<(float Left, float Right)> placed)
+	{
+		float left = Math.Max(g.Left, Math.Min(g.Right - (float)size.cx, centerX - (float)size.cx * 0.5f));
+		float right = left + (float)size.cx;
+		if (right > g.Right + 0.5f || left < g.Left - 0.5f)
+		{
+			return;
+		}
+		for (int i = 0; i < placed.Count; i++)
+		{
+			if (left < placed[i].Right + pad && right > placed[i].Left - pad)
+			{
+				return;
+			}
+		}
+		placed.Add((left, right));
+		_labels.Add(text, new Gdi.RECT((int)left, top, (int)right + 1, bottom), 2085u);
 	}
 
 	private static string BandLabel(int band, int bands)

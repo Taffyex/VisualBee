@@ -91,10 +91,11 @@ internal sealed partial class SettingsWindow : Form
 			string l1 = s;
 			string l2 = "";
 			int sep = s.IndexOf('|');
+			if (sep < 0) sep = s.IndexOf('\n');
 			if (sep >= 0)
 			{
 				l1 = s.Substring(0, sep).Trim();
-				l2 = s.Substring(sep + 1).Trim();
+				l2 = s.Substring(sep + 1).Replace('\n', ' ').Replace('\r', ' ').Trim();
 			}
 			if (l1.Length == 0) l1 = "Audio idle";
 			if (_line1 == l1 && _line2 == l2) return false;
@@ -178,7 +179,7 @@ internal sealed partial class SettingsWindow : Form
 				right -= Ui.S(6);
 			}
 
-			int textW = Math.Max(Ui.S(100), right - Ui.S(8));
+			int textW = Math.Max(0, right - Ui.S(8));
 			if (_subtitle.Parent == this)
 			{
 				_title.SetBounds(Ui.S(2), Ui.S(4), textW, Ui.S(22));
@@ -212,7 +213,7 @@ internal sealed partial class SettingsWindow : Form
 			Ui.Fill(g, rect, Ui.Sf(8f), Ui.Card);
 			Ui.Stroke(g, rect, Ui.Sf(8f), Ui.Border);
 			Ui.Glyph(g, _glyph, Ui.IconsLarge, Ui.Faint, new Rectangle(Ui.S(14), 0, Ui.S(24), Height));
-			Ui.DrawText(g, _message, Ui.Body, Ui.Dim, new Rectangle(Ui.S(44), 0, Math.Max(1, Width - Ui.S(58)), Height), TextFormatFlags.VerticalCenter | TextFormatFlags.EndEllipsis);
+			Ui.DrawText(g, _message, Ui.Body, Ui.Dim, new Rectangle(Ui.S(44), Ui.S(6), Math.Max(1, Width - Ui.S(58)), Math.Max(1, Height - Ui.S(12))), TextFormatFlags.VerticalCenter | TextFormatFlags.WordBreak | TextFormatFlags.EndEllipsis);
 		}
 	}
 
@@ -225,7 +226,7 @@ internal sealed partial class SettingsWindow : Form
 		{
 			_w = w;
 			_p = p;
-			Height = Ui.S(102);
+			Height = Ui.S(108);
 			Width = Ui.S(240);
 			Cursor = Cursors.Hand;
 			if (p.Description.Length > 0)
@@ -265,7 +266,7 @@ internal sealed partial class SettingsWindow : Form
 			Rectangle rTitle = new Rectangle(Ui.S(12), Ui.S(9), Math.Max(1, (int)startX - Ui.S(18)), Ui.S(20));
 			Ui.DrawText(g, _p.Name, Ui.Bold, Ui.Text, rTitle, TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter);
 
-			int bottomReserve = (isCurr || !_p.BuiltIn) ? Ui.S(24) : Ui.S(10);
+			int bottomReserve = (isCurr || !_p.BuiltIn) ? Ui.S(28) : Ui.S(12);
 			Rectangle rDesc = new Rectangle(Ui.S(12), Ui.S(33), Math.Max(1, Width - Ui.S(24)), Math.Max(1, Height - Ui.S(33) - bottomReserve));
 			string desc = _p.Description.Length > 0 ? _p.Description : (_p.BuiltIn ? "" : "Custom user preset (right-click to manage)");
 			Ui.DrawText(g, desc, Ui.Small, Ui.Dim, rDesc, TextFormatFlags.EndEllipsis | TextFormatFlags.WordBreak);

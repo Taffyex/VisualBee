@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.2.0.5] - 2026-11-22
+
+### Pause Freeze Fixes & Label/UI Overlap Cleanup
+
+#### Audio & Playback Pause Fixes
+- **Cleared Paused State Across All Capture Modes**: Removed the `!isPaused` skip in `SpectrumView` so pausing in **MusicBee only**, **MusicBee spectrum API**, and **Automatic** modes clears the active buffer and lets bars, peaks, trails, and oscilloscope state decay smoothly to zero instead of freezing in place.
+- **Immediate PlayState Propagation**: Read `Host.CachedPlayState` directly in `GpuView` instead of throttling updates to 500 ms.
+- **WASAPI Process Loopback & Idle Ring Flush**: Fixed `WasapiLoopback.AdvanceIdleDecay()` stopping after ~4 ms (~192 samples) when endpoints stop delivering packets on pause; now flushes the entire 65,536-frame ring buffer at real-time sample rate so `ReadWindow` never stalls with `fresh = false` and pre-pause audio in the FFT window, and clamped `interpFrames` to `delaySamples` so `ReadWindow` never reads ahead of the write head.
+
+#### Labels & Studio UI Polish
+- **Visualizer Frequency & dB Labels**: Replaced the single rightward cursor in `FrequencyLabels` with interval collision checking so **Mirrored**, **Mirrored-Out**, and **Stereo-sides** layouts no longer duplicate `30` or collide in the center; added width/spacing checks for Gaussian band labels and vertical collision checking + `-100dB` sizing for dB scale labels.
+- **Engine Telemetry & HUD Pill**: Split `AudioTelemetryCard.UpdateText()` on newlines (`\n`) as well as `|` so live `StatusText()` renders cleanly on two lines, and dynamically sized the corner HUD/FPS pill to measured text bounds.
+- **Preferences & Studio Window Layout**: Constrained Preferences Configure label wrapping and dynamically anchored `status` below `label2`; clamped top-bar, footer, and section header title widths to prevent button overlap; added extra bottom clearance in `PresetCard`; enabled word-wrap in `EmptyStateCard`; and widened `RackSectionCard` reset bounds.
+
 ## [2.2.0] - 2026-11-21
 
 ### True 16-bit FP16 HDR, Auto-Level Normalization (#5), Album-Art Refresh Fix & Preset Sharing

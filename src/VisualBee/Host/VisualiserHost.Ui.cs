@@ -208,6 +208,21 @@ internal sealed partial class VisualiserHost
 		refresh.Start();
 		host.Controls.AddRange(new Control[5] { label, looks, button, label2, status });
 		PanelLayout.Fit(host);
+		Action refitConfigureLabels = () =>
+		{
+			int maxW = Math.Max(PanelLayout.S(180), host.ClientSize.Width - PanelLayout.S(16));
+			label2.MaximumSize = new Size(maxW, 0);
+			status.MaximumSize = new Size(maxW, 0);
+			status.Top = Math.Max(PanelLayout.S(84), label2.Bottom + PanelLayout.S(8));
+		};
+		refitConfigureLabels();
+		host.Resize += (object s, EventArgs a) =>
+		{
+			if (!host.IsDisposed && !status.IsDisposed)
+			{
+				refitConfigureLabels();
+			}
+		};
 		return true;
 	}
 }

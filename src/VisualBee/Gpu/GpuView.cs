@@ -47,6 +47,10 @@ internal abstract partial class GpuView : Control
 
 	private string _overlayText;
 
+	private float _overlayPillW;
+
+	private float _overlayPillH;
+
 	private readonly ColourAnimator _animator = new ColourAnimator();
 
 	private readonly Stopwatch _clock = Stopwatch.StartNew();
@@ -80,10 +84,6 @@ internal abstract partial class GpuView : Control
 	private double _fpsStart;
 
 	private double _fpsCpu;
-
-	private double _lastPlayStateCheck;
-
-	private PlayState _cachedPlayState = PlayState.Playing;
 
 	private int _lastSkinTop;
 	private int _lastSkinBottom;
@@ -243,12 +243,7 @@ internal abstract partial class GpuView : Control
 			};
 			_animator.Update(current, ArtLook(current), dt, totalSeconds);
 			f.Colours = _animator.Shown;
-			if (totalSeconds - _lastPlayStateCheck > 0.500)
-			{
-				_cachedPlayState = Host.CachedPlayState;
-				_lastPlayStateCheck = totalSeconds;
-			}
-			if (Advance(ref f, _cachedPlayState) || _animator.Moving || _backdrop.Animated(current))
+			if (Advance(ref f, Host.CachedPlayState) || _animator.Moving || _backdrop.Animated(current))
 			{
 				_settleUntil = totalSeconds + (current.Trails ? (current.TrailMs / 1000.0 * 1.5) : 0.0) + 0.05;
 			}
